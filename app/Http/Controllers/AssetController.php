@@ -23,11 +23,39 @@ class AssetController extends Controller
     {
     }
 
-    public function index(): View
+    public function index(Request $request): View
     {
+        $filters = $request->only([
+            'q',
+            'asset_status_id',
+            'asset_class_id',
+            'asset_category_id',
+            'asset_location_id',
+            'department_id',
+            'asset_user_id',
+            'person_in_charge_id',
+            'warranty_id',
+        ]);
+
         $assets = Asset::with(['status', 'class', 'category', 'unit', 'department', 'personInCharge', 'user', 'location', 'warranty'])
+            ->when($filters['q'] ?? null, function ($query, $q) {
+                $query->where(function ($qBuilder) use ($q) {
+                    $qBuilder->where('code', 'like', "%{$q}%")
+                        ->orWhere('name', 'like', "%{$q}%")
+                        ->orWhere('serial_number', 'like', "%{$q}%");
+                });
+            })
+            ->when($filters['asset_status_id'] ?? null, fn($q, $v) => $q->where('asset_status_id', $v))
+            ->when($filters['asset_class_id'] ?? null, fn($q, $v) => $q->where('asset_class_id', $v))
+            ->when($filters['asset_category_id'] ?? null, fn($q, $v) => $q->where('asset_category_id', $v))
+            ->when($filters['asset_location_id'] ?? null, fn($q, $v) => $q->where('asset_location_id', $v))
+            ->when($filters['department_id'] ?? null, fn($q, $v) => $q->where('department_id', $v))
+            ->when($filters['asset_user_id'] ?? null, fn($q, $v) => $q->where('asset_user_id', $v))
+            ->when($filters['person_in_charge_id'] ?? null, fn($q, $v) => $q->where('person_in_charge_id', $v))
+            ->when($filters['warranty_id'] ?? null, fn($q, $v) => $q->where('warranty_id', $v))
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(15)
+            ->withQueryString();
 
         return view('assets.index', [
             'assets' => $assets,
@@ -40,6 +68,7 @@ class AssetController extends Controller
             'users' => AssetUser::orderBy('name')->get(),
             'locations' => AssetLocation::orderBy('name')->get(),
             'warranties' => Warranty::orderBy('duration_months')->get(),
+            'filters' => $filters,
         ]);
     }
 

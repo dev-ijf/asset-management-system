@@ -16,6 +16,81 @@
             <div class="card-title mb-0">Daftar Aset</div>
         </div>
         <div class="card-body">
+            <form method="GET" class="mb-3">
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <input type="text" name="q" class="form-control" placeholder="Cari kode/nama/SN" value="{{ $filters['q'] ?? '' }}">
+                    </div>
+                    <div class="col-md-2">
+                        <select name="asset_status_id" class="form-select">
+                            <option value="">Status</option>
+                            @foreach($statuses as $item)
+                                <option value="{{ $item->id }}" @selected(($filters['asset_status_id'] ?? '') == $item->id)>{{ $item->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select name="asset_class_id" class="form-select">
+                            <option value="">Kelas</option>
+                            @foreach($classes as $item)
+                                <option value="{{ $item->id }}" @selected(($filters['asset_class_id'] ?? '') == $item->id)>{{ $item->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select name="asset_category_id" class="form-select">
+                            <option value="">Kategori</option>
+                            @foreach($categories as $item)
+                                <option value="{{ $item->id }}" @selected(($filters['asset_category_id'] ?? '') == $item->id)>{{ $item->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="asset_location_id" class="form-select">
+                            <option value="">Lokasi</option>
+                            @foreach($locations as $item)
+                                <option value="{{ $item->id }}" @selected(($filters['asset_location_id'] ?? '') == $item->id)>{{ $item->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="department_id" class="form-select">
+                            <option value="">Departemen</option>
+                            @foreach($departments as $item)
+                                <option value="{{ $item->id }}" @selected(($filters['department_id'] ?? '') == $item->id)>{{ $item->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="asset_user_id" class="form-select">
+                            <option value="">Pengguna</option>
+                            @foreach($users as $item)
+                                <option value="{{ $item->id }}" @selected(($filters['asset_user_id'] ?? '') == $item->id)>{{ $item->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="person_in_charge_id" class="form-select">
+                            <option value="">Person in Charge</option>
+                            @foreach($peopleInCharge as $item)
+                                <option value="{{ $item->id }}" @selected(($filters['person_in_charge_id'] ?? '') == $item->id)>{{ $item->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="warranty_id" class="form-select">
+                            <option value="">Garansi</option>
+                            @foreach($warranties as $item)
+                                <option value="{{ $item->id }}" @selected(($filters['warranty_id'] ?? '') == $item->id)>{{ $item->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-12 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-wave">Filter</button>
+                        <a href="{{ route('assets.index') }}" class="btn btn-outline-secondary">Reset</a>
+                    </div>
+                </div>
+            </form>
             @if(session('success'))
                 <div class="alert alert-success alert-dismissible" role="alert">
                     {{ session('success') }}
@@ -75,6 +150,9 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+            <div class="mt-3">
+                {{ $assets->links() }}
             </div>
         </div>
     </div>
