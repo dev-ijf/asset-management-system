@@ -102,4 +102,9 @@ class Asset extends Model
     {
         return $this->hasMany(AssetAudit::class);
     }
+
+    public function maintenances()
+    {
+        return $this->hasMany(AssetMaintenance::class);
+    }
 }

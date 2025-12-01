@@ -188,6 +188,12 @@
                         <span class="side-menu__label">Laporan Audit</span>
                     </a>
                 </li>
+                <li class="slide">
+                    <a href="{{ route('asset-maintenances.index') }}" class="side-menu__item {{ request()->routeIs('asset-maintenances.*') ? 'active' : '' }}">
+                        <i class="ri-tools-fill side-menu__icon"></i>
+                        <span class="side-menu__label">Perawatan Aset</span>
+                    </a>
+                </li>
 
                 <!-- Start::slide__category -->
                 <li class="slide__category"><span class="category-name">Web Apps</span></li>

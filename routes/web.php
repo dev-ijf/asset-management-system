@@ -21,6 +21,7 @@ use App\Http\Controllers\AssetTransactionController;
 use App\Http\Controllers\AssetAuditController;
 use App\Http\Controllers\AssetTransactionPageController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\AssetMaintenanceController;
 use App\Http\Controllers\Controller;
 
 Route::get('/', function () {
@@ -63,3 +64,4 @@ Route::get('reports/assets', [ReportController::class, 'assets'])->name('reports
 Route::get('reports/movements', [ReportController::class, 'movements'])->name('reports.movements');
 Route::get('reports/disposals', [ReportController::class, 'disposals'])->name('reports.disposals');
 Route::get('reports/audits', [ReportController::class, 'audits'])->name('reports.audits');
+Route::resource('asset-maintenances', AssetMaintenanceController::class)->only(['index','store','update','destroy']);
