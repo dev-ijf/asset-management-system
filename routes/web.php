@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\DashboardsController;
+use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\Controller;
 
 Route::get('/', function () {
@@ -16,3 +17,5 @@ Route::get('/', function () {
 
 // Route::get('/', [DashboardsController::class, 'index']);
 Route::get('index', [DashboardsController::class, 'index']);
+
+Route::get('settings', [SystemSettingController::class, 'index'])->name('settings.index');
