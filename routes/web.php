@@ -22,6 +22,7 @@ use App\Http\Controllers\AssetAuditController;
 use App\Http\Controllers\AssetTransactionPageController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\AssetMaintenanceController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Controller;
 
 Route::get('/', function () {
@@ -65,3 +66,9 @@ Route::get('reports/movements', [ReportController::class, 'movements'])->name('r
 Route::get('reports/disposals', [ReportController::class, 'disposals'])->name('reports.disposals');
 Route::get('reports/audits', [ReportController::class, 'audits'])->name('reports.audits');
 Route::resource('asset-maintenances', AssetMaintenanceController::class)->only(['index','store','update','destroy']);
+
+Route::get('login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('login', [AuthController::class, 'login']);
+Route::get('register', [AuthController::class, 'showRegister'])->name('register');
+Route::post('register', [AuthController::class, 'register']);
+Route::post('logout', [AuthController::class, 'logout'])->name('logout');
