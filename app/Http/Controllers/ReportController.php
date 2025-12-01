@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\ArrayReportExport;
+use App\Exports\AssetFullReportExport;
 use App\Models\Asset;
 use App\Models\AssetAudit;
 use App\Models\AssetCategory;
@@ -43,7 +44,9 @@ class ReportController extends Controller
         $assets = $query->paginate(20)->withQueryString();
 
         if ($request->get('export') === 'excel') {
-            $rows = $query->get()->map(fn($a)=>[
+            $assetsCollection = $query->get();
+
+            $assetRows = $assetsCollection->map(fn($a)=>[
                 $a->code,
                 $a->name,
                 $a->status?->name,
@@ -55,9 +58,45 @@ class ReportController extends Controller
                 $a->warranty?->name,
                 $a->created_at?->format('d/m/Y'),
             ])->toArray();
-            return Excel::download(new ArrayReportExport([
-                'Kode','Nama','Status','Kategori','Lokasi','Departemen','Pengguna','PIC','Garansi','Dibuat'
-            ], $rows), 'asset-report.xlsx');
+
+            $movements = \App\Models\AssetMovement::with(['asset','fromLocation','toLocation','fromDepartment','toDepartment','fromUser','toUser'])
+                ->whereIn('asset_id', $assetsCollection->pluck('id'))
+                ->get()
+                ->map(fn($m)=>[
+                    $m->performed_at?->format('d/m/Y H:i'),
+                    $m->asset?->code,
+                    $m->fromLocation?->name,
+                    $m->toLocation?->name,
+                    $m->fromDepartment?->name,
+                    $m->toDepartment?->name,
+                    $m->fromUser?->name,
+                    $m->toUser?->name,
+                    $m->notes,
+                ])->toArray();
+
+            $disposals = \App\Models\AssetDisposal::with('asset')
+                ->whereIn('asset_id', $assetsCollection->pluck('id'))
+                ->get()
+                ->map(fn($d)=>[
+                    $d->disposed_at?->format('d/m/Y H:i'),
+                    $d->asset?->code,
+                    $d->reason,
+                    $d->notes,
+                    $d->reversed_at ? 'Reversed' : 'Active',
+                ])->toArray();
+
+            $audits = \App\Models\AssetAudit::with(['asset','location'])
+                ->whereIn('asset_id', $assetsCollection->pluck('id'))
+                ->get()
+                ->map(fn($a)=>[
+                    $a->audited_at?->format('d/m/Y H:i'),
+                    $a->asset?->code,
+                    $a->status,
+                    $a->location?->name,
+                    $a->notes,
+                ])->toArray();
+
+            return Excel::download(new AssetFullReportExport($assetRows, $movements, $disposals, $audits), 'asset-report.xlsx');
         }
 
         if ($request->get('export') === 'pdf') {
