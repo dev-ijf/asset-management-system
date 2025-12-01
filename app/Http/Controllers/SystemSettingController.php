@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Http\Requests\SettingRequest;
 use App\Services\System\SystemSettingService;
 use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
 
 class SystemSettingController extends Controller
 {
@@ -24,5 +26,50 @@ class SystemSettingController extends Controller
             'settingsByGroup' => $settings,
             'resolved' => $resolved,
         ]);
+    }
+
+    public function store(SettingRequest $request, SystemSettingService $service): RedirectResponse
+    {
+        $data = $request->validated();
+
+        $service->set(
+            $data['key'],
+            $request->castedValue(),
+            $data['type'] ?? null,
+            $data['description'] ?? null,
+            $data['group'] ?? null,
+            $data['is_public'] ?? false
+        );
+
+        return redirect()->route('settings.index')->with('success', 'Setting berhasil ditambahkan.');
+    }
+
+    public function update(SettingRequest $request, Setting $setting, SystemSettingService $service): RedirectResponse
+    {
+        $data = $request->validated();
+
+        $service->set(
+            $data['key'],
+            $request->castedValue(),
+            $data['type'] ?? null,
+            $data['description'] ?? null,
+            $data['group'] ?? null,
+            $data['is_public'] ?? false
+        );
+
+        // Pastikan key ikut terbarui jika diubah.
+        if ($setting->key !== $data['key']) {
+            $setting->key = $data['key'];
+        }
+
+        return redirect()->route('settings.index')->with('success', 'Setting berhasil diperbarui.');
+    }
+
+    public function destroy(Setting $setting, SystemSettingService $service): RedirectResponse
+    {
+        $setting->delete();
+        $service->refresh();
+
+        return redirect()->route('settings.index')->with('success', 'Setting berhasil dihapus.');
     }
 }

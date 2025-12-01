@@ -16,8 +16,30 @@
                         <div class="card-title">Daftar Setting</div>
                         <div class="card-subtitle">Nilai yang ditampilkan sudah menerapkan override dari database.</div>
                     </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-primary btn-wave" data-bs-toggle="modal" data-bs-target="#createSettingModal">
+                            <i class="ri-add-line me-1"></i>Tambah Setting
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
+                    @if(session('success'))
+                        <div class="alert alert-success alert-dismissible" role="alert">
+                            {{ session('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
+
+                    @if($errors->any())
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
                     @forelse($settingsByGroup as $group => $items)
                         <div class="mb-4">
                             <div class="d-flex align-items-center justify-content-between">
@@ -31,6 +53,7 @@
                                             <th style="width: 25%;">Nilai Aktif</th>
                                             <th style="width: 20%;">Tipe</th>
                                             <th style="width: 30%;">Keterangan</th>
+                                            <th class="text-center" style="width: 10%;">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -48,6 +71,27 @@
                                                 </td>
                                                 <td><span class="badge bg-secondary-transparent text-secondary">{{ $setting->type }}</span></td>
                                                 <td class="text-muted">{{ $setting->description ?? '-' }}</td>
+                                                <td class="text-center">
+                                                    <div class="btn-list">
+                                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                                                                data-bs-target="#editSettingModal"
+                                                                data-id="{{ $setting->id }}"
+                                                                data-key="{{ $setting->key }}"
+                                                                data-group="{{ $setting->group }}"
+                                                                data-type="{{ $setting->type }}"
+                                                                data-description="{{ $setting->description }}"
+                                                                data-value="{{ is_array($setting->value) ? json_encode($setting->value) : $setting->value }}"
+                                                                data-is-public="{{ $setting->is_public ? '1' : '0' }}">
+                                                            Edit
+                                                        </button>
+                                                        <form action="{{ route('settings.destroy', $setting) }}" method="POST" class="d-inline"
+                                                            onsubmit="return confirm('Hapus setting ini?')">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
+                                                        </form>
+                                                    </div>
+                                                </td>
                                             </tr>
                                         @endforeach
                                     </tbody>
@@ -63,4 +107,72 @@
             </div>
         </div>
     </div>
+
+    {{-- Modal Tambah --}}
+    <div class="modal fade" id="createSettingModal" tabindex="-1" aria-labelledby="createSettingModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createSettingModalLabel">Tambah Setting</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ route('settings.store') }}" method="POST">
+                    @csrf
+                    <div class="modal-body">
+                        @include('settings.partials.form')
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal Edit --}}
+    <div class="modal fade" id="editSettingModal" tabindex="-1" aria-labelledby="editSettingModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editSettingModalLabel">Edit Setting</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="editSettingForm" method="POST">
+                    @csrf
+                    @method('PUT')
+                    <div class="modal-body">
+                        @include('settings.partials.form')
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 @endsection
+
+@push('scripts')
+<script>
+    const editModal = document.getElementById('editSettingModal');
+    if (editModal) {
+        editModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const form = document.getElementById('editSettingForm');
+            const id = button.getAttribute('data-id');
+
+            form.action = "{{ url('settings') }}/" + id;
+
+            // Isi field form dengan data dari tombol edit.
+            form.querySelector('[name="key"]').value = button.getAttribute('data-key') || '';
+            form.querySelector('[name="group"]').value = button.getAttribute('data-group') || '';
+            form.querySelector('[name="type"]').value = button.getAttribute('data-type') || 'string';
+            form.querySelector('[name="description"]').value = button.getAttribute('data-description') || '';
+            form.querySelector('[name="value"]').value = button.getAttribute('data-value') || '';
+            form.querySelector('[name="is_public"]').checked = button.getAttribute('data-is-public') === '1';
+        });
+    }
+</script>
+@endpush

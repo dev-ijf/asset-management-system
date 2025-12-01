@@ -18,4 +18,4 @@ Route::get('/', function () {
 // Route::get('/', [DashboardsController::class, 'index']);
 Route::get('index', [DashboardsController::class, 'index']);
 
-Route::get('settings', [SystemSettingController::class, 'index'])->name('settings.index');
+Route::resource('settings', SystemSettingController::class)->only(['index', 'store', 'update', 'destroy']);
