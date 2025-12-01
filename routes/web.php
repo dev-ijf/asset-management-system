@@ -7,6 +7,15 @@ use App\Http\Controllers\SystemSettingController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\Master\AssetStatusController;
+use App\Http\Controllers\Master\AssetClassController;
+use App\Http\Controllers\Master\UnitController;
+use App\Http\Controllers\Master\DepartmentController;
+use App\Http\Controllers\Master\PersonInChargeController;
+use App\Http\Controllers\Master\AssetUserController;
+use App\Http\Controllers\Master\AssetCategoryController;
+use App\Http\Controllers\Master\AssetLocationController;
+use App\Http\Controllers\Master\WarrantyController;
 use App\Http\Controllers\Controller;
 
 Route::get('/', function () {
@@ -26,3 +35,13 @@ Route::resource('settings', SystemSettingController::class)->only(['index', 'sto
 Route::resource('roles', RoleController::class)->only(['index', 'store', 'update']);
 Route::resource('permissions', PermissionController::class)->only(['index', 'store', 'update']);
 Route::resource('users', UserManagementController::class)->only(['index', 'store', 'update']);
+
+Route::resource('asset-statuses', AssetStatusController::class)->only(['index', 'store', 'update', 'destroy']);
+Route::resource('asset-classes', AssetClassController::class)->only(['index', 'store', 'update', 'destroy']);
+Route::resource('units', UnitController::class)->only(['index', 'store', 'update', 'destroy']);
+Route::resource('departments', DepartmentController::class)->only(['index', 'store', 'update', 'destroy']);
+Route::resource('people-in-charge', PersonInChargeController::class)->only(['index', 'store', 'update', 'destroy']);
+Route::resource('asset-users', AssetUserController::class)->only(['index', 'store', 'update', 'destroy']);
+Route::resource('asset-categories', AssetCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
+Route::resource('asset-locations', AssetLocationController::class)->only(['index', 'store', 'update', 'destroy']);
+Route::resource('warranties', WarrantyController::class)->only(['index', 'store', 'update', 'destroy']);

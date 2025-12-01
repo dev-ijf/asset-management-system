@@ -86,6 +86,33 @@
                 <!-- End::slide -->
 
                 <!-- Start::slide__category -->
+                <li class="slide__category"><span class="category-name">Master Data</span></li>
+                <!-- End::slide__category -->
+
+                <li class="slide has-sub">
+                    <a href="javascript:void(0);" class="side-menu__item">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 256 256">
+                            <rect width="256" height="256" fill="none"/>
+                            <path d="M32,80H224" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                            <path d="M56,48H200a8,8,0,0,1,8,8V200a8,8,0,0,1-8,8H56a8,8,0,0,1-8-8V56A8,8,0,0,1,56,48Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                        </svg>
+                        <span class="side-menu__label">Master Data</span>
+                        <i class="ri-arrow-right-s-line side-menu__angle"></i>
+                    </a>
+                    <ul class="slide-menu child1">
+                        <li class="slide"><a href="{{ route('asset-statuses.index') }}" class="side-menu__item {{ request()->routeIs('asset-statuses.index') ? 'active' : '' }}">Status Aset</a></li>
+                        <li class="slide"><a href="{{ route('asset-classes.index') }}" class="side-menu__item {{ request()->routeIs('asset-classes.index') ? 'active' : '' }}">Kelas Aset</a></li>
+                        <li class="slide"><a href="{{ route('units.index') }}" class="side-menu__item {{ request()->routeIs('units.index') ? 'active' : '' }}">Satuan</a></li>
+                        <li class="slide"><a href="{{ route('departments.index') }}" class="side-menu__item {{ request()->routeIs('departments.index') ? 'active' : '' }}">Departemen</a></li>
+                        <li class="slide"><a href="{{ route('people-in-charge.index') }}" class="side-menu__item {{ request()->routeIs('people-in-charge.index') ? 'active' : '' }}">Penanggung Jawab</a></li>
+                        <li class="slide"><a href="{{ route('asset-users.index') }}" class="side-menu__item {{ request()->routeIs('asset-users.index') ? 'active' : '' }}">Pengguna Aset</a></li>
+                        <li class="slide"><a href="{{ route('asset-categories.index') }}" class="side-menu__item {{ request()->routeIs('asset-categories.index') ? 'active' : '' }}">Kategori Aset</a></li>
+                        <li class="slide"><a href="{{ route('asset-locations.index') }}" class="side-menu__item {{ request()->routeIs('asset-locations.index') ? 'active' : '' }}">Lokasi Aset</a></li>
+                        <li class="slide"><a href="{{ route('warranties.index') }}" class="side-menu__item {{ request()->routeIs('warranties.index') ? 'active' : '' }}">Masa Garansi</a></li>
+                    </ul>
+                </li>
+
+                <!-- Start::slide__category -->
                 <li class="slide__category"><span class="category-name">Web Apps</span></li>
                 <!-- End::slide__category -->
 

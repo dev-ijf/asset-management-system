@@ -17,4 +17,9 @@ class AssetUser extends Model
         'department_id',
         'notes',
     ];
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
 }
