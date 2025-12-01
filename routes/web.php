@@ -16,6 +16,7 @@ use App\Http\Controllers\Master\AssetUserController;
 use App\Http\Controllers\Master\AssetCategoryController;
 use App\Http\Controllers\Master\AssetLocationController;
 use App\Http\Controllers\Master\WarrantyController;
+use App\Http\Controllers\AssetController;
 use App\Http\Controllers\Controller;
 
 Route::get('/', function () {
@@ -45,3 +46,5 @@ Route::resource('asset-users', AssetUserController::class)->only(['index', 'stor
 Route::resource('asset-categories', AssetCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
 Route::resource('asset-locations', AssetLocationController::class)->only(['index', 'store', 'update', 'destroy']);
 Route::resource('warranties', WarrantyController::class)->only(['index', 'store', 'update', 'destroy']);
+Route::get('assets/{asset}/history', [AssetController::class, 'history'])->name('assets.history');
+Route::resource('assets', AssetController::class)->only(['index', 'store', 'update']);

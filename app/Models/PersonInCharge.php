@@ -10,6 +10,8 @@ class PersonInCharge extends Model
 {
     use HasFactory, HasUuids;
 
+    protected $table = 'person_in_charges';
+
     protected $fillable = [
         'name',
         'email',

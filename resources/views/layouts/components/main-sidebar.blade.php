@@ -109,6 +109,7 @@
                         <li class="slide"><a href="{{ route('asset-categories.index') }}" class="side-menu__item {{ request()->routeIs('asset-categories.index') ? 'active' : '' }}">Kategori Aset</a></li>
                         <li class="slide"><a href="{{ route('asset-locations.index') }}" class="side-menu__item {{ request()->routeIs('asset-locations.index') ? 'active' : '' }}">Lokasi Aset</a></li>
                         <li class="slide"><a href="{{ route('warranties.index') }}" class="side-menu__item {{ request()->routeIs('warranties.index') ? 'active' : '' }}">Masa Garansi</a></li>
+                        <li class="slide"><a href="{{ route('assets.index') }}" class="side-menu__item {{ request()->routeIs('assets.*') ? 'active' : '' }}">Data Aset</a></li>
                     </ul>
                 </li>
 
