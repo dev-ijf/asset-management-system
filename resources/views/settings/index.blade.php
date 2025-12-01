@@ -46,7 +46,7 @@
                                 <h6 class="mb-2 text-uppercase text-muted">{{ $group ?: 'general' }}</h6>
                             </div>
                             <div class="table-responsive">
-                                <table class="table table-bordered align-middle mb-0">
+                                <table class="table table-bordered align-middle text-nowrap mb-0">
                                     <thead class="table-light">
                                         <tr>
                                             <th style="width: 25%;">Key</th>

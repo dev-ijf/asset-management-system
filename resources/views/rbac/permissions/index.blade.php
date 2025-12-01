@@ -39,7 +39,7 @@
                     @endif
 
                     <div class="table-responsive">
-                        <table class="table table-bordered align-middle">
+                        <table class="table table-bordered align-middle text-nowrap">
                             <thead class="table-light">
                                 <tr>
                                     <th>Permission</th>
