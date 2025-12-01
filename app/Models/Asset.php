@@ -87,4 +87,14 @@ class Asset extends Model
     {
         return $this->hasMany(AssetHistory::class);
     }
+
+    public function movements()
+    {
+        return $this->hasMany(AssetMovement::class);
+    }
+
+    public function disposals()
+    {
+        return $this->hasMany(AssetDisposal::class);
+    }
 }

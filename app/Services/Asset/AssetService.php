@@ -5,6 +5,9 @@ namespace App\Services\Asset;
 use App\Models\Asset;
 use App\Models\AssetHistory;
 use App\Services\System\SystemSettingService;
+use App\Models\AssetStatus;
+use App\Models\AssetMovement;
+use App\Models\AssetDisposal;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -71,7 +74,7 @@ class AssetService
         return sprintf('%s-%05d', $prefix, $nextNumber);
     }
 
-    private function logHistory(Asset $asset, string $action, string $description, array $payload = []): void
+    public function logHistory(Asset $asset, string $action, string $description, array $payload = []): void
     {
         AssetHistory::create([
             'asset_id' => $asset->id,
@@ -95,5 +98,91 @@ class AssetService
         Storage::disk('public')->put($path, $image);
 
         $asset->updateQuietly(['qr_path' => $path]);
+    }
+
+    /**
+     * Catat movement aset lalu update lokasi/departemen.
+     */
+    public function move(Asset $asset, array $data): AssetMovement
+    {
+        return DB::transaction(function () use ($asset, $data) {
+            $movement = AssetMovement::create([
+                'asset_id' => $asset->id,
+                'from_location_id' => $asset->asset_location_id,
+                'to_location_id' => $data['to_location_id'] ?? null,
+                'from_department_id' => $asset->department_id,
+                'to_department_id' => $data['to_department_id'] ?? null,
+                'notes' => $data['notes'] ?? null,
+                'moved_by' => auth()->id(),
+                'performed_at' => $data['performed_at'] ?? now(),
+            ]);
+
+            $asset->update([
+                'asset_location_id' => $data['to_location_id'] ?? $asset->asset_location_id,
+                'department_id' => $data['to_department_id'] ?? $asset->department_id,
+            ]);
+
+            $this->logHistory($asset, 'movement', 'Perpindahan aset', $movement->toArray());
+
+            return $movement;
+        });
+    }
+
+    /**
+     * Catat disposal dan ubah status aset (jika ada status DISPOSED).
+     */
+    public function dispose(Asset $asset, array $data): AssetDisposal
+    {
+        return DB::transaction(function () use ($asset, $data) {
+            $disposal = AssetDisposal::create([
+                'asset_id' => $asset->id,
+                'reason' => $data['reason'] ?? null,
+                'notes' => $data['notes'] ?? null,
+                'disposed_by' => auth()->id(),
+                'disposed_at' => $data['disposed_at'] ?? now(),
+                'previous_status_id' => $asset->asset_status_id,
+                'previous_location_id' => $asset->asset_location_id,
+                'previous_department_id' => $asset->department_id,
+            ]);
+
+            // Ubah status aset ke DISPOSED bila tersedia
+            $disposedStatus = AssetStatus::where('code', 'DISPOSED')->first();
+            $asset->update([
+                'asset_status_id' => $disposedStatus?->id ?? $asset->asset_status_id,
+            ]);
+
+            $this->logHistory($asset, 'disposal', 'Aset didispose', $disposal->toArray());
+
+            return $disposal;
+        });
+    }
+
+    /**
+     * Reverse disposal dan kembalikan status/lokasi/departemen sebelumnya.
+     */
+    public function reverseDisposal(AssetDisposal $disposal, ?string $notes = null): Asset
+    {
+        return DB::transaction(function () use ($disposal, $notes) {
+            $asset = $disposal->asset;
+
+            $asset->update([
+                'asset_status_id' => $disposal->previous_status_id,
+                'asset_location_id' => $disposal->previous_location_id,
+                'department_id' => $disposal->previous_department_id,
+            ]);
+
+            $disposal->update([
+                'reversed_at' => now(),
+                'reversed_by' => auth()->id(),
+                'reversed_notes' => $notes,
+            ]);
+
+            $this->logHistory($asset, 'reverse_disposal', 'Aset di-restore dari disposal', [
+                'disposal_id' => $disposal->id,
+                'notes' => $notes,
+            ]);
+
+            return $asset;
+        });
     }
 }

@@ -59,4 +59,137 @@
             </div>
         </div>
     </div>
+
+    <div class="row g-3 mt-2">
+        <div class="col-xl-6">
+            <div class="card custom-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="card-title mb-0">Movement</div>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('assets.movements.store', $asset) }}" method="POST" class="mb-3">
+                        @csrf
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Lokasi Tujuan</label>
+                                <select name="to_location_id" class="form-select">
+                                    <option value="">-- Pilih --</option>
+                                    @foreach(\App\Models\AssetLocation::orderBy('name')->get() as $loc)
+                                        <option value="{{ $loc->id }}">{{ $loc->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Departemen Tujuan</label>
+                                <select name="to_department_id" class="form-select">
+                                    <option value="">-- Pilih --</option>
+                                    @foreach(\App\Models\Department::orderBy('name')->get() as $dept)
+                                        <option value="{{ $dept->id }}">{{ $dept->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Catatan</label>
+                                <textarea name="notes" class="form-control" rows="2" placeholder="Catatan perpindahan"></textarea>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-primary btn-wave" type="submit">Catat Movement</button>
+                        </div>
+                    </form>
+                    <div class="table-responsive">
+                        <table class="table table-bordered text-nowrap align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Waktu</th>
+                                    <th>Dari</th>
+                                    <th>Ke</th>
+                                    <th>Catatan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($asset->movements()->latest()->get() as $movement)
+                                    <tr>
+                                        <td>{{ optional($movement->performed_at)->format('d/m/Y H:i') ?: '-' }}</td>
+                                        <td>
+                                            {{ $movement->fromLocation?->name ?: '-' }} / {{ $movement->fromDepartment?->name ?: '-' }}
+                                        </td>
+                                        <td>
+                                            {{ $movement->toLocation?->name ?: '-' }} / {{ $movement->toDepartment?->name ?: '-' }}
+                                        </td>
+                                        <td>{{ $movement->notes ?: '-' }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">Belum ada movement.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="card custom-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="card-title mb-0">Disposal</div>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('assets.disposals.store', $asset) }}" method="POST" class="mb-3">
+                        @csrf
+                        <div class="row g-2">
+                            <div class="col-md-12">
+                                <label class="form-label">Alasan</label>
+                                <input type="text" name="reason" class="form-control" required placeholder="Contoh: rusak berat">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Catatan</label>
+                                <textarea name="notes" class="form-control" rows="2" placeholder="Catatan disposal"></textarea>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-danger btn-wave" type="submit">Catat Disposal</button>
+                        </div>
+                    </form>
+                    <div class="table-responsive">
+                        <table class="table table-bordered text-nowrap align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Waktu</th>
+                                    <th>Alasan</th>
+                                    <th>Catatan</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($asset->disposals()->latest()->get() as $disposal)
+                                    <tr>
+                                        <td>{{ optional($disposal->disposed_at)->format('d/m/Y H:i') ?: '-' }}</td>
+                                        <td>{{ $disposal->reason ?: '-' }}</td>
+                                        <td>{{ $disposal->notes ?: '-' }}</td>
+                                        <td>
+                                            @if(!$disposal->reversed_at)
+                                                <form action="{{ route('assets.disposals.reverse', $disposal) }}" method="POST" class="d-inline">
+                                                    @csrf
+                                                    <input type="hidden" name="notes" value="Reverse via UI">
+                                                    <button class="btn btn-sm btn-outline-success">Reverse</button>
+                                                </form>
+                                            @else
+                                                <span class="badge bg-success-transparent text-success">Reversed</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">Belum ada disposal.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection

@@ -17,6 +17,7 @@ use App\Http\Controllers\Master\AssetCategoryController;
 use App\Http\Controllers\Master\AssetLocationController;
 use App\Http\Controllers\Master\WarrantyController;
 use App\Http\Controllers\AssetController;
+use App\Http\Controllers\AssetTransactionController;
 use App\Http\Controllers\Controller;
 
 Route::get('/', function () {
@@ -48,3 +49,6 @@ Route::resource('asset-locations', AssetLocationController::class)->only(['index
 Route::resource('warranties', WarrantyController::class)->only(['index', 'store', 'update', 'destroy']);
 Route::get('assets/{asset}/history', [AssetController::class, 'history'])->name('assets.history');
 Route::resource('assets', AssetController::class)->only(['index', 'store', 'update', 'show']);
+Route::post('assets/{asset}/movements', [AssetTransactionController::class, 'storeMovement'])->name('assets.movements.store');
+Route::post('assets/{asset}/disposals', [AssetTransactionController::class, 'storeDisposal'])->name('assets.disposals.store');
+Route::post('asset-disposals/{disposal}/reverse', [AssetTransactionController::class, 'reverseDisposal'])->name('assets.disposals.reverse');

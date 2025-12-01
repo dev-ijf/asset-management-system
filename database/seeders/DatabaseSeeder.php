@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             RbacSeeder::class,
             MasterDataSeeder::class,
             AssetSeeder::class,
+            AssetTransactionSeeder::class,
         ]);
     }
 }
