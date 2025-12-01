@@ -97,4 +97,9 @@ class Asset extends Model
     {
         return $this->hasMany(AssetDisposal::class);
     }
+
+    public function audits()
+    {
+        return $this->hasMany(AssetAudit::class);
+    }
 }

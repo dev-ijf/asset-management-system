@@ -201,4 +201,75 @@
             </div>
         </div>
     </div>
+
+    <div class="row g-3 mt-2">
+        <div class="col-xl-6">
+            <div class="card custom-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="card-title mb-0">Audit Aset</div>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('assets.audits.store', $asset) }}" method="POST" class="mb-3">
+                        @csrf
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <label class="form-label">Status</label>
+                                <select name="status" class="form-select" required>
+                                    <option value="matched">Sesuai</option>
+                                    <option value="missing">Tidak ditemukan</option>
+                                    <option value="damaged">Rusak</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Lokasi Audit</label>
+                                <select name="location_id" class="form-select">
+                                    <option value="">-- Pilih --</option>
+                                    @foreach(\App\Models\AssetLocation::orderBy('name')->get() as $loc)
+                                        <option value="{{ $loc->id }}">{{ $loc->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Tanggal Audit</label>
+                                <input type="date" name="audited_at" class="form-control" value="{{ now()->toDateString() }}">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Catatan</label>
+                                <textarea name="notes" class="form-control" rows="2" placeholder="Catatan hasil audit"></textarea>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-success btn-wave" type="submit">Catat Audit</button>
+                        </div>
+                    </form>
+                    <div class="table-responsive">
+                        <table class="table table-bordered text-nowrap align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Waktu</th>
+                                    <th>Status</th>
+                                    <th>Lokasi</th>
+                                    <th>Catatan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($asset->audits()->latest()->get() as $audit)
+                                    <tr>
+                                        <td>{{ optional($audit->audited_at)->format('d/m/Y H:i') ?: '-' }}</td>
+                                        <td><span class="badge bg-info-transparent text-info">{{ ucfirst($audit->status) }}</span></td>
+                                        <td>{{ $audit->location?->name ?: '-' }}</td>
+                                        <td>{{ $audit->notes ?: '-' }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">Belum ada audit.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection

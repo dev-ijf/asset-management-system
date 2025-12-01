@@ -8,6 +8,7 @@ use App\Services\System\SystemSettingService;
 use App\Models\AssetStatus;
 use App\Models\AssetMovement;
 use App\Models\AssetDisposal;
+use App\Models\AssetAudit;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -186,6 +187,27 @@ class AssetService
             ]);
 
             return $asset;
+        });
+    }
+
+    /**
+     * Catat audit aset untuk memastikan kesesuaian fisik vs sistem.
+     */
+    public function audit(Asset $asset, array $data): AssetAudit
+    {
+        return DB::transaction(function () use ($asset, $data) {
+            $audit = AssetAudit::create([
+                'asset_id' => $asset->id,
+                'status' => $data['status'],
+                'notes' => $data['notes'] ?? null,
+                'audited_by' => auth()->id(),
+                'audited_at' => $data['audited_at'] ?? now(),
+                'location_id' => $data['location_id'] ?? $asset->asset_location_id,
+            ]);
+
+            $this->logHistory($asset, 'audit', 'Audit aset', $audit->toArray());
+
+            return $audit;
         });
     }
 }

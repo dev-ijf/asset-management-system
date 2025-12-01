@@ -18,6 +18,7 @@ use App\Http\Controllers\Master\AssetLocationController;
 use App\Http\Controllers\Master\WarrantyController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AssetTransactionController;
+use App\Http\Controllers\AssetAuditController;
 use App\Http\Controllers\Controller;
 
 Route::get('/', function () {
@@ -52,3 +53,4 @@ Route::resource('assets', AssetController::class)->only(['index', 'store', 'upda
 Route::post('assets/{asset}/movements', [AssetTransactionController::class, 'storeMovement'])->name('assets.movements.store');
 Route::post('assets/{asset}/disposals', [AssetTransactionController::class, 'storeDisposal'])->name('assets.disposals.store');
 Route::post('asset-disposals/{disposal}/reverse', [AssetTransactionController::class, 'reverseDisposal'])->name('assets.disposals.reverse');
+Route::post('assets/{asset}/audits', [AssetAuditController::class, 'store'])->name('assets.audits.store');
