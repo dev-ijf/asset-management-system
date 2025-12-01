@@ -16,16 +16,17 @@ class RbacSeeder extends Seeder
     public function run(): void
     {
         $permissions = [
-            'user.view',
-            'user.create',
-            'user.update',
-            'role.view',
-            'role.manage',
-            'permission.view',
-            'permission.manage',
-            'setting.manage',
-            'asset.view',
-            'asset.manage',
+            'settings.manage',
+            'users.manage',
+            'roles.manage',
+            'permissions.manage',
+            'assets.view',
+            'assets.manage',
+            'movements.manage',
+            'disposals.manage',
+            'audits.manage',
+            'maintenance.manage',
+            'reports.view',
         ];
 
         foreach ($permissions as $permission) {
@@ -34,20 +35,28 @@ class RbacSeeder extends Seeder
             );
         }
 
-        $adminRole = Role::firstOrCreate(
-            ['name' => 'admin', 'guard_name' => 'web']
-        );
+        $adminRole = Role::firstOrCreate(['name' => 'super-admin', 'guard_name' => 'web']);
+        $assetManager = Role::firstOrCreate(['name' => 'asset-manager', 'guard_name' => 'web']);
+        $auditor = Role::firstOrCreate(['name' => 'auditor', 'guard_name' => 'web']);
+        $maintenance = Role::firstOrCreate(['name' => 'maintenance', 'guard_name' => 'web']);
+        $viewer = Role::firstOrCreate(['name' => 'viewer', 'guard_name' => 'web']);
+
         $adminRole->syncPermissions($permissions);
 
-        $viewerRole = Role::firstOrCreate(
-            ['name' => 'viewer', 'guard_name' => 'web']
-        );
-        $viewerRole->syncPermissions([
-            'user.view',
-            'role.view',
-            'permission.view',
-            'setting.manage', // viewer tetap bisa lihat setting; atur sesuai kebutuhan.
-            'asset.view',
+        $assetManager->syncPermissions([
+            'assets.view','assets.manage','movements.manage','disposals.manage','maintenance.manage','audits.manage','reports.view',
+        ]);
+
+        $auditor->syncPermissions([
+            'assets.view','audits.manage','reports.view',
+        ]);
+
+        $maintenance->syncPermissions([
+            'assets.view','maintenance.manage','movements.manage','reports.view',
+        ]);
+
+        $viewer->syncPermissions([
+            'assets.view','reports.view',
         ]);
 
         // Buat akun admin default bila belum ada.

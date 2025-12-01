@@ -25,47 +25,66 @@ use App\Http\Controllers\AssetMaintenanceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Controller;
 
-Route::get('/', function () {
-    return view('welcome');
+Route::view('/', 'pages.landing.index')->name('landing');
+Route::view('/landing', 'pages.landing.index');
+
+Route::middleware('auth')->group(function () {
+    Route::get('index', [DashboardsController::class, 'index'])->name('index');
+
+    Route::resource('settings', SystemSettingController::class)->only(['index', 'store', 'update', 'destroy'])
+        ->middleware('permission:settings.manage');
+
+    Route::resource('roles', RoleController::class)->only(['index', 'store', 'update'])
+        ->middleware('permission:roles.manage');
+    Route::resource('permissions', PermissionController::class)->only(['index', 'store', 'update'])
+        ->middleware('permission:permissions.manage');
+    Route::resource('users', UserManagementController::class)->only(['index', 'store', 'update'])
+        ->middleware('permission:users.manage');
+
+    Route::resource('asset-statuses', AssetStatusController::class)->only(['index', 'store', 'update', 'destroy'])
+        ->middleware('permission:assets.manage');
+    Route::resource('asset-classes', AssetClassController::class)->only(['index', 'store', 'update', 'destroy'])
+        ->middleware('permission:assets.manage');
+    Route::resource('units', UnitController::class)->only(['index', 'store', 'update', 'destroy'])
+        ->middleware('permission:assets.manage');
+    Route::resource('departments', DepartmentController::class)->only(['index', 'store', 'update', 'destroy'])
+        ->middleware('permission:assets.manage');
+    Route::resource('person-in-charge', PersonInChargeController::class)->only(['index', 'store', 'update', 'destroy'])
+        ->middleware('permission:assets.manage');
+    Route::resource('asset-users', AssetUserController::class)->only(['index', 'store', 'update', 'destroy'])
+        ->middleware('permission:assets.manage');
+    Route::resource('asset-categories', AssetCategoryController::class)->only(['index', 'store', 'update', 'destroy'])
+        ->middleware('permission:assets.manage');
+    Route::resource('asset-locations', AssetLocationController::class)->only(['index', 'store', 'update', 'destroy'])
+        ->middleware('permission:assets.manage');
+    Route::resource('warranties', WarrantyController::class)->only(['index', 'store', 'update', 'destroy'])
+        ->middleware('permission:assets.manage');
+
+    Route::get('assets/{asset}/history', [AssetController::class, 'history'])->name('assets.history')->middleware('permission:assets.view');
+    Route::resource('assets', AssetController::class)->only(['index', 'store', 'update', 'show'])
+        ->middleware(['permission:assets.view|assets.manage']);
+
+    Route::post('assets/{asset}/movements', [AssetTransactionController::class, 'storeMovement'])->name('assets.movements.store')
+        ->middleware('permission:movements.manage');
+    Route::post('assets/{asset}/disposals', [AssetTransactionController::class, 'storeDisposal'])->name('assets.disposals.store')
+        ->middleware('permission:disposals.manage');
+    Route::post('asset-disposals/{disposal}/reverse', [AssetTransactionController::class, 'reverseDisposal'])->name('assets.disposals.reverse')
+        ->middleware('permission:disposals.manage');
+    Route::post('assets/{asset}/audits', [AssetAuditController::class, 'store'])->name('assets.audits.store')
+        ->middleware('permission:audits.manage');
+
+    Route::get('asset-movements', [AssetTransactionPageController::class, 'movements'])->name('asset-movements.index')->middleware('permission:movements.manage');
+    Route::get('asset-disposals', [AssetTransactionPageController::class, 'disposals'])->name('asset-disposals.index')->middleware('permission:disposals.manage');
+    Route::get('asset-audits', [AssetTransactionPageController::class, 'audits'])->name('asset-audits.index')->middleware('permission:audits.manage');
+
+    Route::get('reports/assets', [ReportController::class, 'assets'])->name('reports.assets')->middleware('permission:reports.view');
+    Route::get('reports/movements', [ReportController::class, 'movements'])->name('reports.movements')->middleware('permission:reports.view');
+    Route::get('reports/disposals', [ReportController::class, 'disposals'])->name('reports.disposals')->middleware('permission:reports.view');
+    Route::get('reports/audits', [ReportController::class, 'audits'])->name('reports.audits')->middleware('permission:reports.view');
+
+    Route::resource('asset-maintenances', AssetMaintenanceController::class)->only(['index','store','update','destroy'])
+        ->middleware('permission:maintenance.manage');
 });
-
-/******** Dashboards ********/
-Route::get('/', function () {
-    return redirect('index'); // This will redirect '/' to '/index'
-});
-
-// Route::get('/', [DashboardsController::class, 'index']);
-Route::get('index', [DashboardsController::class, 'index']);
-
-Route::resource('settings', SystemSettingController::class)->only(['index', 'store', 'update', 'destroy']);
-
-Route::resource('roles', RoleController::class)->only(['index', 'store', 'update']);
-Route::resource('permissions', PermissionController::class)->only(['index', 'store', 'update']);
-Route::resource('users', UserManagementController::class)->only(['index', 'store', 'update']);
-
-Route::resource('asset-statuses', AssetStatusController::class)->only(['index', 'store', 'update', 'destroy']);
-Route::resource('asset-classes', AssetClassController::class)->only(['index', 'store', 'update', 'destroy']);
-Route::resource('units', UnitController::class)->only(['index', 'store', 'update', 'destroy']);
-Route::resource('departments', DepartmentController::class)->only(['index', 'store', 'update', 'destroy']);
-Route::resource('person-in-charge', PersonInChargeController::class)->only(['index', 'store', 'update', 'destroy']);
-Route::resource('asset-users', AssetUserController::class)->only(['index', 'store', 'update', 'destroy']);
-Route::resource('asset-categories', AssetCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
-Route::resource('asset-locations', AssetLocationController::class)->only(['index', 'store', 'update', 'destroy']);
-Route::resource('warranties', WarrantyController::class)->only(['index', 'store', 'update', 'destroy']);
-Route::get('assets/{asset}/history', [AssetController::class, 'history'])->name('assets.history');
-Route::resource('assets', AssetController::class)->only(['index', 'store', 'update', 'show']);
-Route::post('assets/{asset}/movements', [AssetTransactionController::class, 'storeMovement'])->name('assets.movements.store');
-Route::post('assets/{asset}/disposals', [AssetTransactionController::class, 'storeDisposal'])->name('assets.disposals.store');
-Route::post('asset-disposals/{disposal}/reverse', [AssetTransactionController::class, 'reverseDisposal'])->name('assets.disposals.reverse');
-Route::post('assets/{asset}/audits', [AssetAuditController::class, 'store'])->name('assets.audits.store');
-Route::get('asset-movements', [AssetTransactionPageController::class, 'movements'])->name('asset-movements.index');
-Route::get('asset-disposals', [AssetTransactionPageController::class, 'disposals'])->name('asset-disposals.index');
-Route::get('asset-audits', [AssetTransactionPageController::class, 'audits'])->name('asset-audits.index');
-Route::get('reports/assets', [ReportController::class, 'assets'])->name('reports.assets');
-Route::get('reports/movements', [ReportController::class, 'movements'])->name('reports.movements');
-Route::get('reports/disposals', [ReportController::class, 'disposals'])->name('reports.disposals');
-Route::get('reports/audits', [ReportController::class, 'audits'])->name('reports.audits');
-Route::resource('asset-maintenances', AssetMaintenanceController::class)->only(['index','store','update','destroy']);
 
 Route::get('login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('login', [AuthController::class, 'login']);
