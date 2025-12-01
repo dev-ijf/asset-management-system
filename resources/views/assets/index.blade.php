@@ -63,6 +63,7 @@
                                             data-payload='@json($asset->toArray())'>
                                             Edit
                                         </button>
+                                        <a href="{{ route('assets.show', $asset) }}" class="btn btn-sm btn-outline-success">Show</a>
                                         <a href="{{ route('assets.history', $asset) }}" class="btn btn-sm btn-outline-secondary">History</a>
                                     </div>
                                 </td>

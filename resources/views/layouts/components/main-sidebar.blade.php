@@ -109,8 +109,21 @@
                         <li class="slide"><a href="{{ route('asset-categories.index') }}" class="side-menu__item {{ request()->routeIs('asset-categories.index') ? 'active' : '' }}">Kategori Aset</a></li>
                         <li class="slide"><a href="{{ route('asset-locations.index') }}" class="side-menu__item {{ request()->routeIs('asset-locations.index') ? 'active' : '' }}">Lokasi Aset</a></li>
                         <li class="slide"><a href="{{ route('warranties.index') }}" class="side-menu__item {{ request()->routeIs('warranties.index') ? 'active' : '' }}">Masa Garansi</a></li>
-                        <li class="slide"><a href="{{ route('assets.index') }}" class="side-menu__item {{ request()->routeIs('assets.*') ? 'active' : '' }}">Data Aset</a></li>
                     </ul>
+                </li>
+
+                <!-- Start::slide__category -->
+                <li class="slide__category"><span class="category-name">Asset</span></li>
+                <!-- End::slide__category -->
+                <li class="slide">
+                    <a href="{{ route('assets.index') }}" class="side-menu__item {{ request()->routeIs('assets.*') ? 'active' : '' }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 256 256">
+                            <rect width="256" height="256" fill="none"/>
+                            <path d="M216,88v88a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V80A16,16,0,0,1,56,64H192a16,16,0,0,1,16,16Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                            <path d="M72,72l88-32V72" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                        </svg>
+                        <span class="side-menu__label">Data Aset</span>
+                    </a>
                 </li>
 
                 <!-- Start::slide__category -->
