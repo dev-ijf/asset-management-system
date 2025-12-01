@@ -86,15 +86,12 @@ $bodyClass = 'bg-white';
                         </a>
                     </div>
                     <div class="authentication-cover-background">
-                        <img src="{{asset('build/assets/images/media/backgrounds/9.png')}}" alt="">
+                        <img src="{{ asset('storage/auth-asset-cover.jpg') }}" alt="asset cover">
                     </div>
-                    <div class="authentication-cover-content">
+                    <div class="authentication-cover-content bg-dark-transparent text-fixed-white">
                         <div class="p-5">
-                            <h3 class="fw-semibold lh-base">Welcome to Dashboard</h3>
-                            <p class="mb-0 text-muted fw-medium">Manage your website and content with ease using our powerful admin tools.</p>
-                        </div>
-                        <div>
-                            <img src="{{asset('build/assets/images/media/media-72.png')}}" alt="" class="img-fluid">
+                            <h3 class="fw-semibold lh-base">Asset Management Login</h3>
+                            <p class="mb-0 text-fixed-white-7 fw-medium">Masuk untuk mengelola aset, perawatan, dan audit dalam satu tempat.</p>
                         </div>
                     </div>
                 </div>
