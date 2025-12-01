@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -15,4 +14,9 @@ class AssetStatus extends Model
         'code',
         'description',
     ];
+
+    public function assets()
+    {
+        return $this->hasMany(Asset::class, 'asset_status_id');
+    }
 }

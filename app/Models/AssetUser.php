@@ -22,4 +22,9 @@ class AssetUser extends Model
     {
         return $this->belongsTo(Department::class);
     }
+
+    public function assets()
+    {
+        return $this->hasMany(Asset::class, 'asset_user_id');
+    }
 }

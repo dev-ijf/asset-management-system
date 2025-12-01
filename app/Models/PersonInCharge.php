@@ -18,4 +18,9 @@ class PersonInCharge extends Model
         'phone',
         'notes',
     ];
+
+    public function assets()
+    {
+        return $this->hasMany(Asset::class, 'person_in_charge_id');
+    }
 }

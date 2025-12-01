@@ -16,4 +16,9 @@ class AssetLocation extends Model
         'description',
         'parent_id',
     ];
+
+    public function assets()
+    {
+        return $this->hasMany(Asset::class, 'asset_location_id');
+    }
 }

@@ -15,4 +15,9 @@ class AssetClass extends Model
         'code',
         'description',
     ];
+
+    public function assets()
+    {
+        return $this->hasMany(Asset::class, 'asset_class_id');
+    }
 }

@@ -15,4 +15,9 @@ class Department extends Model
         'code',
         'description',
     ];
+
+    public function assets()
+    {
+        return $this->hasMany(Asset::class);
+    }
 }

@@ -15,4 +15,9 @@ class Warranty extends Model
         'duration_months',
         'notes',
     ];
+
+    public function assets()
+    {
+        return $this->hasMany(Asset::class);
+    }
 }

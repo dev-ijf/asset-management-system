@@ -15,4 +15,9 @@ class Unit extends Model
         'symbol',
         'description',
     ];
+
+    public function assets()
+    {
+        return $this->hasMany(Asset::class);
+    }
 }
