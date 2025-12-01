@@ -1,5 +1,4 @@
 <?php
-
 namespace Database\Seeders;
 
 use App\Models\AssetCategory;
@@ -49,16 +48,16 @@ class MasterDataSeeder extends Seeder
         ]);
 
         $categoryOffice = AssetCategory::create([
-            'name' => 'Peralatan Kantor',
-            'code' => 'OFFICE',
+            'name'        => 'Peralatan Kantor',
+            'code'        => 'OFFICE',
             'description' => 'Kategori umum peralatan kantor',
         ]);
 
         AssetCategory::create([
-            'name' => 'Laptop',
-            'code' => 'LAPTOP',
+            'name'        => 'Laptop',
+            'code'        => 'LAPTOP',
             'description' => 'Perangkat laptop',
-            'parent_id' => $categoryOffice->id,
+            'parent_id'   => $categoryOffice->id,
         ]);
 
         AssetLocation::insert([

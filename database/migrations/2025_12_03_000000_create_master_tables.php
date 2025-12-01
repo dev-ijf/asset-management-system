@@ -40,7 +40,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('people_in_charge', function (Blueprint $table) {
+        Schema::create('person_in_charges', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('name');
             $table->string('email')->nullable();
@@ -92,7 +92,7 @@ return new class extends Migration
         Schema::dropIfExists('asset_locations');
         Schema::dropIfExists('asset_categories');
         Schema::dropIfExists('asset_users');
-        Schema::dropIfExists('people_in_charge');
+        Schema::dropIfExists('person_in_charges');
         Schema::dropIfExists('departments');
         Schema::dropIfExists('units');
         Schema::dropIfExists('asset_classes');
