@@ -148,7 +148,7 @@
     </div>
 @endsection
 
-@push('scripts')
+@section('scripts')
 <script>
     const editModal = document.getElementById('editSettingModal');
     if (editModal) {
@@ -169,4 +169,4 @@
         });
     }
 </script>
-@endpush
+@endsection
