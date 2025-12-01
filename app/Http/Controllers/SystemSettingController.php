@@ -47,6 +47,12 @@ class SystemSettingController extends Controller
     public function update(SettingRequest $request, Setting $setting, SystemSettingService $service): RedirectResponse
     {
         $data = $request->validated();
+        // Hanya izinkan perubahan pada value; metadata mengikuti record lama.
+        $data['key'] = $setting->key;
+        $data['group'] = $setting->group;
+        $data['type'] = $setting->type;
+        $data['description'] = $setting->description;
+        $data['is_public'] = $setting->is_public;
 
         $service->set(
             $data['key'],
@@ -56,11 +62,6 @@ class SystemSettingController extends Controller
             $data['group'] ?? null,
             $data['is_public'] ?? false
         );
-
-        // Pastikan key ikut terbarui jika diubah.
-        if ($setting->key !== $data['key']) {
-            $setting->key = $data['key'];
-        }
 
         return redirect()->route('settings.index')->with('success', 'Setting berhasil diperbarui.');
     }

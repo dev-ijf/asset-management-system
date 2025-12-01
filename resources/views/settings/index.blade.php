@@ -136,7 +136,40 @@
                     @csrf
                     @method('PUT')
                     <div class="modal-body">
-                        @include('settings.partials.form')
+                        <div class="alert alert-warning">
+                            Hanya nilai yang dapat diubah. Key, grup, dan tipe mengikuti data awal.
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Key</label>
+                            <input type="text" class="form-control" id="editKeyDisplay" readonly>
+                            <input type="hidden" name="key" id="editKey">
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Group</label>
+                                <input type="text" class="form-control" id="editGroupDisplay" readonly>
+                                <input type="hidden" name="group" id="editGroup">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Tipe</label>
+                                <input type="text" class="form-control" id="editTypeDisplay" readonly>
+                                <input type="hidden" name="type" id="editType">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Public?</label>
+                                <input type="text" class="form-control" id="editPublicDisplay" readonly>
+                                <input type="hidden" name="is_public" id="editIsPublic" value="0">
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <label class="form-label">Deskripsi</label>
+                            <input type="text" class="form-control" id="editDescriptionDisplay" readonly>
+                            <input type="hidden" name="description" id="editDescription">
+                        </div>
+                        <div class="mt-3">
+                            <label class="form-label">Nilai</label>
+                            <textarea name="value" class="form-control" id="editValue" rows="4" required placeholder="Isi sesuai tipe"></textarea>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
@@ -160,12 +193,24 @@
             form.action = "{{ url('settings') }}/" + id;
 
             // Isi field form dengan data dari tombol edit.
-            form.querySelector('[name="key"]').value = button.getAttribute('data-key') || '';
-            form.querySelector('[name="group"]').value = button.getAttribute('data-group') || '';
-            form.querySelector('[name="type"]').value = button.getAttribute('data-type') || 'string';
-            form.querySelector('[name="description"]').value = button.getAttribute('data-description') || '';
-            form.querySelector('[name="value"]').value = button.getAttribute('data-value') || '';
-            form.querySelector('[name="is_public"]').checked = button.getAttribute('data-is-public') === '1';
+            const key = button.getAttribute('data-key') || '';
+            const group = button.getAttribute('data-group') || '';
+            const type = button.getAttribute('data-type') || 'string';
+            const description = button.getAttribute('data-description') || '';
+            const value = button.getAttribute('data-value') || '';
+            const isPublic = button.getAttribute('data-is-public') === '1';
+
+            document.getElementById('editKey').value = key;
+            document.getElementById('editKeyDisplay').value = key;
+            document.getElementById('editGroup').value = group;
+            document.getElementById('editGroupDisplay').value = group;
+            document.getElementById('editType').value = type;
+            document.getElementById('editTypeDisplay').value = type;
+            document.getElementById('editDescription').value = description;
+            document.getElementById('editDescriptionDisplay').value = description;
+            document.getElementById('editValue').value = value;
+            document.getElementById('editIsPublic').value = isPublic ? 1 : 0;
+            document.getElementById('editPublicDisplay').value = isPublic ? 'Ya' : 'Tidak';
         });
     }
 </script>
