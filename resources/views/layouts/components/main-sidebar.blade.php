@@ -125,6 +125,41 @@
                         <span class="side-menu__label">Data Aset</span>
                     </a>
                 </li>
+                <li class="slide">
+                    <a href="{{ route('asset-movements.index') }}" class="side-menu__item {{ request()->routeIs('asset-movements.*') ? 'active' : '' }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 256 256">
+                            <rect width="256" height="256" fill="none"/>
+                            <polyline points="176 152 224 104 176 56" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                            <polyline points="80 104 32 152 80 200" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                            <line x1="224" y1="104" x2="32" y2="104" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                        </svg>
+                        <span class="side-menu__label">Movement</span>
+                    </a>
+                </li>
+                <li class="slide">
+                    <a href="{{ route('asset-disposals.index') }}" class="side-menu__item {{ request()->routeIs('asset-disposals.*') ? 'active' : '' }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 256 256">
+                            <rect width="256" height="256" fill="none"/>
+                            <path d="M216,56H40L56,216H200Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                            <line x1="88" y1="56" x2="104" y2="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                            <line x1="168" y1="56" x2="152" y2="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                            <line x1="96" y1="104" x2="96" y2="168" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                            <line x1="160" y1="104" x2="160" y2="168" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                        </svg>
+                        <span class="side-menu__label">Disposal</span>
+                    </a>
+                </li>
+                <li class="slide">
+                    <a href="{{ route('asset-audits.index') }}" class="side-menu__item {{ request()->routeIs('asset-audits.*') ? 'active' : '' }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 256 256">
+                            <rect width="256" height="256" fill="none"/>
+                            <rect x="40" y="56" width="176" height="144" rx="16" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                            <polyline points="172 120 113.33 178.67 84 149.33" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                            <line x1="144" y1="88" x2="176" y2="88" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                        </svg>
+                        <span class="side-menu__label">Audit Aset</span>
+                    </a>
+                </li>
 
                 <!-- Start::slide__category -->
                 <li class="slide__category"><span class="category-name">Web Apps</span></li>
