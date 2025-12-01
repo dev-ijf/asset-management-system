@@ -73,6 +73,14 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'asset_activity' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/'.env('ASSET_LOG_FILE', 'asset-activity.log')),
+            'level' => env('ASSET_LOG_LEVEL', env('LOG_LEVEL', 'info')),
+            'days' => env('ASSET_LOG_DAYS', 30),
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),
