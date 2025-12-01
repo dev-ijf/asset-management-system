@@ -76,20 +76,14 @@
                                                         <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
                                                                 data-bs-target="#editSettingModal"
                                                                 data-id="{{ $setting->id }}"
-                                                                data-key="{{ $setting->key }}"
-                                                                data-group="{{ $setting->group }}"
-                                                                data-type="{{ $setting->type }}"
-                                                                data-description="{{ $setting->description }}"
-                                                                data-value="{{ is_array($setting->value) ? json_encode($setting->value) : $setting->value }}"
+                                                                data-key="{{ e($setting->key) }}"
+                                                                data-group="{{ e($setting->group) }}"
+                                                                data-type="{{ e($setting->type) }}"
+                                                                data-description="{{ e($setting->description) }}"
+                                                                data-value="{{ e(is_array($setting->value) ? json_encode($setting->value) : $setting->value) }}"
                                                                 data-is-public="{{ $setting->is_public ? '1' : '0' }}">
                                                             Edit
                                                         </button>
-                                                        <form action="{{ route('settings.destroy', $setting) }}" method="POST" class="d-inline"
-                                                            onsubmit="return confirm('Hapus setting ini?')">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
-                                                        </form>
                                                     </div>
                                                 </td>
                                             </tr>
