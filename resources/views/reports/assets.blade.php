@@ -1,11 +1,10 @@
-@php
-    $filtersView = view('reports.partials.asset_filters', compact('filters','statuses','classes','categories','locations','departments','users','pics','warranties'));
-@endphp
+@extends('reports.layout', ['title' => 'Laporan Aset', 'subtitle' => 'Filter by status, lokasi, PIC, pengguna, garansi'])
 
-@extends('reports.layout', ['title' => 'Laporan Aset', 'subtitle' => 'Filter by status, lokasi, PIC, pengguna, garansi', 'filtersView' => $filtersView])
+@section('filters')
+    @include('reports.partials.asset_filters', ['filters' => $filters, 'statuses' => $statuses, 'classes' => $classes, 'categories' => $categories, 'locations' => $locations, 'departments' => $departments, 'users' => $users, 'pics' => $pics, 'warranties' => $warranties])
+@endsection
 
-@section('content')
-    @parent
+@section('report-table')
     <div class="table-responsive">
         <table class="table table-bordered text-nowrap align-middle mb-0">
             <thead class="table-light">

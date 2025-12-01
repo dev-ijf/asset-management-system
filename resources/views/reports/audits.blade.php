@@ -1,11 +1,10 @@
-@php
-    $filtersView = view('reports.partials.audit_filters', compact('filters','assets','locations'));
-@endphp
+@extends('reports.layout', ['title' => 'Laporan Audit', 'subtitle' => 'Filter per tanggal, status, lokasi'])
 
-@extends('reports.layout', ['title' => 'Laporan Audit', 'subtitle' => 'Filter per tanggal, status, lokasi', 'filtersView' => $filtersView])
+@section('filters')
+    @include('reports.partials.audit_filters', ['filters' => $filters, 'assets' => $assets, 'locations' => $locations])
+@endsection
 
-@section('content')
-    @parent
+@section('report-table')
     <div class="table-responsive">
         <table class="table table-bordered text-nowrap align-middle mb-0">
             <thead class="table-light">
