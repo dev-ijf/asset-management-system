@@ -20,6 +20,7 @@ use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AssetTransactionController;
 use App\Http\Controllers\AssetAuditController;
 use App\Http\Controllers\AssetTransactionPageController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\Controller;
 
 Route::get('/', function () {
@@ -58,3 +59,7 @@ Route::post('assets/{asset}/audits', [AssetAuditController::class, 'store'])->na
 Route::get('asset-movements', [AssetTransactionPageController::class, 'movements'])->name('asset-movements.index');
 Route::get('asset-disposals', [AssetTransactionPageController::class, 'disposals'])->name('asset-disposals.index');
 Route::get('asset-audits', [AssetTransactionPageController::class, 'audits'])->name('asset-audits.index');
+Route::get('reports/assets', [ReportController::class, 'assets'])->name('reports.assets');
+Route::get('reports/movements', [ReportController::class, 'movements'])->name('reports.movements');
+Route::get('reports/disposals', [ReportController::class, 'disposals'])->name('reports.disposals');
+Route::get('reports/audits', [ReportController::class, 'audits'])->name('reports.audits');

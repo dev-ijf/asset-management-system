@@ -162,6 +162,34 @@
                 </li>
 
                 <!-- Start::slide__category -->
+                <li class="slide__category"><span class="category-name">Laporan</span></li>
+                <!-- End::slide__category -->
+                <li class="slide">
+                    <a href="{{ route('reports.assets') }}" class="side-menu__item {{ request()->routeIs('reports.assets') ? 'active' : '' }}">
+                        <i class="ri-bar-chart-2-line side-menu__icon"></i>
+                        <span class="side-menu__label">Laporan Aset</span>
+                    </a>
+                </li>
+                <li class="slide">
+                    <a href="{{ route('reports.movements') }}" class="side-menu__item {{ request()->routeIs('reports.movements') ? 'active' : '' }}">
+                        <i class="ri-route-line side-menu__icon"></i>
+                        <span class="side-menu__label">Laporan Movement</span>
+                    </a>
+                </li>
+                <li class="slide">
+                    <a href="{{ route('reports.disposals') }}" class="side-menu__item {{ request()->routeIs('reports.disposals') ? 'active' : '' }}">
+                        <i class="ri-delete-bin-2-line side-menu__icon"></i>
+                        <span class="side-menu__label">Laporan Disposal</span>
+                    </a>
+                </li>
+                <li class="slide">
+                    <a href="{{ route('reports.audits') }}" class="side-menu__item {{ request()->routeIs('reports.audits') ? 'active' : '' }}">
+                        <i class="ri-clipboard-line side-menu__icon"></i>
+                        <span class="side-menu__label">Laporan Audit</span>
+                    </a>
+                </li>
+
+                <!-- Start::slide__category -->
                 <li class="slide__category"><span class="category-name">Web Apps</span></li>
                 <!-- End::slide__category -->
 
