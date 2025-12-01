@@ -47,4 +47,4 @@ Route::resource('asset-categories', AssetCategoryController::class)->only(['inde
 Route::resource('asset-locations', AssetLocationController::class)->only(['index', 'store', 'update', 'destroy']);
 Route::resource('warranties', WarrantyController::class)->only(['index', 'store', 'update', 'destroy']);
 Route::get('assets/{asset}/history', [AssetController::class, 'history'])->name('assets.history');
-Route::resource('assets', AssetController::class)->only(['index', 'store', 'update']);
+Route::resource('assets', AssetController::class)->only(['index', 'store', 'update', 'show']);

@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             SettingSeeder::class,
             RbacSeeder::class,
             MasterDataSeeder::class,
+            AssetSeeder::class,
         ]);
     }
 }

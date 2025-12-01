@@ -6,7 +6,9 @@ use App\Models\Asset;
 use App\Models\AssetHistory;
 use App\Services\System\SystemSettingService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class AssetService
 {
@@ -33,6 +35,7 @@ class AssetService
 
             $asset = Asset::create($data);
 
+            $this->generateQr($asset);
             $this->logHistory($asset, 'created', 'Aset dibuat', $data);
 
             return $asset;
@@ -46,6 +49,7 @@ class AssetService
     {
         return DB::transaction(function () use ($asset, $data) {
             $asset->update($data);
+            $this->generateQr($asset);
             $this->logHistory($asset, 'updated', 'Aset diperbarui', $data);
 
             return $asset;
@@ -76,5 +80,20 @@ class AssetService
             'changed_by' => auth()->id(),
             'payload' => $payload,
         ]);
+    }
+
+    private function generateQr(Asset $asset): void
+    {
+        $path = "qr/{$asset->code}.svg";
+        $url = route('assets.show', $asset);
+
+        $image = QrCode::format('svg')
+            ->size(300)
+            ->margin(1)
+            ->generate($url);
+
+        Storage::disk('public')->put($path, $image);
+
+        $asset->updateQuietly(['qr_path' => $path]);
     }
 }

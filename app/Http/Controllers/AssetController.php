@@ -59,6 +59,13 @@ class AssetController extends Controller
         return back()->with('success', "Aset {$asset->code} berhasil diperbarui.");
     }
 
+    public function show(Asset $asset): View
+    {
+        $asset->load(['status','class','category','unit','department','personInCharge','user','location','warranty']);
+
+        return view('assets.show', compact('asset'));
+    }
+
     public function history(Asset $asset): View
     {
         $asset->load('histories');
