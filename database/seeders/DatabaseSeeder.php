@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             MasterDataSeeder::class,
             AssetSeeder::class,
             AssetTransactionSeeder::class,
+            AssetAuditSeeder::class,
         ]);
     }
 }
