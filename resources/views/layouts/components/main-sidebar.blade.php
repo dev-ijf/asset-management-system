@@ -122,6 +122,56 @@
                                 System
                             </a>
                         </li>
+                        <li class="slide {{ request()->routeIs('users.index') ? 'active' : '' }}">
+                            <a href="{{ route('users.index') }}" class="side-menu__item">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="side-menu-doublemenu__icon"
+                                    viewBox="0 0 256 256">
+                                    <rect width="256" height="256" fill="none" />
+                                    <path d="M160,112a40,40,0,1,1-40-40A40,40,0,0,1,160,112Z" opacity="0.2" />
+                                    <path d="M24,200a72,72,0,0,1,144,0" fill="none" stroke="currentColor"
+                                        stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                                    <circle cx="120" cy="104" r="40" fill="none" stroke="currentColor"
+                                        stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                                </svg>
+                                Users
+                            </a>
+                        </li>
+                        <li class="slide {{ request()->routeIs('roles.index') ? 'active' : '' }}">
+                            <a href="{{ route('roles.index') }}" class="side-menu__item">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="side-menu-doublemenu__icon"
+                                    viewBox="0 0 256 256">
+                                    <rect width="256" height="256" fill="none" />
+                                    <circle cx="84" cy="108" r="52" opacity="0.2" />
+                                    <circle cx="172" cy="68" r="28" opacity="0.2" />
+                                    <path d="M84,160a76,76,0,0,0-76,76H160a76,76,0,0,0-76-76Z" fill="none" stroke="currentColor"
+                                        stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                                    <circle cx="84" cy="108" r="52" fill="none" stroke="currentColor"
+                                        stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                                    <circle cx="172" cy="68" r="28" fill="none" stroke="currentColor"
+                                        stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                                    <path d="M200,96a51.93,51.93,0,0,1,48,52H192a48,48,0,0,0-31.55,11.91" fill="none"
+                                        stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                                </svg>
+                                Roles
+                            </a>
+                        </li>
+                        <li class="slide {{ request()->routeIs('permissions.index') ? 'active' : '' }}">
+                            <a href="{{ route('permissions.index') }}" class="side-menu__item">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="side-menu-doublemenu__icon"
+                                    viewBox="0 0 256 256">
+                                    <rect width="256" height="256" fill="none" />
+                                    <circle cx="128" cy="96" r="64" opacity="0.2" />
+                                    <circle cx="128" cy="96" r="64" fill="none" stroke="currentColor"
+                                        stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                                    <path d="M55.43,200a96.08,96.08,0,0,1,145.14,0" fill="none" stroke="currentColor"
+                                        stroke-linecap="round" stroke-linejoin="round" stroke-width="16" />
+                                    <line x1="128" y1="160" x2="128" y2="232" fill="none"
+                                        stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                        stroke-width="16" />
+                                </svg>
+                                Permissions
+                            </a>
+                        </li>
                     </ul>
                 </li>
                 <!-- End::slide -->
