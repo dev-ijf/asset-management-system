@@ -1,97 +1,100 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr" data-nav-layout="vertical" data-theme-mode="light" data-header-styles="transparent" data-width="fullwidth" data-menu-styles="transparent" data-page-style="flat" data-toggled="close"  data-vertical-style="doublemenu" data-toggled="double-menu-open">
+<html lang="en" dir="ltr" data-nav-layout="vertical" data-nav-style="menu-click" data-theme-mode="light"
+    data-header-styles="transparent" data-width="fullwidth" data-menu-styles="transparent" data-page-style="flat"
+    data-toggled="close" data-vertical-style="doublemenu" data-toggled="double-menu-open">
 
-    <head>
+<head>
 
-        <!-- Meta Data -->
-        <meta charset="UTF-8">
-        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="Description" content="Laravel Bootstrap Responsive Admin Web Dashboard Template">
-        <meta name="Author" content="Spruko Technologies Private Limited">
-        <meta name="keywords" content="laravel, laravel admin panel, laravel dashboard, bootstrap dashboard, bootstrap admin panel, vite laravel, admin dashboard, admin panel in laravel, admin dashboard ui, laravel admin, admin panel template, laravel framework, dashboard, admin dashboard template, laravel template.">
-    
-        <!-- Title-->
-        <title> Vyzor Starterkit - Laravel Bootstrap 5 Premium Admin & Dashboard Template </title>
-        
-        <!-- Favicon -->
-        <link rel="icon" href="{{asset('build/assets/images/brand-logos/favicon.ico')}}" type="image/x-icon">
-    
-        <!-- Main Theme Js -->
-        <script src="{{asset('build/assets/main.js')}}"></script>
+    <!-- Meta Data -->
+    <meta charset="UTF-8">
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="Description" content="Asset Management System">
+    <meta name="Author" content="Arya Dwi Putra">
+    <meta name="keywords"
+        content="laravel, laravel asset management system, laravel dashboard, bootstrap dashboard, bootstrap asset management system, vite laravel, admin dashboard, asset management system in laravel, admin dashboard ui, laravel admin, asset management system template, laravel framework, dashboard, admin dashboard template, laravel template.">
 
-        <!-- ICONS CSS -->
-        <link href="{{asset('build/assets/icon-fonts/icons.css')}}" rel="stylesheet">
+    <!-- Title-->
+    <title> Asset Management System</title>
 
-        @include('layouts.components.styles')
-      
-        <!-- APP CSS & APP SCSS -->
-        @vite(['resources/sass/app.scss'])
+    <!-- Favicon -->
+    <link rel="icon" href="{{ asset('build/assets/images/brand-logos/favicon.ico') }}" type="image/x-icon">
 
-        @yield('styles')
+    <!-- Main Theme Js -->
+    <script src="{{ asset('build/assets/main.js') }}"></script>
 
-    </head>
+    <!-- ICONS CSS -->
+    <link href="{{ asset('build/assets/icon-fonts/icons.css') }}" rel="stylesheet">
 
-    <body class="">
+    @include('layouts.components.styles')
 
-        <div class="progress-top-bar"></div>
+    <!-- APP CSS & APP SCSS -->
+    @vite(['resources/sass/app.scss'])
 
-        <!-- Start::main-switcher -->
-        @include('layouts.components.switcher')
-        <!-- End::main-switcher -->
+    @yield('styles')
 
-        <!-- Loader -->
-        <div id="loader" >
-            <img src="{{asset('build/assets/images/media/loader.svg')}}" alt="">
-        </div>
-        <!-- Loader -->
+</head>
 
-        <div class="page">
+<body class="">
 
-            <!-- Start::main-header -->
-            @include('layouts.components.main-header')
-            <!-- End::main-header -->
+    <div class="progress-top-bar"></div>
 
-            <!-- Start::main-sidebar -->
-            @include('layouts.components.main-sidebar')
-            <!-- End::main-sidebar -->
+    <!-- Start::main-switcher -->
+    {{-- @include('layouts.components.switcher') --}}
+    <!-- End::main-switcher -->
 
-            <!-- Start::app-content -->
-            <div class="main-content app-content">
-                <div class="container-fluid page-container main-body-container">
+    <!-- Loader -->
+    <div id="loader">
+        <img src="{{ asset('build/assets/images/media/loader.svg') }}" alt="">
+    </div>
+    <!-- Loader -->
 
-                    @yield('content')
-                    
-                </div>
+    <div class="page">
+
+        <!-- Start::main-header -->
+        @include('layouts.components.main-header1')
+        <!-- End::main-header -->
+
+        <!-- Start::main-sidebar -->
+        @include('layouts.components.main-sidebar')
+        <!-- End::main-sidebar -->
+
+        <!-- Start::app-content -->
+        <div class="main-content app-content">
+            <div class="container-fluid page-container main-body-container">
+
+                @yield('content')
+
             </div>
-            <!-- End::content  -->
-
-            <!-- Start::main-footer -->
-            @include('layouts.components.footer')
-            <!-- End::main-footer -->
-
-            <!-- Start::main-modal -->
-            @include('layouts.components.modal')
-            <!-- End::main-modal -->
-
-            @yield('modals')  
-
         </div>
+        <!-- End::content  -->
 
-        <!-- Scripts -->
-        @include('layouts.components.scripts')
+        <!-- Start::main-footer -->
+        @include('layouts.components.footer')
+        <!-- End::main-footer -->
 
-        <!-- Sticky JS -->
-        <script src="{{asset('build/assets/sticky.js')}}"></script>
+        <!-- Start::main-modal -->
+        @include('layouts.components.modal')
+        <!-- End::main-modal -->
 
-        <!-- Custom-Switcher JS -->
-        @vite('resources/assets/js/custom-switcher.js')
+        @yield('modals')
 
-        <!-- App JS-->
-        @vite('resources/js/app.js')
+    </div>
 
-        <!-- End Scripts -->
+    <!-- Scripts -->
+    @include('layouts.components.scripts')
 
-    </body> 
+    <!-- Sticky JS -->
+    <script src="{{ asset('build/assets/sticky.js') }}"></script>
+
+    <!-- Custom-Switcher JS -->
+    @vite('resources/assets/js/custom-switcher.js')
+
+    <!-- App JS-->
+    @vite('resources/js/app.js')
+
+    <!-- End Scripts -->
+
+</body>
 
 </html>
