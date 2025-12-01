@@ -104,7 +104,7 @@
                         <li class="slide"><a href="{{ route('asset-classes.index') }}" class="side-menu__item {{ request()->routeIs('asset-classes.index') ? 'active' : '' }}">Kelas Aset</a></li>
                         <li class="slide"><a href="{{ route('units.index') }}" class="side-menu__item {{ request()->routeIs('units.index') ? 'active' : '' }}">Satuan</a></li>
                         <li class="slide"><a href="{{ route('departments.index') }}" class="side-menu__item {{ request()->routeIs('departments.index') ? 'active' : '' }}">Departemen</a></li>
-                        <li class="slide"><a href="{{ route('people-in-charge.index') }}" class="side-menu__item {{ request()->routeIs('people-in-charge.index') ? 'active' : '' }}">Penanggung Jawab</a></li>
+                        <li class="slide"><a href="{{ route('person-in-charge.index') }}" class="side-menu__item {{ request()->routeIs('person-in-charge.index') ? 'active' : '' }}">Penanggung Jawab (Person in Charge)</a></li>
                         <li class="slide"><a href="{{ route('asset-users.index') }}" class="side-menu__item {{ request()->routeIs('asset-users.index') ? 'active' : '' }}">Pengguna Aset</a></li>
                         <li class="slide"><a href="{{ route('asset-categories.index') }}" class="side-menu__item {{ request()->routeIs('asset-categories.index') ? 'active' : '' }}">Kategori Aset</a></li>
                         <li class="slide"><a href="{{ route('asset-locations.index') }}" class="side-menu__item {{ request()->routeIs('asset-locations.index') ? 'active' : '' }}">Lokasi Aset</a></li>

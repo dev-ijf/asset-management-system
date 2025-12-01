@@ -112,6 +112,8 @@ class AssetService
                 'to_location_id' => $data['to_location_id'] ?? null,
                 'from_department_id' => $asset->department_id,
                 'to_department_id' => $data['to_department_id'] ?? null,
+                'from_asset_user_id' => $asset->asset_user_id,
+                'to_asset_user_id' => $data['to_asset_user_id'] ?? null,
                 'notes' => $data['notes'] ?? null,
                 'moved_by' => auth()->id(),
                 'performed_at' => $data['performed_at'] ?? now(),
@@ -120,6 +122,7 @@ class AssetService
             $asset->update([
                 'asset_location_id' => $data['to_location_id'] ?? $asset->asset_location_id,
                 'department_id' => $data['to_department_id'] ?? $asset->department_id,
+                'asset_user_id' => $data['to_asset_user_id'] ?? $asset->asset_user_id,
             ]);
 
             $this->logHistory($asset, 'movement', 'Perpindahan aset', $movement->toArray());

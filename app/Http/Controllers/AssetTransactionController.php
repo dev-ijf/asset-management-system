@@ -19,6 +19,7 @@ class AssetTransactionController extends Controller
         $data = $request->validate([
             'to_location_id' => ['nullable', 'uuid', 'exists:asset_locations,id'],
             'to_department_id' => ['nullable', 'uuid', 'exists:departments,id'],
+            'to_asset_user_id' => ['nullable', 'uuid', 'exists:asset_users,id'],
             'notes' => ['nullable', 'string'],
             'performed_at' => ['nullable', 'date'],
         ]);

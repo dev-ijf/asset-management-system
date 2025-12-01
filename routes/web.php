@@ -42,7 +42,7 @@ Route::resource('asset-statuses', AssetStatusController::class)->only(['index', 
 Route::resource('asset-classes', AssetClassController::class)->only(['index', 'store', 'update', 'destroy']);
 Route::resource('units', UnitController::class)->only(['index', 'store', 'update', 'destroy']);
 Route::resource('departments', DepartmentController::class)->only(['index', 'store', 'update', 'destroy']);
-Route::resource('people-in-charge', PersonInChargeController::class)->only(['index', 'store', 'update', 'destroy']);
+Route::resource('person-in-charge', PersonInChargeController::class)->only(['index', 'store', 'update', 'destroy']);
 Route::resource('asset-users', AssetUserController::class)->only(['index', 'store', 'update', 'destroy']);
 Route::resource('asset-categories', AssetCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
 Route::resource('asset-locations', AssetLocationController::class)->only(['index', 'store', 'update', 'destroy']);

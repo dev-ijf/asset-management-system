@@ -70,7 +70,7 @@
                     <form action="{{ route('assets.movements.store', $asset) }}" method="POST" class="mb-3">
                         @csrf
                         <div class="row g-2">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">Lokasi Tujuan</label>
                                 <select name="to_location_id" class="form-select">
                                     <option value="">-- Pilih --</option>
@@ -79,12 +79,21 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">Departemen Tujuan</label>
                                 <select name="to_department_id" class="form-select">
                                     <option value="">-- Pilih --</option>
                                     @foreach(\App\Models\Department::orderBy('name')->get() as $dept)
                                         <option value="{{ $dept->id }}">{{ $dept->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Pengguna Tujuan</label>
+                                <select name="to_asset_user_id" class="form-select">
+                                    <option value="">-- Pilih --</option>
+                                    @foreach(\App\Models\AssetUser::orderBy('name')->get() as $user)
+                                        <option value="{{ $user->id }}">{{ $user->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -112,10 +121,10 @@
                                     <tr>
                                         <td>{{ optional($movement->performed_at)->format('d/m/Y H:i') ?: '-' }}</td>
                                         <td>
-                                            {{ $movement->fromLocation?->name ?: '-' }} / {{ $movement->fromDepartment?->name ?: '-' }}
+                                            {{ $movement->fromLocation?->name ?: '-' }} / {{ $movement->fromDepartment?->name ?: '-' }} / {{ $movement->fromUser?->name ?: '-' }}
                                         </td>
                                         <td>
-                                            {{ $movement->toLocation?->name ?: '-' }} / {{ $movement->toDepartment?->name ?: '-' }}
+                                            {{ $movement->toLocation?->name ?: '-' }} / {{ $movement->toDepartment?->name ?: '-' }} / {{ $movement->toUser?->name ?: '-' }}
                                         </td>
                                         <td>{{ $movement->notes ?: '-' }}</td>
                                     </tr>

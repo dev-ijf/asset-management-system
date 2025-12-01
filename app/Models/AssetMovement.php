@@ -16,6 +16,8 @@ class AssetMovement extends Model
         'to_location_id',
         'from_department_id',
         'to_department_id',
+        'from_asset_user_id',
+        'to_asset_user_id',
         'notes',
         'moved_by',
         'performed_at',
@@ -48,5 +50,15 @@ class AssetMovement extends Model
     public function toDepartment()
     {
         return $this->belongsTo(Department::class, 'to_department_id');
+    }
+
+    public function fromUser()
+    {
+        return $this->belongsTo(AssetUser::class, 'from_asset_user_id');
+    }
+
+    public function toUser()
+    {
+        return $this->belongsTo(AssetUser::class, 'to_asset_user_id');
     }
 }
