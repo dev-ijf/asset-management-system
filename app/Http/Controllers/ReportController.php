@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Exports\ArrayReportExport;
 use App\Exports\AssetFullReportExport;
+use App\Models\AssetAudit;
+use App\Models\AssetMovement;
+use App\Models\AssetDisposal;
 use App\Models\Asset;
 use App\Models\AssetAudit;
 use App\Models\AssetCategory;
@@ -59,12 +62,18 @@ class ReportController extends Controller
                 $a->created_at?->format('d/m/Y'),
             ])->toArray();
 
-            $movements = \App\Models\AssetMovement::with(['asset','fromLocation','toLocation','fromDepartment','toDepartment','fromUser','toUser'])
+            $movementsRaw = AssetMovement::with(['asset','fromLocation','toLocation','fromDepartment','toDepartment','fromUser','toUser'])
                 ->whereIn('asset_id', $assetsCollection->pluck('id'))
-                ->get()
-                ->map(fn($m)=>[
+                ->get();
+
+            $movements = $movementsRaw->values()->map(function ($m, $index) {
+                $rowNumber = $index + 2; // heading at row 1
+                $codeCell = "B{$rowNumber}";
+                $nameFormula = "=IFERROR(XLOOKUP({$codeCell},Assets!A:A,Assets!B:B,\"\"),\"\")";
+                return [
                     $m->performed_at?->format('d/m/Y H:i'),
                     $m->asset?->code,
+                    $nameFormula,
                     $m->fromLocation?->name,
                     $m->toLocation?->name,
                     $m->fromDepartment?->name,
@@ -72,29 +81,44 @@ class ReportController extends Controller
                     $m->fromUser?->name,
                     $m->toUser?->name,
                     $m->notes,
-                ])->toArray();
+                ];
+            })->toArray();
 
-            $disposals = \App\Models\AssetDisposal::with('asset')
+            $disposalsRaw = AssetDisposal::with('asset')
                 ->whereIn('asset_id', $assetsCollection->pluck('id'))
-                ->get()
-                ->map(fn($d)=>[
+                ->get();
+
+            $disposals = $disposalsRaw->values()->map(function ($d, $index) {
+                $rowNumber = $index + 2;
+                $codeCell = "B{$rowNumber}";
+                $nameFormula = "=IFERROR(XLOOKUP({$codeCell},Assets!A:A,Assets!B:B,\"\"),\"\")";
+                return [
                     $d->disposed_at?->format('d/m/Y H:i'),
                     $d->asset?->code,
+                    $nameFormula,
                     $d->reason,
                     $d->notes,
                     $d->reversed_at ? 'Reversed' : 'Active',
-                ])->toArray();
+                ];
+            })->toArray();
 
-            $audits = \App\Models\AssetAudit::with(['asset','location'])
+            $auditsRaw = AssetAudit::with(['asset','location'])
                 ->whereIn('asset_id', $assetsCollection->pluck('id'))
-                ->get()
-                ->map(fn($a)=>[
+                ->get();
+
+            $audits = $auditsRaw->values()->map(function ($a, $index) {
+                $rowNumber = $index + 2;
+                $codeCell = "B{$rowNumber}";
+                $nameFormula = "=IFERROR(XLOOKUP({$codeCell},Assets!A:A,Assets!B:B,\"\"),\"\")";
+                return [
                     $a->audited_at?->format('d/m/Y H:i'),
                     $a->asset?->code,
+                    $nameFormula,
                     $a->status,
                     $a->location?->name,
                     $a->notes,
-                ])->toArray();
+                ];
+            })->toArray();
 
             return Excel::download(new AssetFullReportExport($assetRows, $movements, $disposals, $audits), 'asset-report.xlsx');
         }

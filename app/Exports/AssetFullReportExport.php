@@ -17,17 +17,17 @@ class AssetFullReportExport implements WithMultipleSheets
     public function sheets(): array
     {
         return [
-            'Assets' => new ArrayReportExport([
+            new NamedArraySheet('Assets', [
                 'Kode','Nama','Status','Kategori','Lokasi','Dept','User','PIC','Garansi','Dibuat'
             ], $this->assets),
-            'Movements' => new ArrayReportExport([
-                'Waktu','Aset','Dari Lokasi','Ke Lokasi','Dari Dept','Ke Dept','Dari User','Ke User','Catatan'
+            new NamedArraySheet('Movements', [
+                'Waktu','Kode Aset','Nama Aset','Dari Lokasi','Ke Lokasi','Dari Dept','Ke Dept','Dari User','Ke User','Catatan'
             ], $this->movements),
-            'Disposals' => new ArrayReportExport([
-                'Waktu','Aset','Alasan','Catatan','Status'
+            new NamedArraySheet('Disposals', [
+                'Waktu','Kode Aset','Nama Aset','Alasan','Catatan','Status'
             ], $this->disposals),
-            'Audits' => new ArrayReportExport([
-                'Waktu','Aset','Status','Lokasi','Catatan'
+            new NamedArraySheet('Audits', [
+                'Waktu','Kode Aset','Nama Aset','Status Audit','Lokasi','Catatan'
             ], $this->audits),
         ];
     }
