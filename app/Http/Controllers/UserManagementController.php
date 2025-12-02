@@ -7,9 +7,14 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use App\Models\Role;
+use App\Services\Logging\ActivityLogger;
 
 class UserManagementController extends Controller
 {
+    public function __construct(private readonly ActivityLogger $logger)
+    {
+    }
+
     public function index(): View
     {
         $users = User::with('roles')->orderBy('name')->get();
@@ -24,6 +29,13 @@ class UserManagementController extends Controller
 
         $user->syncRoles($request->input('roles', []));
 
+        $this->logger->audit([
+            'action' => 'user_created',
+            'model' => 'User',
+            'model_id' => $user->id,
+            'changes' => ['name' => $user->name, 'email' => $user->email, 'roles' => $request->input('roles', [])],
+        ]);
+
         return back()->with('success', 'User berhasil ditambahkan.');
     }
 
@@ -37,6 +49,13 @@ class UserManagementController extends Controller
 
         $user->update($data);
         $user->syncRoles($request->input('roles', []));
+
+        $this->logger->audit([
+            'action' => 'user_updated',
+            'model' => 'User',
+            'model_id' => $user->id,
+            'changes' => ['name' => $user->name, 'email' => $user->email, 'roles' => $request->input('roles', [])],
+        ]);
 
         return back()->with('success', 'User berhasil diperbarui.');
     }

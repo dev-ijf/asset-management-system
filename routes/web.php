@@ -34,7 +34,7 @@ Route::get('asset-view/{asset}', [PublicAssetController::class, 'show'])->name('
 Route::view('help', 'pages.landing.help')->name('landing.help');
 Route::view('changelog', 'pages.landing.changelog')->name('landing.changelog');
 
-Route::middleware(['auth','maintenance.readonly','session.timeout'])->prefix('dashboard')->group(function () {
+Route::middleware(['auth','maintenance.readonly','session.timeout','audit.request'])->prefix('dashboard')->group(function () {
     Route::get('index', [DashboardsController::class, 'index'])->name('index');
 
     Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');

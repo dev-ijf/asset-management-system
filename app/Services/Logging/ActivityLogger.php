@@ -81,6 +81,24 @@ class ActivityLogger
         Log::channel(self::CHANNEL)->log($level, $action, $payload);
     }
 
+    /**
+     * Tulis audit terstruktur (dipakai middleware/listener).
+     */
+    public function audit(array $data, string $level = 'info'): void
+    {
+        if (! config('system.security.audit_log', true)) {
+            return;
+        }
+
+        $payload = array_merge([
+            'performed_at' => now()->toIso8601String(),
+            'request_id' => app()->bound('audit.request_id') ? app('audit.request_id') : Str::uuid()->toString(),
+            'actor_id' => optional(auth()->user())->getAuthIdentifier(),
+        ], $data);
+
+        Log::channel(self::CHANNEL)->log($level, $data['action'] ?? 'audit', $payload);
+    }
+
     private function maskSensitiveFields(array $input): array
     {
         foreach ($input as $key => &$value) {

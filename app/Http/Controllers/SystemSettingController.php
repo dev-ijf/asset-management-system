@@ -7,9 +7,14 @@ use App\Http\Requests\SettingRequest;
 use App\Services\System\SystemSettingService;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use App\Services\Logging\ActivityLogger;
 
 class SystemSettingController extends Controller
 {
+    public function __construct(private readonly ActivityLogger $logger)
+    {
+    }
+
     public function index(SystemSettingService $service): View
     {
         // Ambil nilai yang sudah di-override (DB > config default).
@@ -41,6 +46,12 @@ class SystemSettingController extends Controller
             $data['is_public'] ?? false
         );
 
+        $this->logger->audit([
+            'action' => 'setting_created',
+            'model' => 'Setting',
+            'changes' => $data,
+        ]);
+
         return redirect()->route('settings.index')->with('success', 'Setting berhasil ditambahkan.');
     }
 
@@ -63,6 +74,13 @@ class SystemSettingController extends Controller
             $data['is_public'] ?? false
         );
 
+        $this->logger->audit([
+            'action' => 'setting_updated',
+            'model' => 'Setting',
+            'model_id' => $setting->id,
+            'changes' => ['value' => $request->castedValue()],
+        ]);
+
         return redirect()->route('settings.index')->with('success', 'Setting berhasil diperbarui.');
     }
 
@@ -70,6 +88,13 @@ class SystemSettingController extends Controller
     {
         $setting->delete();
         $service->refresh();
+
+        $this->logger->audit([
+            'action' => 'setting_deleted',
+            'model' => 'Setting',
+            'model_id' => $setting->id,
+            'changes' => ['key' => $setting->key],
+        ]);
 
         return redirect()->route('settings.index')->with('success', 'Setting berhasil dihapus.');
     }

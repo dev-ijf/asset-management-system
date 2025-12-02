@@ -8,6 +8,7 @@ use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 use App\Http\Middleware\MaintenanceReadOnly;
 use App\Http\Middleware\SessionTimeout;
+use App\Http\Middleware\AuditRequest;
 use Illuminate\Console\Scheduling\Schedule;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'maintenance.readonly' => MaintenanceReadOnly::class,
             'session.timeout' => SessionTimeout::class,
+            'audit.request' => AuditRequest::class,
         ]);
     })
     ->withSchedule(function (Schedule $schedule) {
