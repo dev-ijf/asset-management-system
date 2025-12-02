@@ -102,9 +102,9 @@ Route::middleware(['auth','maintenance.readonly','session.timeout','audit.reques
     Route::resource('asset-maintenances', AssetMaintenanceController::class)->only(['index','store','update','destroy'])
         ->middleware('permission:maintenance.manage');
 
-    Route::get('approvals', [\App\Http\Controllers\ApprovalController::class, 'index'])->name('approvals.index')->middleware('permission:assets.manage');
-    Route::post('approvals/{approval}/approve', [\App\Http\Controllers\ApprovalController::class, 'approve'])->name('approvals.approve')->middleware('permission:assets.manage');
-    Route::post('approvals/{approval}/reject', [\App\Http\Controllers\ApprovalController::class, 'reject'])->name('approvals.reject')->middleware('permission:assets.manage');
+    Route::get('approvals', [\App\Http\Controllers\ApprovalController::class, 'index'])->name('approvals.index')->middleware('permission:approvals.manage');
+    Route::post('approvals/{approval}/approve', [\App\Http\Controllers\ApprovalController::class, 'approve'])->name('approvals.approve')->middleware('permission:approvals.manage');
+    Route::post('approvals/{approval}/reject', [\App\Http\Controllers\ApprovalController::class, 'reject'])->name('approvals.reject')->middleware('permission:approvals.manage');
 });
 
 Route::get('login', [AuthController::class, 'showLogin'])->name('login');

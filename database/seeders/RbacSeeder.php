@@ -26,6 +26,7 @@ class RbacSeeder extends Seeder
             'audits.manage',
             'maintenance.manage',
             'reports.view',
+            'approvals.manage',
         ];
 
         foreach ($permissions as $permission) {
@@ -43,7 +44,7 @@ class RbacSeeder extends Seeder
         $adminRole->syncPermissions($permissions);
 
         $assetManager->syncPermissions([
-            'assets.view', 'assets.manage', 'movements.manage', 'disposals.manage', 'maintenance.manage', 'audits.manage', 'reports.view',
+            'assets.view', 'assets.manage', 'movements.manage', 'disposals.manage', 'maintenance.manage', 'audits.manage', 'reports.view', 'approvals.manage',
         ]);
 
         $auditor->syncPermissions([
