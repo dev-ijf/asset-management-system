@@ -129,11 +129,12 @@
 <script>
     const editPermissionModal = document.getElementById('editPermissionModal');
     if (editPermissionModal) {
+        const updateRouteTemplate = "{{ route('permissions.update', ['permission' => '__ID__']) }}";
         editPermissionModal.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
             const form = document.getElementById('editPermissionForm');
 
-            form.action = "{{ url('permissions') }}/" + button.getAttribute('data-id');
+            form.action = updateRouteTemplate.replace('__ID__', button.getAttribute('data-id'));
             document.getElementById('editPermissionName').value = button.getAttribute('data-name');
         });
     }

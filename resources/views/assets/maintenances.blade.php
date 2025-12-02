@@ -144,10 +144,11 @@
 <script>
     const maintEditModal = document.getElementById('maintenanceEditModal');
     if (maintEditModal) {
+        const updateRouteTemplate = "{{ route('asset-maintenances.update', ['asset_maintenance' => '__ID__']) }}";
         maintEditModal.addEventListener('show.bs.modal', function (event) {
             const btn = event.relatedTarget;
             const form = document.getElementById('maintenanceEditForm');
-            form.action = "{{ url('asset-maintenances') }}/" + btn.getAttribute('data-id');
+            form.action = updateRouteTemplate.replace('__ID__', btn.getAttribute('data-id'));
             form.querySelector('[name="asset_id"]').value = btn.getAttribute('data-asset_id');
             form.querySelector('[name="performed_at"]').value = btn.getAttribute('data-performed_at') || '';
             form.querySelector('[name="description"]').value = btn.getAttribute('data-description') || '';

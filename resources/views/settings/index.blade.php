@@ -185,12 +185,13 @@
 <script>
     const editModal = document.getElementById('editSettingModal');
     if (editModal) {
+        const updateRouteTemplate = "{{ route('settings.update', ['setting' => '__ID__']) }}";
         editModal.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
             const form = document.getElementById('editSettingForm');
             const id = button.getAttribute('data-id');
 
-            form.action = "{{ url('settings') }}/" + id;
+            form.action = updateRouteTemplate.replace('__ID__', id);
 
             // Isi field form dengan data dari tombol edit.
             const key = button.getAttribute('data-key') || '';

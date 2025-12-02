@@ -134,12 +134,13 @@
 <script>
     const editRoleModal = document.getElementById('editRoleModal');
     if (editRoleModal) {
+        const updateRouteTemplate = "{{ route('roles.update', ['role' => '__ID__']) }}";
         editRoleModal.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
             const form = document.getElementById('editRoleForm');
             const permissions = JSON.parse(button.getAttribute('data-permissions') || '[]');
 
-            form.action = "{{ url('roles') }}/" + button.getAttribute('data-id');
+            form.action = updateRouteTemplate.replace('__ID__', button.getAttribute('data-id'));
             form.querySelector('[name="name"]').value = button.getAttribute('data-name');
 
             // reset checkboxes

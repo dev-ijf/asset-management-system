@@ -140,12 +140,13 @@
 <script>
     const editUserModal = document.getElementById('editUserModal');
     if (editUserModal) {
+        const updateRouteTemplate = "{{ route('users.update', ['user' => '__ID__']) }}";
         editUserModal.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
             const form = document.getElementById('editUserForm');
             const roles = JSON.parse(button.getAttribute('data-roles') || '[]');
 
-            form.action = "{{ url('users') }}/" + button.getAttribute('data-id');
+            form.action = updateRouteTemplate.replace('__ID__', button.getAttribute('data-id'));
             form.querySelector('[name="name"]').value = button.getAttribute('data-name');
             form.querySelector('[name="email"]').value = button.getAttribute('data-email');
             form.querySelector('[name="password"]').value = '';
