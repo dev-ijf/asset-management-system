@@ -1,5 +1,9 @@
 @extends('layouts.custom-master')
 
+@php
+$bodyClass = 'bg-white';
+@endphp
+
 @section('content')
 <div class="container py-5">
     <div class="row justify-content-center">
