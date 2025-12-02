@@ -16,6 +16,7 @@ use App\Http\Controllers\Master\AssetUserController;
 use App\Http\Controllers\Master\AssetCategoryController;
 use App\Http\Controllers\Master\AssetLocationController;
 use App\Http\Controllers\Master\WarrantyController;
+use App\Http\Controllers\Master\VendorController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AssetTransactionController;
 use App\Http\Controllers\AssetAuditController;
@@ -81,6 +82,8 @@ Route::middleware(['auth','maintenance.readonly','session.timeout','audit.reques
     Route::resource('asset-locations', AssetLocationController::class)->only(['index', 'store', 'update', 'destroy'])
         ->middleware('permission:assets.manage');
     Route::resource('warranties', WarrantyController::class)->only(['index', 'store', 'update', 'destroy'])
+        ->middleware('permission:assets.manage');
+    Route::resource('vendor-contracts', VendorController::class)->only(['index', 'store', 'update', 'destroy'])
         ->middleware('permission:assets.manage');
 
     Route::get('assets/{asset}/history', [AssetController::class, 'history'])->name('assets.history')->middleware('permission:assets.view');

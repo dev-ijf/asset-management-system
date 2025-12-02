@@ -130,6 +130,8 @@
                         <li class="slide"><a href="{{ route('warranties.index') }}"
                                 class="side-menu__item {{ request()->routeIs('warranties.index') ? 'active' : '' }}">Masa
                                 Garansi</a></li>
+                        <li class="slide"><a href="{{ route('vendor-contracts.index') }}"
+                                class="side-menu__item {{ request()->routeIs('vendor-contracts.index') ? 'active' : '' }}">Vendor & Kontrak</a></li>
                     </ul>
                 </li>
 

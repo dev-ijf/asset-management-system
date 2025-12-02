@@ -33,15 +33,17 @@ class AssetSeeder extends Seeder
         $user = AssetUser::first();
         $location = AssetLocation::first();
         $warranty = Warranty::first();
-        $contract = VendorContract::create([
-            'vendor_name' => 'Vendor Default',
-            'contract_number' => 'CNT-001',
-            'start_date' => now()->subMonths(6),
-            'end_date' => now()->addMonths(6),
-            'sla_response_hours' => 4,
-            'sla_resolution_hours' => 24,
-            'notes' => 'Kontrak default untuk sample aset',
-        ]);
+        $contract = VendorContract::firstOrCreate(
+            ['contract_number' => 'CNT-001'],
+            [
+                'vendor_name' => 'Vendor Default',
+                'start_date' => now()->subMonths(6),
+                'end_date' => now()->addMonths(6),
+                'sla_response_hours' => 4,
+                'sla_resolution_hours' => 24,
+                'notes' => 'Kontrak default untuk sample aset',
+            ]
+        );
 
         $names = [
             'Laptop Dell XPS 13',

@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             SettingSeeder::class,
             RbacSeeder::class,
+            VendorContractSeeder::class,
             TwoFactorUserSeeder::class,
             MasterDataSeeder::class,
             AssetSeeder::class,
