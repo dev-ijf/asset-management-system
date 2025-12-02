@@ -218,13 +218,29 @@
             const simpleFields = [
                 'name','serial_number','description','asset_status_id','asset_class_id','asset_category_id',
                 'unit_id','department_id','person_in_charge_id','asset_user_id','asset_location_id',
-                'warranty_id','purchase_date','warranty_end','cost'
+                'warranty_id','cost'
             ];
 
             simpleFields.forEach((field) => {
                 const el = form.querySelector(`[name="${field}"]`);
                 if (!el) return;
                 el.value = payload[field] ?? '';
+            });
+
+            const dateFields = ['purchase_date','warranty_end'];
+            const normalizeDate = (value) => {
+                if (!value) return '';
+                if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+                    return value.slice(0, 10);
+                }
+                const d = new Date(value);
+                return isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+            };
+
+            dateFields.forEach((field) => {
+                const el = form.querySelector(`[name="${field}"]`);
+                if (!el) return;
+                el.value = normalizeDate(payload[field]);
             });
 
             // metadata not editable via modal here (bisa ditambah kemudian)
