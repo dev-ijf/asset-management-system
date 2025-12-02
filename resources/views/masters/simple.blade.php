@@ -1,5 +1,9 @@
 @extends('layouts.master')
 
+@php
+    $routeParamName = \Illuminate\Support\Str::singular(str_replace('-', '_', $routeName));
+@endphp
+
 @section('content')
     <div class="d-flex align-items-center justify-content-between mb-3 page-header-breadcrumb flex-wrap gap-2">
         <div>
@@ -134,7 +138,7 @@
 <script>
     const editModal = document.getElementById('editModal');
     if (editModal) {
-        const updateRouteTemplate = "{{ route($routeName.'.update', ['id' => '__ID__']) }}";
+        const updateRouteTemplate = "{{ route($routeName.'.update', [$routeParamName => '__ID__']) }}";
         editModal.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
             const form = document.getElementById('editForm');
