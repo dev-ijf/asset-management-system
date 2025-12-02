@@ -82,6 +82,17 @@ $bodyClass = 'bg-white';
                             @foreach($settings->groupBy('group') as $group => $items)
                                 <div class="border rounded p-3 mb-3">
                                     <h6 class="fw-semibold text-uppercase text-muted mb-2">{{ ucfirst($group) }}</h6>
+                                    @if($group === 'integration')
+                                        <div class="alert alert-info">
+                                            <div class="fw-semibold mb-1">Panduan cepat integrasi</div>
+                                            <ul class="mb-2 ps-3">
+                                                <li>Gunakan header <code>X-Api-Key</code> untuk REST API: <code>{{ url('/api/v1') }}</code></li>
+                                                <li>Webhook event: movement/disposal/audit/maintenance & perubahan aset</li>
+                                                <li>Aktifkan webhook dan isi secret untuk signature HMAC di header <code>X-Webhook-Signature</code></li>
+                                            </ul>
+                                            <div class="small text-muted">Contoh: <code>curl -H "X-Api-Key: YOUR_KEY" "{{ url('/api/v1/assets') }}"</code> | Dokumentasi API bisa ditambahkan di halaman help/changelog.</div>
+                                        </div>
+                                    @endif
                                     <div class="row g-3">
                                         @foreach($items as $setting)
                                             @php
