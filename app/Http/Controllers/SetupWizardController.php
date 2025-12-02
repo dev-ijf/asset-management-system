@@ -142,8 +142,9 @@ class SetupWizardController extends Controller
             if ($withSample) {
                 Artisan::call('db:seed', ['--force' => true]);
             } else {
-                // Seed minimal RBAC agar wizard dapat berjalan
+                // Seed minimal: RBAC + default settings agar wizard punya baseline konfigurasi
                 Artisan::call('db:seed', ['--force' => true, '--class' => 'Database\\Seeders\\RbacSeeder']);
+                Artisan::call('db:seed', ['--force' => true, '--class' => 'Database\\Seeders\\SettingSeeder']);
             }
             return redirect()->route('setup.index', ['step' => 1])->with('success', 'Migrasi berhasil' . ($withSample ? ' dengan sample data.' : '.'));
         } catch (\Throwable $e) {
