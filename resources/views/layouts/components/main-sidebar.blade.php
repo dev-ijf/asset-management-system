@@ -2,7 +2,7 @@
 
     <!-- Start::main-sidebar-header -->
     <div class="main-sidebar-header">
-        <a href="{{ url('index') }}" class="header-logo">
+        <a href="{{ route('index') }}" class="header-logo">
             <img src="{{ asset('build/assets/images/brand-logos/desktop-logo.png') }}" alt="logo" class="desktop-logo">
             <img src="{{ asset('build/assets/images/brand-logos/toggle-dark.png') }}" alt="logo" class="toggle-dark">
             <img src="{{ asset('build/assets/images/brand-logos/desktop-dark.png') }}" alt="logo"
@@ -58,8 +58,8 @@
                         <li class="slide side-menu__label1">
                             <a href="javascript:void(0)">Dashboards</a>
                         </li>
-                        <li class="slide {{ request()->is('index') ? 'active' : '' }}">
-                            <a href="{{ url('index') }}" class="side-menu__item">
+                        <li class="slide {{ request()->routeIs('index') ? 'active' : '' }}">
+                            <a href="{{ route('index') }}" class="side-menu__item">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="side-menu-doublemenu__icon"
                                     viewBox="0 0 256 256">
                                     <rect width="256" height="256" fill="none" />
