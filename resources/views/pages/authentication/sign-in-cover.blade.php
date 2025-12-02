@@ -41,11 +41,6 @@ $bodyClass = 'bg-white';
                                 </div>
                             </div>
                             <div class="col-12">
-                                <label for="signin-code" class="form-label text-default">Kode 2FA (jika aktif)</label>
-                                <input type="text" name="code" class="form-control @error('code') is-invalid @enderror" id="signin-code" placeholder="6 digit">
-                                @error('code') <span class="invalid-feedback">{{ $message }}</span> @enderror
-                            </div>
-                            <div class="col-12">
                                 <div class="d-flex align-items-center justify-content-between">
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" value="1" name="remember" id="rememberCheck">

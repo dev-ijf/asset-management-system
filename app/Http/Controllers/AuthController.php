@@ -30,20 +30,19 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
-            'code' => ['nullable', 'digits:6'],
         ]);
 
         $remember = $request->boolean('remember');
-        $code = $credentials['code'] ?? null;
         $authCredentials = Arr::only($credentials, ['email', 'password']);
 
         if (Auth::attempt($authCredentials, $remember)) {
             $user = Auth::user();
             if ($user->two_factor_enabled) {
-                if (!$code || !$this->twoFactor->verifyCode($user->two_factor_secret, $code)) {
-                    Auth::logout();
-                    return back()->withErrors(['code' => 'Kode 2FA tidak valid atau belum diisi.'])->withInput();
-                }
+                // logout and ask for 2FA challenge
+                Auth::logout();
+                $request->session()->put('2fa:user_id', $user->id);
+                $request->session()->put('2fa:remember', $remember);
+                return redirect()->route('twofactor.challenge');
             }
             $request->session()->regenerate();
             return redirect()->intended(route('index'));
@@ -86,5 +85,47 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login');
+    }
+
+    public function showTwoFactorChallenge(Request $request)
+    {
+        if (Auth::check()) {
+            return redirect()->route('index');
+        }
+        if (!$request->session()->has('2fa:user_id')) {
+            return redirect()->route('login');
+        }
+        return view('pages.authentication.two-factor-challenge');
+    }
+
+    public function verifyTwoFactorChallenge(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'code' => ['required', 'digits:6'],
+        ]);
+
+        $userId = $request->session()->pull('2fa:user_id');
+        $remember = $request->session()->pull('2fa:remember', false);
+
+        if (!$userId) {
+            return redirect()->route('login')->withErrors(['email' => 'Sesi 2FA tidak ditemukan, silakan login kembali.']);
+        }
+
+        $user = User::find($userId);
+        if (!$user || !$user->two_factor_enabled || !$user->two_factor_secret) {
+            return redirect()->route('login')->withErrors(['email' => 'Sesi 2FA tidak valid, silakan login kembali.']);
+        }
+
+        if (!$this->twoFactor->verifyCode($user->two_factor_secret, $data['code'])) {
+            // keep session to retry
+            $request->session()->put('2fa:user_id', $userId);
+            $request->session()->put('2fa:remember', $remember);
+            return back()->withErrors(['code' => 'Kode 2FA salah, coba lagi.']);
+        }
+
+        Auth::login($user, $remember);
+        $request->session()->regenerate();
+
+        return redirect()->intended(route('index'));
     }
 }
