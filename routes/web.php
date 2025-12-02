@@ -34,6 +34,8 @@ Route::view('/landing', 'pages.landing.index');
 Route::get('asset-view/{asset}', [PublicAssetController::class, 'show'])->name('assets.public.show');
 Route::view('help', 'pages.landing.help')->name('landing.help');
 Route::view('changelog', 'pages.landing.changelog')->name('landing.changelog');
+Route::get('setup', [\App\Http\Controllers\SetupWizardController::class, 'index'])->name('setup.index');
+Route::post('setup', [\App\Http\Controllers\SetupWizardController::class, 'store'])->name('setup.store');
 
 // Transaksi dari halaman landing (user harus login)
 Route::middleware(['auth','audit.request'])->group(function () {
