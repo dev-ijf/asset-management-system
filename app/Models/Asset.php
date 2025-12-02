@@ -37,6 +37,13 @@ class Asset extends Model
         'qr_token',
         'qr_path',
         'metadata',
+        'rfid_tag',
+        'nfc_tag',
+        'label_template',
+        'is_consumable',
+        'quantity',
+        'available_quantity',
+        'is_pool',
     ];
 
     protected $casts = [
@@ -45,6 +52,8 @@ class Asset extends Model
         'warranty_reminder_sent_at' => 'datetime',
         'residual_value' => 'decimal:2',
         'metadata' => 'array',
+        'is_consumable' => 'boolean',
+        'is_pool' => 'boolean',
     ];
 
     public function status()
