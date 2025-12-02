@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             AssetSeeder::class,
             AssetTransactionSeeder::class,
             AssetAuditSeeder::class,
+            AssetChangelogSeeder::class,
         ]);
     }
 }
