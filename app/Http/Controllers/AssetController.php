@@ -54,7 +54,7 @@ class AssetController extends Controller
             ->when($filters['person_in_charge_id'] ?? null, fn($q, $v) => $q->where('person_in_charge_id', $v))
             ->when($filters['warranty_id'] ?? null, fn($q, $v) => $q->where('warranty_id', $v))
             ->orderBy('created_at', 'desc')
-            ->paginate(15)
+            ->paginate(config('system.ui.table_page_size', 15))
             ->withQueryString();
 
         return view('assets.index', [

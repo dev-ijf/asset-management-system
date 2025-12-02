@@ -40,7 +40,7 @@ class ReportController extends Controller
             ->when($filters['person_in_charge_id'] ?? null, fn($q, $v) => $q->where('person_in_charge_id', $v))
             ->when($filters['warranty_id'] ?? null, fn($q, $v) => $q->where('warranty_id', $v));
 
-        $assets = $query->paginate(20)->withQueryString();
+        $assets = $query->paginate(config('system.ui.table_page_size', 20))->withQueryString();
 
         if ($request->get('export') === 'excel') {
             $assetsCollection = $query->get();
@@ -150,7 +150,7 @@ class ReportController extends Controller
             ->when($filters['department_id'] ?? null, fn($q, $v) => $q->where('to_department_id', $v))
             ->when($filters['asset_user_id'] ?? null, fn($q, $v) => $q->where('to_asset_user_id', $v));
 
-        $items = $query->paginate(20)->withQueryString();
+        $items = $query->paginate(config('system.ui.table_page_size', 20))->withQueryString();
 
         if ($request->get('export') === 'excel') {
             $rows = $query->get()->map(fn($m) => [
@@ -196,7 +196,7 @@ class ReportController extends Controller
                 $v === 'reversed' ? $q->whereNotNull('reversed_at') : $q->whereNull('reversed_at');
             });
 
-        $items = $query->paginate(20)->withQueryString();
+        $items = $query->paginate(config('system.ui.table_page_size', 20))->withQueryString();
 
         if ($request->get('export') === 'excel') {
             $rows = $query->get()->map(fn($d) => [
@@ -234,7 +234,7 @@ class ReportController extends Controller
             ->when($filters['status'] ?? null, fn($q, $v) => $q->where('status', $v))
             ->when($filters['location_id'] ?? null, fn($q, $v) => $q->where('location_id', $v));
 
-        $items = $query->paginate(20)->withQueryString();
+        $items = $query->paginate(config('system.ui.table_page_size', 20))->withQueryString();
 
         if ($request->get('export') === 'excel') {
             $rows = $query->get()->map(fn($a) => [

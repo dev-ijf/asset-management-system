@@ -39,7 +39,9 @@ class AssetService
 
             $asset = Asset::create($data);
 
-            $this->generateQr($asset);
+            if ($this->settings->get('asset.qr_enabled', true)) {
+                $this->generateQr($asset);
+            }
             $this->logHistory($asset, 'created', 'Aset dibuat', $data);
 
             return $asset;
@@ -53,7 +55,9 @@ class AssetService
     {
         return DB::transaction(function () use ($asset, $data) {
             $asset->update($data);
-            $this->generateQr($asset);
+            if ($this->settings->get('asset.qr_enabled', true)) {
+                $this->generateQr($asset);
+            }
             $this->logHistory($asset, 'updated', 'Aset diperbarui', $data);
 
             return $asset;

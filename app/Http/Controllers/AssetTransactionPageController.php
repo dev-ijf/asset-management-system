@@ -13,7 +13,7 @@ class AssetTransactionPageController extends Controller
     {
         $items = AssetMovement::with(['asset', 'fromLocation', 'toLocation', 'fromDepartment', 'toDepartment', 'fromUser', 'toUser'])
             ->latest()
-            ->paginate(20);
+            ->paginate(config('system.ui.table_page_size', 20));
 
         return view('assets.movements', compact('items'));
     }
@@ -22,7 +22,7 @@ class AssetTransactionPageController extends Controller
     {
         $items = AssetDisposal::with(['asset', 'previousStatus', 'previousLocation', 'previousDepartment'])
             ->latest()
-            ->paginate(20);
+            ->paginate(config('system.ui.table_page_size', 20));
 
         return view('assets.disposals', compact('items'));
     }
@@ -31,7 +31,7 @@ class AssetTransactionPageController extends Controller
     {
         $items = AssetAudit::with(['asset', 'location'])
             ->latest()
-            ->paginate(20);
+            ->paginate(config('system.ui.table_page_size', 20));
 
         return view('assets.audits', compact('items'));
     }

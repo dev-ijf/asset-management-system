@@ -577,7 +577,14 @@
 											</li>
 										</ul>        
 									</li>
-									<li><a class="dropdown-item d-flex align-items-center" href="javascript:void(0);"><i class="ti ti-logout me-2 fs-18"></i>Log Out</a></li>
+									<li>
+										<form action="{{ route('logout') }}" method="POST">
+											@csrf
+											<button type="submit" class="dropdown-item d-flex align-items-center">
+												<i class="ti ti-logout me-2 fs-18"></i>Log Out
+											</button>
+										</form>
+									</li>
 								</ul>
 							</div>
 						</li>  
