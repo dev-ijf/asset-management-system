@@ -207,12 +207,13 @@
 <script>
     const editAssetModal = document.getElementById('editAssetModal');
     if (editAssetModal) {
+        const updateRouteTemplate = "{{ route('assets.update', ['asset' => '__ID__']) }}";
         editAssetModal.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
             const form = document.getElementById('editAssetForm');
             const payload = JSON.parse(button.getAttribute('data-payload') || '{}');
 
-            form.action = "{{ url('assets') }}/" + button.getAttribute('data-id');
+            form.action = updateRouteTemplate.replace('__ID__', button.getAttribute('data-id'));
 
             const simpleFields = [
                 'name','serial_number','description','asset_status_id','asset_class_id','asset_category_id',
