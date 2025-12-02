@@ -10,6 +10,7 @@ use App\Models\AssetUser;
 use App\Models\AssetPhoto;
 use App\Models\Department;
 use App\Models\PersonInCharge;
+use App\Models\VendorContract;
 use App\Models\Unit;
 use App\Models\Warranty;
 use App\Services\Asset\AssetService;
@@ -32,6 +33,15 @@ class AssetSeeder extends Seeder
         $user = AssetUser::first();
         $location = AssetLocation::first();
         $warranty = Warranty::first();
+        $contract = VendorContract::create([
+            'vendor_name' => 'Vendor Default',
+            'contract_number' => 'CNT-001',
+            'start_date' => now()->subMonths(6),
+            'end_date' => now()->addMonths(6),
+            'sla_response_hours' => 4,
+            'sla_resolution_hours' => 24,
+            'notes' => 'Kontrak default untuk sample aset',
+        ]);
 
         $names = [
             'Laptop Dell XPS 13',
@@ -81,6 +91,11 @@ class AssetSeeder extends Seeder
                 'warranty_id' => $warranty?->id,
                 'purchase_date' => now()->subDays(30 + $index),
                 'cost' => 1000000 + ($index * 250000),
+                'residual_value' => 500000,
+                'useful_life_months' => 36,
+                'depreciation_method' => $index % 2 === 0 ? 'straight_line' : 'diminishing',
+                'capex_opex' => $index % 3 === 0 ? 'capex' : 'opex',
+                'vendor_contract_id' => $contract->id,
             ]);
 
             // Download 2 foto berbeda untuk tiap aset dari pool.
