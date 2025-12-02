@@ -9,6 +9,7 @@ use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 use App\Http\Middleware\MaintenanceReadOnly;
 use App\Http\Middleware\SessionTimeout;
 use App\Http\Middleware\AuditRequest;
+use App\Http\Middleware\EnsureDatabaseReady;
 use Illuminate\Console\Scheduling\Schedule;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -25,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'maintenance.readonly' => MaintenanceReadOnly::class,
             'session.timeout' => SessionTimeout::class,
             'audit.request' => AuditRequest::class,
+            'db.ready' => EnsureDatabaseReady::class,
         ]);
     })
     ->withSchedule(function (Schedule $schedule) {

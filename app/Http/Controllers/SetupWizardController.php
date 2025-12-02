@@ -22,8 +22,21 @@ use Spatie\Permission\Models\Role;
 
 class SetupWizardController extends Controller
 {
+    private function dbReady(): bool
+    {
+        try {
+            \DB::connection()->getPdo();
+            return true;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
     public function index(Request $request): View|RedirectResponse
     {
+        if (!$this->dbReady()) {
+            return view('setup.database');
+        }
         $step = (int) $request->get('step', 1);
 
         return view('setup.wizard', [
@@ -37,6 +50,9 @@ class SetupWizardController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        if (!$this->dbReady()) {
+            return redirect()->route('setup.index')->withErrors(['db' => 'Database belum siap. Periksa konfigurasi DB & migrasi.']);
+        }
         $step = (int) $request->input('step', 1);
 
         if ($step === 1) {

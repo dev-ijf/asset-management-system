@@ -31,9 +31,22 @@ use App\Http\Controllers\ProfileController;
 
 Route::view('/', 'pages.landing.index')->name('landing');
 Route::view('/landing', 'pages.landing.index');
-Route::get('asset-view/{asset}', [PublicAssetController::class, 'show'])->name('assets.public.show');
-Route::view('help', 'pages.landing.help')->name('landing.help');
-Route::view('changelog', 'pages.landing.changelog')->name('landing.changelog');
+Route::middleware('db.ready')->group(function () {
+    Route::get('asset-view/{asset}', [PublicAssetController::class, 'show'])->name('assets.public.show');
+    Route::view('help', 'pages.landing.help')->name('landing.help');
+    Route::view('changelog', 'pages.landing.changelog')->name('landing.changelog');
+
+    // Transaksi dari halaman landing (user harus login)
+    Route::middleware(['auth','audit.request'])->group(function () {
+        Route::post('asset-view/{asset}/movement', [AssetTransactionController::class, 'storeMovement'])->name('assets.public.movements.store')
+            ->middleware('permission:movements.manage');
+        Route::post('asset-view/{asset}/disposal', [AssetTransactionController::class, 'storeDisposal'])->name('assets.public.disposals.store')
+            ->middleware('permission:disposals.manage');
+        Route::post('asset-view/{asset}/maintenance', [AssetMaintenanceController::class, 'store'])->name('assets.public.maintenances.store')
+            ->middleware('permission:maintenance.manage');
+    });
+});
+
 Route::get('setup', [\App\Http\Controllers\SetupWizardController::class, 'index'])->name('setup.index');
 Route::post('setup', [\App\Http\Controllers\SetupWizardController::class, 'store'])->name('setup.store');
 
