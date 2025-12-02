@@ -134,12 +134,13 @@
 <script>
     const editModal = document.getElementById('editModal');
     if (editModal) {
+        const updateRouteTemplate = "{{ route($routeName.'.update', ['id' => '__ID__']) }}";
         editModal.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
             const form = document.getElementById('editForm');
             const payload = JSON.parse(button.getAttribute('data-payload') || '{}');
 
-            form.action = "{{ url(str_replace('.', '/', $routeName)) }}/" + button.getAttribute('data-id');
+            form.action = updateRouteTemplate.replace('__ID__', button.getAttribute('data-id'));
 
             @foreach($fields as $field)
                 (function() {
