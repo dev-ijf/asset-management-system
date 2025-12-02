@@ -262,4 +262,44 @@ class ReportController extends Controller
             'locations' => AssetLocation::orderBy('name')->get(),
         ]);
     }
+
+    public function depreciations(Request $request)
+    {
+        $filters = $request->only(['asset_class_id','asset_category_id','asset_status_id']);
+        $query = Asset::with(['class','category','status','vendorContract'])
+            ->when($filters['asset_class_id'] ?? null, fn($q,$v) => $q->where('asset_class_id',$v))
+            ->when($filters['asset_category_id'] ?? null, fn($q,$v) => $q->where('asset_category_id',$v))
+            ->when($filters['asset_status_id'] ?? null, fn($q,$v) => $q->where('asset_status_id',$v));
+
+        $items = $query->paginate(config('system.ui.table_page_size', 20))->withQueryString();
+
+        if ($request->get('export') === 'excel') {
+            $rows = $query->get()->map(function($a){
+                return [
+                    $a->code,
+                    $a->name,
+                    $a->class?->name,
+                    $a->category?->name,
+                    $a->status?->name,
+                    $a->purchase_date?->format('d/m/Y'),
+                    $a->cost,
+                    $a->residual_value,
+                    $a->useful_life_months,
+                    $a->depreciation_method,
+                    $a->bookValue(),
+                ];
+            })->toArray();
+            return Excel::download(new ArrayReportExport([
+                'Kode','Nama','Kelas','Kategori','Status','Tgl Beli','Cost','Residual','Umur (bln)','Metode','Nilai Buku'
+            ], $rows),'asset-depreciation.xlsx');
+        }
+
+        return view('reports.depreciations', [
+            'items' => $items,
+            'filters' => $filters,
+            'classes' => AssetClass::orderBy('name')->get(),
+            'categories' => AssetCategory::orderBy('name')->get(),
+            'statuses' => AssetStatus::orderBy('name')->get(),
+        ]);
+    }
 }

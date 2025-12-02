@@ -108,6 +108,7 @@ Route::middleware(['auth','maintenance.readonly','session.timeout','audit.reques
     Route::get('reports/movements', [ReportController::class, 'movements'])->name('reports.movements')->middleware('permission:reports.view');
     Route::get('reports/disposals', [ReportController::class, 'disposals'])->name('reports.disposals')->middleware('permission:reports.view');
     Route::get('reports/audits', [ReportController::class, 'audits'])->name('reports.audits')->middleware('permission:reports.view');
+    Route::get('reports/depreciations', [ReportController::class, 'depreciations'])->name('reports.depreciations')->middleware('permission:reports.view');
 
     Route::resource('asset-maintenances', AssetMaintenanceController::class)->only(['index','store','update','destroy'])
         ->middleware('permission:maintenance.manage');
