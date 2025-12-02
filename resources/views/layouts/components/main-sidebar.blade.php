@@ -207,6 +207,17 @@
                         <span class="side-menu__label">Audit Aset</span>
                     </a>
                 </li>
+                <li class="slide">
+                    <a href="{{ route('approvals.index') }}"
+                        class="side-menu__item {{ request()->routeIs('approvals.*') ? 'active' : '' }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="side-menu__icon" viewBox="0 0 256 256">
+                            <rect width="256" height="256" fill="none" />
+                            <path d="M40,48H216a8,8,0,0,1,8,8V200a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V56A8,8,0,0,1,40,48Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                            <polyline points="88 104 128 144 168 104" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+                        </svg>
+                        <span class="side-menu__label">Approval</span>
+                    </a>
+                </li>
 
                 <!-- Start::slide__category -->
                 <li class="slide__category"><span class="category-name">Laporan</span></li>
