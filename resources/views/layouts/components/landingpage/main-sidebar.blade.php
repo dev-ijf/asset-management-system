@@ -19,84 +19,44 @@
                         <ul class="main-menu flex-fill justify-content-center">
                             <!-- Start::slide -->
                             <li class="slide">
-                                <a class="side-menu__item" href="#home">
-                                    <span class="side-menu__label">Home</span>
-                                </a>
-                            </li>
-                            <!-- End::slide -->
-                            <!-- Start::slide -->
-                            <li class="slide">
-                                <a href="#feature" class="side-menu__item">
-                                    <span class="side-menu__label">Features</span>
-                                </a>
-                            </li>
-                            <!-- End::slide -->
-                            <!-- Start::slide -->
-                            <li class="slide">
-                                <a href="#service" class="side-menu__item">
-                                    <span class="side-menu__label">Services</span>
-                                </a>
-                            </li>
-                            <!-- End::slide -->
-                            <!-- Start::slide -->
-                            <li class="slide has-sub">
-                                <a href="javascript:void(0);" class="side-menu__item">
-                                    <span class="side-menu__label">Pages</span>
-                                    <i class="fe fe-chevron-right side-menu__angle"></i>
-                                </a>
-                                <ul class="slide-menu child1">
-                                    <li class="slide">
-                                        <a href="javascript:void(0);" class="side-menu__item">Abous Us</a>
-                                    </li>
-                                    <li class="slide">
-                                        <a href="javascript:void(0);" class="side-menu__item">Terms & Conditions</a>
-                                    </li>
-                                    <li class="slide">
-                                        <a href="javascript:void(0);" class="side-menu__item">Privacy Policy</a>
-                                    </li>
-                                    <li class="slide has-sub">
-                                        <a href="javascript:void(0);" class="side-menu__item">Level-2
-                                            <i class="fe fe-chevron-right side-menu__angle"></i></a>
-                                        <ul class="slide-menu child2">
-                                            <li class="slide">
-                                                <a href="javascript:void(0);" class="side-menu__item">Level-2-1</a>
-                                            </li>
-                                            <li class="slide has-sub">
-                                                <a href="javascript:void(0);" class="side-menu__item">Level-2-2
-                                                    <i class="fe fe-chevron-right side-menu__angle"></i></a>
-                                                <ul class="slide-menu child3">
-                                                    <li class="slide">
-                                                        <a href="javascript:void(0);" class="side-menu__item">Level-2-2-1</a>
-                                                    </li>
-                                                    <li class="slide has-sub">
-                                                        <a href="javascript:void(0);" class="side-menu__item">Level-2-2-2</a>
-                                                    </li>
-                                                </ul>
-                                            </li>
-                                        </ul>
-                                    </li>
-                                </ul>
-                            </li>
-                            <!-- End::slide -->
-                            <!-- Start::slide -->
-                            <li class="slide">
-                                <a href="#price" class="side-menu__item">
-                                    <span class="side-menu__label">Subscription</span>
-                                </a>
-                            </li>
-                            <!-- End::slide -->
-                            <!-- Start::slide -->
-                            <li class="slide">
-                                <a href="#contactus" class="side-menu__item">
-                                    <span class="side-menu__label">Contact Us</span>
-                                </a>
-                            </li>
-                            <!-- End::slide -->
+                        <a class="side-menu__item" href="#home">
+                            <span class="side-menu__label">Beranda</span>
+                        </a>
+                    </li>
+                    <!-- End::slide -->
+                    <!-- Start::slide -->
+                    <li class="slide">
+                        <a href="#feature" class="side-menu__item">
+                            <span class="side-menu__label">Fitur</span>
+                        </a>
+                    </li>
+                    <!-- End::slide -->
+                    <!-- Start::slide -->
+                    <li class="slide">
+                        <a href="#service" class="side-menu__item">
+                            <span class="side-menu__label">Alur</span>
+                        </a>
+                    </li>
+                    <!-- End::slide -->
+                    <!-- Start::slide -->
+                    <li class="slide">
+                        <a href="#price" class="side-menu__item">
+                            <span class="side-menu__label">Pricing</span>
+                        </a>
+                    </li>
+                    <!-- End::slide -->
+                    <!-- Start::slide -->
+                    <li class="slide">
+                        <a href="#contactus" class="side-menu__item">
+                            <span class="side-menu__label">Kontak</span>
+                        </a>
+                    </li>
+                    <!-- End::slide -->
                         </ul>
                         <div class="slide-right" id="slide-right"><svg xmlns="http://www.w3.org/2000/svg" fill="#7b8191" width="24" height="24" viewBox="0 0 24 24"> <path d="M10.707 17.707 16.414 12l-5.707-5.707-1.414 1.414L13.586 12l-4.293 4.293z"></path> </svg></div>
                         <div class="d-lg-flex d-none align-items-center">
                             <div class="btn-list d-xl-flex d-none">
-                                <a href="{{url('sign-in-basic')}}" class="btn btn-wave btn-primary border">
+                                <a href="{{ route('login') }}" class="btn btn-wave btn-primary border">
                                     Login / Register
                                 </a>
                             </div>

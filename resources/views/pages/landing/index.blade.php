@@ -12,7 +12,7 @@
                 <!-- Start:: Landing Banner -->
                 <div class="landing-banner" id="home">
                     <div class="banner-image-container">
-                        <img src="{{asset('build/assets/images/media/backgrounds/5.png')}}" alt="">
+                        <img src="{{ asset('landing-asset-hero.jpg') }}" alt="Asset hero">
                     </div>
                     <div class="container">
                         <div class="row">
