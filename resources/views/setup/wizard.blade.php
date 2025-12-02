@@ -158,6 +158,9 @@ $bodyClass = 'bg-white';
                                                                     'asset.attachment_max_size_mb' => '20',
                                                                     'notification.slack_webhook_url' => 'https://hooks.slack.com/services/XXXX/XXXX/XXXX',
                                                                     'maintenance.window' => 'Sabtu 23:00-02:00',
+                                                                    'integration.api_key' => 'ubah-ke-api-key-anda',
+                                                                    'integration.webhook_url' => 'https://erp.example.com/webhook/asset',
+                                                                    'integration.webhook_secret' => 'secret-optional',
                                                                     default => ''
                                                                 }
                                                             }}"
