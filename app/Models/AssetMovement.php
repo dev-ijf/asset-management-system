@@ -21,10 +21,19 @@ class AssetMovement extends Model
         'notes',
         'moved_by',
         'performed_at',
+        'status',
+        'requested_by',
+        'approved_by',
+        'approved_at',
+        'rejected_by',
+        'rejected_at',
+        'decision_notes',
     ];
 
     protected $casts = [
         'performed_at' => 'datetime',
+        'approved_at' => 'datetime',
+        'rejected_at' => 'datetime',
     ];
 
     public function asset()
@@ -60,5 +69,10 @@ class AssetMovement extends Model
     public function toUser()
     {
         return $this->belongsTo(AssetUser::class, 'to_asset_user_id');
+    }
+
+    public function approval()
+    {
+        return $this->morphOne(AssetApprovalRequest::class, 'approvable');
     }
 }

@@ -18,15 +18,28 @@ class AssetMaintenance extends Model
         'cost',
         'status',
         'notes',
+        'requested_by',
+        'approved_by',
+        'approved_at',
+        'rejected_by',
+        'rejected_at',
+        'decision_notes',
     ];
 
     protected $casts = [
         'performed_at' => 'datetime',
         'cost' => 'decimal:2',
+        'approved_at' => 'datetime',
+        'rejected_at' => 'datetime',
     ];
 
     public function asset()
     {
         return $this->belongsTo(Asset::class);
+    }
+
+    public function approval()
+    {
+        return $this->morphOne(AssetApprovalRequest::class, 'approvable');
     }
 }

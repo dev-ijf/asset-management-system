@@ -22,11 +22,20 @@ class AssetDisposal extends Model
         'reversed_at',
         'reversed_by',
         'reversed_notes',
+        'status',
+        'requested_by',
+        'approved_by',
+        'approved_at',
+        'rejected_by',
+        'rejected_at',
+        'decision_notes',
     ];
 
     protected $casts = [
         'disposed_at' => 'datetime',
         'reversed_at' => 'datetime',
+        'approved_at' => 'datetime',
+        'rejected_at' => 'datetime',
     ];
 
     public function asset()
@@ -47,5 +56,10 @@ class AssetDisposal extends Model
     public function previousDepartment()
     {
         return $this->belongsTo(Department::class, 'previous_department_id');
+    }
+
+    public function approval()
+    {
+        return $this->morphOne(AssetApprovalRequest::class, 'approvable');
     }
 }

@@ -10,6 +10,8 @@ use App\Models\AssetMovement;
 use App\Models\AssetDisposal;
 use App\Models\AssetAudit;
 use App\Models\AssetChangelog;
+use App\Models\AssetMaintenance;
+use App\Services\Logging\ActivityLogger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -17,7 +19,10 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class AssetService
 {
-    public function __construct(private readonly SystemSettingService $settings)
+    public function __construct(
+        private readonly SystemSettingService $settings,
+        private readonly ActivityLogger $logger
+    )
     {
     }
 
@@ -123,7 +128,9 @@ class AssetService
      */
     public function move(Asset $asset, array $data): AssetMovement
     {
-        return DB::transaction(function () use ($asset, $data) {
+        $requireApproval = config('system.workflow.require_approval.movement', false);
+
+        return DB::transaction(function () use ($asset, $data, $requireApproval) {
             $movement = AssetMovement::create([
                 'asset_id' => $asset->id,
                 'from_location_id' => $asset->asset_location_id,
@@ -135,13 +142,23 @@ class AssetService
                 'notes' => $data['notes'] ?? null,
                 'moved_by' => auth()->id(),
                 'performed_at' => $data['performed_at'] ?? now(),
+                'status' => $requireApproval ? 'pending' : 'approved',
+                'requested_by' => auth()->id(),
             ]);
 
-            $asset->update([
-                'asset_location_id' => $data['to_location_id'] ?? $asset->asset_location_id,
-                'department_id' => $data['to_department_id'] ?? $asset->department_id,
-                'asset_user_id' => $data['to_asset_user_id'] ?? $asset->asset_user_id,
-            ]);
+            if (!$requireApproval) {
+                $asset->update([
+                    'asset_location_id' => $data['to_location_id'] ?? $asset->asset_location_id,
+                    'department_id' => $data['to_department_id'] ?? $asset->department_id,
+                    'asset_user_id' => $data['to_asset_user_id'] ?? $asset->asset_user_id,
+                ]);
+                $movement->update([
+                    'approved_by' => auth()->id(),
+                    'approved_at' => now(),
+                ]);
+            } else {
+                app(\App\Services\Workflow\ApprovalService::class)->create('movement', $movement);
+            }
 
             $this->logHistory($asset, 'movement', 'Perpindahan aset', $movement->toArray());
 
@@ -154,23 +171,34 @@ class AssetService
      */
     public function dispose(Asset $asset, array $data): AssetDisposal
     {
-        return DB::transaction(function () use ($asset, $data) {
+        $requireApproval = config('system.workflow.require_approval.disposal', false);
+
+        return DB::transaction(function () use ($asset, $data, $requireApproval) {
             $disposal = AssetDisposal::create([
                 'asset_id' => $asset->id,
                 'reason' => $data['reason'] ?? null,
                 'notes' => $data['notes'] ?? null,
-                'disposed_by' => auth()->id(),
-                'disposed_at' => $data['disposed_at'] ?? now(),
+                'disposed_by' => $requireApproval ? null : auth()->id(),
+                'disposed_at' => $requireApproval ? null : ($data['disposed_at'] ?? now()),
                 'previous_status_id' => $asset->asset_status_id,
                 'previous_location_id' => $asset->asset_location_id,
                 'previous_department_id' => $asset->department_id,
+                'status' => $requireApproval ? 'pending' : 'approved',
+                'requested_by' => auth()->id(),
             ]);
 
-            // Ubah status aset ke DISPOSED bila tersedia
-            $disposedStatus = AssetStatus::where('code', 'DISPOSED')->first();
-            $asset->update([
-                'asset_status_id' => $disposedStatus?->id ?? $asset->asset_status_id,
-            ]);
+            if (!$requireApproval) {
+                $disposedStatus = AssetStatus::where('code', 'DISPOSED')->first();
+                $asset->update([
+                    'asset_status_id' => $disposedStatus?->id ?? $asset->asset_status_id,
+                ]);
+                $disposal->update([
+                    'approved_by' => auth()->id(),
+                    'approved_at' => now(),
+                ]);
+            } else {
+                app(\App\Services\Workflow\ApprovalService::class)->create('disposal', $disposal);
+            }
 
             $this->logHistory($asset, 'disposal', 'Aset didispose', $disposal->toArray());
 
@@ -225,6 +253,37 @@ class AssetService
             $this->logHistory($asset, 'audit', 'Audit aset', $audit->toArray());
 
             return $audit;
+        });
+    }
+
+    /**
+     * Catat maintenance aset; jika butuh persetujuan, status pending.
+     */
+    public function maintenance(Asset $asset, array $data): AssetMaintenance
+    {
+        $requireApproval = config('system.workflow.require_approval.maintenance', false);
+
+        return DB::transaction(function () use ($asset, $data, $requireApproval) {
+            $maintenance = AssetMaintenance::create([
+                'asset_id' => $asset->id,
+                'performed_at' => $data['performed_at'] ?? now(),
+                'description' => $data['description'] ?? null,
+                'vendor' => $data['vendor'] ?? null,
+                'cost' => $data['cost'] ?? null,
+                'status' => $requireApproval ? 'pending' : 'approved',
+                'notes' => $data['notes'] ?? null,
+                'requested_by' => auth()->id(),
+                'approved_by' => $requireApproval ? null : auth()->id(),
+                'approved_at' => $requireApproval ? null : now(),
+            ]);
+
+            if ($requireApproval) {
+                app(\App\Services\Workflow\ApprovalService::class)->create('maintenance', $maintenance);
+            }
+
+            $this->logHistory($asset, 'maintenance', 'Perawatan aset', $maintenance->toArray());
+
+            return $maintenance;
         });
     }
 }

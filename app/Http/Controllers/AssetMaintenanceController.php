@@ -4,12 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\Asset;
 use App\Models\AssetMaintenance;
+use App\Services\Asset\AssetService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class AssetMaintenanceController extends Controller
 {
+    public function __construct(private readonly AssetService $assets)
+    {
+    }
+
     public function index(): View
     {
         $maintenances = AssetMaintenance::with('asset')->latest()->paginate(config('system.ui.table_page_size', 20));
@@ -26,11 +31,11 @@ class AssetMaintenanceController extends Controller
             'description' => ['required', 'string', 'max:255'],
             'vendor' => ['nullable', 'string', 'max:255'],
             'cost' => ['nullable', 'numeric', 'min:0'],
-            'status' => ['required', 'string'],
             'notes' => ['nullable', 'string'],
         ]);
 
-        AssetMaintenance::create($data);
+        $asset = Asset::findOrFail($data['asset_id']);
+        $this->assets->maintenance($asset, $data);
 
         return back()->with('success', 'Data perawatan berhasil dicatat.');
     }
