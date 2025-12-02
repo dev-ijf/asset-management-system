@@ -46,6 +46,7 @@ class SetupWizardController extends Controller
             'hasSettings' => Setting::exists(),
             'hasMaster' => AssetStatus::exists() && AssetClass::exists() && AssetCategory::exists(),
             'hasAsset' => Asset::exists(),
+            'settings' => Setting::orderBy('group')->orderBy('key')->get(),
         ]);
     }
 
@@ -74,20 +75,25 @@ class SetupWizardController extends Controller
         }
 
         if ($step === 2) {
-            $data = $request->validate([
-                'company_name' => ['required', 'string', 'max:255'],
-                'timezone' => ['required', 'string', 'max:100'],
-            ]);
-            Setting::updateOrCreate(['key' => 'system.company_name'], [
-                'value' => $data['company_name'],
-                'type' => 'string',
-                'group' => 'system',
-            ]);
-            Setting::updateOrCreate(['key' => 'system.timezone'], [
-                'value' => $data['timezone'],
-                'type' => 'string',
-                'group' => 'system',
-            ]);
+            $settings = Setting::all();
+            $input = $request->input('settings', []);
+
+            foreach ($settings as $setting) {
+                $key = $setting->key;
+                $raw = $input[$key] ?? null;
+                $value = $raw;
+
+                if ($setting->type === 'boolean') {
+                    $value = filter_var($raw, FILTER_VALIDATE_BOOL);
+                } elseif ($setting->type === 'integer') {
+                    $value = is_null($raw) ? null : (int) $raw;
+                } else {
+                    $value = is_null($raw) ? null : (string) $raw;
+                }
+
+                $setting->update(['value' => $value]);
+            }
+
             return redirect()->route('setup.index', ['step' => 3])->with('success', 'Setting dasar disimpan.');
         }
 
