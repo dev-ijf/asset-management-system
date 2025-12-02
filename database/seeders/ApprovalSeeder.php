@@ -31,7 +31,7 @@ class ApprovalSeeder extends Seeder
             'to_department_id' => $asset->department_id,
             'from_asset_user_id' => $asset->asset_user_id,
             'to_asset_user_id' => $asset->asset_user_id,
-            'notes' => 'Seeder movement pending approval',
+            'notes' => 'Seeder movement menunggu approval',
             'moved_by' => $user->id,
             'performed_at' => now(),
             'status' => 'pending',
@@ -51,7 +51,7 @@ class ApprovalSeeder extends Seeder
         // Pending disposal approval
         $disposal = AssetDisposal::create([
             'asset_id' => $asset->id,
-            'reason' => 'Seeder disposal pending approval',
+            'reason' => 'Seeder disposal menunggu approval',
             'notes' => null,
             'previous_status_id' => $asset->asset_status_id,
             'previous_location_id' => $asset->asset_location_id,
@@ -74,7 +74,7 @@ class ApprovalSeeder extends Seeder
         $maintenance = AssetMaintenance::create([
             'asset_id' => $asset->id,
             'performed_at' => now()->addDays(3),
-            'description' => 'Seeder maintenance pending approval',
+            'description' => 'Seeder maintenance menunggu approval',
             'vendor' => 'Vendor Seeder',
             'cost' => 250000,
             'status' => 'pending',
