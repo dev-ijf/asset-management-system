@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\Security\TwoFactorService;
+use Illuminate\Support\Arr;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -33,11 +34,13 @@ class AuthController extends Controller
         ]);
 
         $remember = $request->boolean('remember');
+        $code = $credentials['code'] ?? null;
+        $authCredentials = Arr::only($credentials, ['email', 'password']);
 
-        if (Auth::attempt($credentials, $remember)) {
+        if (Auth::attempt($authCredentials, $remember)) {
             $user = Auth::user();
             if ($user->two_factor_enabled) {
-                if (!$credentials['code'] || !$this->twoFactor->verifyCode($user->two_factor_secret, $credentials['code'])) {
+                if (!$code || !$this->twoFactor->verifyCode($user->two_factor_secret, $code)) {
                     Auth::logout();
                     return back()->withErrors(['code' => 'Kode 2FA tidak valid atau belum diisi.'])->withInput();
                 }
