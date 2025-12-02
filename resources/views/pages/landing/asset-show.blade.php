@@ -45,27 +45,15 @@
                 <div class="card custom-card">
                     <div class="card-body">
                         <div class="row g-2">
-                            <div class="col-md-6 text-center">
-                                @if($asset->qr_path)
-                                    <img src="{{ asset('storage/'.$asset->qr_path) }}" alt="QR {{ $asset->code }}" class="img-fluid mb-2" style="max-height:220px;">
-                                    <p class="mb-0"><code>{{ route('assets.public.show', $asset) }}</code></p>
-                                @else
-                                    <p class="text-muted">QR belum tersedia.</p>
-                                @endif
-                            </div>
-                            <div class="col-md-6">
-                                <div class="row g-2">
-                                    @forelse($asset->photos as $photo)
-                                        <div class="col-6">
-                                            <a href="{{ asset('storage/'.$photo->path) }}" target="_blank" class="d-block">
-                                                <img src="{{ asset('storage/'.$photo->path) }}" class="img-fluid rounded" style="height:100px;object-fit:cover;" alt="foto aset">
-                                            </a>
-                                        </div>
-                                    @empty
-                                        <div class="col-12 text-muted small">Belum ada foto aset.</div>
-                                    @endforelse
+                            @forelse($asset->photos as $photo)
+                                <div class="col-6 col-md-4">
+                                    <a href="{{ asset('storage/'.$photo->path) }}" target="_blank" class="d-block">
+                                        <img src="{{ asset('storage/'.$photo->path) }}" class="img-fluid rounded" style="height:140px;object-fit:cover;" alt="foto aset">
+                                    </a>
                                 </div>
-                            </div>
+                            @empty
+                                <div class="col-12 text-muted small">Belum ada foto aset.</div>
+                            @endforelse
                         </div>
                     </div>
                 </div>

@@ -7,12 +7,15 @@ use App\Models\AssetClass;
 use App\Models\AssetLocation;
 use App\Models\AssetStatus;
 use App\Models\AssetUser;
+use App\Models\AssetPhoto;
 use App\Models\Department;
 use App\Models\PersonInCharge;
 use App\Models\Unit;
 use App\Models\Warranty;
 use App\Services\Asset\AssetService;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 class AssetSeeder extends Seeder
 {
@@ -48,8 +51,24 @@ class AssetSeeder extends Seeder
             'Camera CCTV Hikvision',
         ];
 
+        $imagePool = [
+            'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1498050108023-c5249f4df086?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1518779578993-ec3579fee39f?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1559163499-35d55e4857a8?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1523475472560-d2df97ec485c?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1481277542470-605612bd2d61?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1481277542470-605612bd2d60?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1433838552652-f9a46b332c40?auto=format&fit=crop&w=800&q=80',
+            'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=800&q=80',
+        ];
+
         foreach ($names as $index => $name) {
-            $service->create([
+            $asset = $service->create([
                 'name' => $name,
                 'asset_status_id' => $status?->id,
                 'asset_class_id' => $class?->id,
@@ -63,6 +82,21 @@ class AssetSeeder extends Seeder
                 'purchase_date' => now()->subDays(30 + $index),
                 'cost' => 1000000 + ($index * 250000),
             ]);
+
+            // Download 2 foto berbeda untuk tiap aset dari pool.
+            $pics = collect($imagePool)->shuffle()->take(2);
+            foreach ($pics as $idx => $url) {
+                $response = Http::get($url);
+                if ($response->ok()) {
+                    $path = "assets/{$asset->id}/photo-{$idx}.jpg";
+                    Storage::disk('public')->put($path, $response->body());
+                    AssetPhoto::create([
+                        'asset_id' => $asset->id,
+                        'path' => $path,
+                        'is_primary' => $idx === 0 && $asset->photos()->count() === 0,
+                    ]);
+                }
+            }
         }
     }
 }
