@@ -60,30 +60,109 @@ $bodyClass = 'bg-white';
                             </div>
                         </form>
                     @elseif($step === 2)
+                        @php
+                            $booleanOptions = [1 => 'Aktif', 0 => 'Nonaktif'];
+                            $timezoneOptions = [
+                                'Asia/Jakarta', 'Asia/Makassar', 'Asia/Jayapura',
+                                'Asia/Singapore', 'Asia/Kuala_Lumpur', 'UTC'
+                            ];
+                            $currencyOptions = ['IDR', 'USD', 'EUR', 'SGD', 'MYR'];
+                            $dateFormats = ['d/m/Y', 'Y-m-d', 'm/d/Y'];
+                            $timeFormats = ['H:i', 'h:i A'];
+                            $pageSizes = [10, 25, 50, 100];
+                            $depreciationOptions = [
+                                'straight_line' => 'Straight Line',
+                                'diminishing_balance' => 'Diminishing Balance',
+                            ];
+                        @endphp
                         <form method="POST" action="{{ route('setup.store') }}">
                             @csrf
                             <input type="hidden" name="step" value="2">
                             <p class="text-muted">Sesuaikan konfigurasi awal. Nilai diambil dari seeder dan dapat diubah.</p>
                             @foreach($settings->groupBy('group') as $group => $items)
                                 <div class="border rounded p-3 mb-3">
-                                    <h6 class="fw-semibold text-uppercase text-muted mb-2">{{ $group }}</h6>
+                                    <h6 class="fw-semibold text-uppercase text-muted mb-2">{{ ucfirst($group) }}</h6>
                                     <div class="row g-3">
                                         @foreach($items as $setting)
+                                            @php
+                                                $label = ucwords(str_replace(['.', '_'], ' ', $setting->key));
+                                                $fieldName = "settings[{$setting->key}]";
+                                                $current = old('settings.'.$setting->key, $setting->value);
+                                            @endphp
                                             <div class="col-md-6">
-                                                <label class="form-label">{{ str_replace(['.', '_'], ' ', $setting->key) }}</label>
-                                                @if($setting->type === 'boolean')
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="settings[{{ $setting->key }}]" value="1" id="setting_{{ $setting->id }}" {{ $setting->value ? 'checked' : '' }}>
-                                                        <label class="form-check-label" for="setting_{{ $setting->id }}">Aktif</label>
-                                                    </div>
-                                                @else
-                                                    <input
-                                                        type="{{ $setting->type === 'integer' ? 'number' : 'text' }}"
-                                                        name="settings[{{ $setting->key }}]"
-                                                        class="form-control"
-                                                        value="{{ old('settings.'.$setting->key, $setting->value) }}"
-                                                    >
-                                                @endif
+                                                <label class="form-label">{{ $label }}</label>
+                                                @switch($setting->key)
+                                                    @case('application.timezone')
+                                                        <select name="{{ $fieldName }}" class="form-select">
+                                                            @foreach($timezoneOptions as $tz)
+                                                                <option value="{{ $tz }}" @selected($current == $tz)>{{ $tz }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                        @break
+                                                    @case('ui.currency')
+                                                        <select name="{{ $fieldName }}" class="form-select">
+                                                            @foreach($currencyOptions as $cur)
+                                                                <option value="{{ $cur }}" @selected($current == $cur)>{{ $cur }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                        @break
+                                                    @case('ui.date_format')
+                                                        <select name="{{ $fieldName }}" class="form-select">
+                                                            @foreach($dateFormats as $fmt)
+                                                                <option value="{{ $fmt }}" @selected($current == $fmt)>{{ $fmt }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                        @break
+                                                    @case('ui.time_format')
+                                                        <select name="{{ $fieldName }}" class="form-select">
+                                                            @foreach($timeFormats as $fmt)
+                                                                <option value="{{ $fmt }}" @selected($current == $fmt)>{{ $fmt }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                        @break
+                                                    @case('ui.table_page_size')
+                                                        <select name="{{ $fieldName }}" class="form-select">
+                                                            @foreach($pageSizes as $size)
+                                                                <option value="{{ $size }}" @selected($current == $size)>{{ $size }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                        @break
+                                                    @case('asset.depreciation_method')
+                                                        <select name="{{ $fieldName }}" class="form-select">
+                                                            @foreach($depreciationOptions as $val => $text)
+                                                                <option value="{{ $val }}" @selected($current == $val)>{{ $text }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                        @break
+                                                    @case('asset.qr_enabled')
+                                                    @case('security.audit_log')
+                                                    @case('notification.email_enabled')
+                                                    @case('maintenance.readonly_mode')
+                                                        <select name="{{ $fieldName }}" class="form-select">
+                                                            @foreach($booleanOptions as $val => $text)
+                                                                <option value="{{ $val }}" @selected((int)$current === (int)$val)>{{ $text }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                        @break
+                                                    @default
+                                                        <input
+                                                            type="{{ $setting->type === 'integer' ? 'number' : 'text' }}"
+                                                            name="{{ $fieldName }}"
+                                                            class="form-control"
+                                                            value="{{ $current }}"
+                                                            placeholder="@lang('Contoh:') {{
+                                                                match($setting->key) {
+                                                                    'application.name' => 'Asset Management System',
+                                                                    'asset.code_prefix' => 'AST',
+                                                                    'asset.warranty_reminder_days' => '30',
+                                                                    'asset.attachment_max_size_mb' => '20',
+                                                                    'notification.slack_webhook_url' => 'https://hooks.slack.com/services/XXXX/XXXX/XXXX',
+                                                                    'maintenance.window' => 'Sabtu 23:00-02:00',
+                                                                    default => ''
+                                                                }
+                                                            }}"
+                                                        >
+                                                @endswitch
                                                 @if(!empty($setting->description))
                                                     <small class="text-muted d-block">{{ $setting->description }}</small>
                                                 @endif
