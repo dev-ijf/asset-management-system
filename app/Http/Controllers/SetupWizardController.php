@@ -16,9 +16,10 @@ use App\Models\Warranty;
 use App\Services\Asset\AssetService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
-use Spatie\Permission\Models\Role;
+use App\Models\Role; // pakai model lokal yang sudah memakai UUID dan accessor id->uuid
 
 class SetupWizardController extends Controller
 {
@@ -131,5 +132,22 @@ class SetupWizardController extends Controller
         }
 
         return back()->with('error', 'Langkah tidak dikenal.');
+    }
+
+    public function migrate(Request $request): RedirectResponse
+    {
+        $withSample = $request->boolean('with_sample');
+        try {
+            Artisan::call('migrate', ['--force' => true]);
+            if ($withSample) {
+                Artisan::call('db:seed', ['--force' => true]);
+            } else {
+                // Seed minimal RBAC agar wizard dapat berjalan
+                Artisan::call('db:seed', ['--force' => true, '--class' => 'Database\\Seeders\\RbacSeeder']);
+            }
+            return redirect()->route('setup.index', ['step' => 1])->with('success', 'Migrasi berhasil' . ($withSample ? ' dengan sample data.' : '.'));
+        } catch (\Throwable $e) {
+            return redirect()->route('setup.index')->withErrors(['db' => 'Migrasi gagal: '.$e->getMessage()]);
+        }
     }
 }
