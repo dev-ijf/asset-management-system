@@ -39,9 +39,11 @@
                     <!-- Start::header-element -->
                     <div class="header-element align-items-center">
                         <div class="btn-list d-lg-none d-block">
-                            <a href="{{ route('login') }}" class="btn btn-primary-light">
-                                Login
-                            </a>
+                            @auth
+                                <a href="{{ route('index') }}" class="btn btn-primary-light">Dashboard</a>
+                            @else
+                                <a href="{{ route('login') }}" class="btn btn-primary-light">Login</a>
+                            @endauth
                         </div>
                     </div>
                     <!-- End::header-element -->

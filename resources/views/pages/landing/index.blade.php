@@ -27,7 +27,7 @@
                             </div>
                             <div class="col-xl-6">
                                 <div class="banner-main-img text-end d-xl-block d-none">
-                                    <img src="{{asset('build/assets/images/media/backgrounds/7.png')}}" alt="" class="img-fluid">
+                                    <img src="{{ asset('landing-feature.jpg') }}" alt="" class="img-fluid">
                                 </div>
                             </div>
                         </div>
@@ -363,7 +363,7 @@
                 <!-- Start:: Buy Now Section -->
                 <section class="section section-md section-primary text-fixed-white py-5 buy-now-section">
                     <div class="testimonials-background-container">
-                        <img src="{{asset('build/assets/images/media/backgrounds/1.png')}}" alt="">
+                        <img src="{{ asset('landing-cta.jpg') }}" alt="">
                     </div>
                     <div class="container">
                         <div class="d-flex align-items-center gap-2 justify-content-between flex-wrap">
@@ -947,7 +947,7 @@
                                 <div class="card custom-card border-0 shadow-none">
                                     <div class="card-body p-4 text-center">
                                         <div class="step-arrow-container d-lg-block d-none">
-                                            <img src="{{asset('build/assets/images/media/backgrounds/3.png')}}" alt="" class="img-fluid">
+                                            <img src="{{ asset('landing-feature.jpg') }}" alt="" class="img-fluid">
                                         </div>
                                         <div class="lh-1 mb-3">
                                             <span class="avatar avatar-lg svg-primary text-primary workflow-icon-container">
@@ -963,7 +963,7 @@
                                 <div class="card custom-card border-0 shadow-none">
                                     <div class="card-body p-4 text-center">
                                         <div class="step-arrow-container d-lg-block d-none">
-                                            <img src="{{asset('build/assets/images/media/backgrounds/4.png')}}" alt="" class="img-fluid">
+                                            <img src="{{ asset('landing-service.jpg') }}" alt="" class="img-fluid">
                                         </div>
                                         <div class="lh-1 mb-3">
                                             <span class="avatar avatar-lg svg-warning text-warning workflow-icon-container">
@@ -1214,7 +1214,7 @@
                 <!-- Start:: Buy Now Section -->
                 <section class="section section-md section-primary text-fixed-white py-5 buy-now-section">
                     <div class="testimonials-background-container">
-                        <img src="{{asset('build/assets/images/media/backgrounds/1.png')}}" alt="">
+                        <img src="{{ asset('landing-cta.jpg') }}" alt="">
                     </div>
                     <div class="container">
                         <div class="d-flex align-items-center gap-2 justify-content-between">

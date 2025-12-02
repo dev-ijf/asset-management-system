@@ -13,6 +13,9 @@ class AuthController extends Controller
 {
     public function showLogin()
     {
+        if (Auth::check()) {
+            return redirect()->route('index');
+        }
         return view('pages.authentication.sign-in-cover');
     }
 
@@ -35,6 +38,9 @@ class AuthController extends Controller
 
     public function showRegister()
     {
+        if (Auth::check()) {
+            return redirect()->route('index');
+        }
         return view('pages.authentication.sign-up-cover');
     }
 
