@@ -218,7 +218,7 @@
             const simpleFields = [
                 'name','serial_number','description','asset_status_id','asset_class_id','asset_category_id',
                 'unit_id','department_id','person_in_charge_id','asset_user_id','asset_location_id',
-                'warranty_id','cost'
+                'warranty_id','cost','depreciation_method','useful_life_months','residual_value','capex_opex','vendor_contract_id'
             ];
 
             simpleFields.forEach((field) => {

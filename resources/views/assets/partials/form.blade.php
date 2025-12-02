@@ -105,6 +105,41 @@
         <input type="number" step="0.01" name="cost" class="form-control" placeholder="0.00">
     </div>
 
+    <div class="col-md-4">
+        <label class="form-label">Metode Depresiasi</label>
+        <select name="depreciation_method" class="form-select">
+            <option value="">-- Pilih --</option>
+            <option value="straight_line">Straight Line</option>
+            <option value="diminishing">Diminishing</option>
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Umur Manfaat (bulan)</label>
+        <input type="number" name="useful_life_months" class="form-control" placeholder="cth: 36">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Nilai Residual</label>
+        <input type="number" step="0.01" name="residual_value" class="form-control" placeholder="0.00">
+    </div>
+
+    <div class="col-md-4">
+        <label class="form-label">Capex / Opex</label>
+        <select name="capex_opex" class="form-select">
+            <option value="">-- Pilih --</option>
+            <option value="capex">Capex</option>
+            <option value="opex">Opex</option>
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Kontrak Vendor</label>
+        <select name="vendor_contract_id" class="form-select">
+            <option value="">-- Pilih --</option>
+            @foreach($vendorContracts ?? [] as $contract)
+                <option value="{{ $contract->id }}">{{ $contract->vendor_name }} ({{ $contract->contract_number }})</option>
+            @endforeach
+        </select>
+    </div>
+
     <div class="col-md-12">
         <label class="form-label">Deskripsi</label>
         <textarea name="description" class="form-control" rows="3" placeholder="Keterangan singkat aset"></textarea>

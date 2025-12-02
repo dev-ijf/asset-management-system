@@ -11,6 +11,7 @@ use App\Models\AssetUser;
 use App\Models\Department;
 use App\Models\PersonInCharge;
 use App\Models\Unit;
+use App\Models\VendorContract;
 use App\Models\Warranty;
 use App\Services\Asset\AssetService;
 use Illuminate\Http\RedirectResponse;
@@ -69,6 +70,7 @@ class AssetController extends Controller
             'users' => AssetUser::orderBy('name')->get(),
             'locations' => AssetLocation::orderBy('name')->get(),
             'warranties' => Warranty::orderBy('duration_months')->get(),
+            'vendorContracts' => VendorContract::orderBy('vendor_name')->get(),
             'filters' => $filters,
         ]);
     }
@@ -129,6 +131,11 @@ class AssetController extends Controller
             'purchase_date' => ['nullable', 'date'],
             'warranty_end' => ['nullable', 'date'],
             'cost' => ['nullable', 'numeric', 'min:0'],
+            'depreciation_method' => ['nullable', 'in:straight_line,diminishing'],
+            'useful_life_months' => ['nullable', 'integer', 'min:1'],
+            'residual_value' => ['nullable', 'numeric', 'min:0'],
+            'capex_opex' => ['nullable', 'in:capex,opex'],
+            'vendor_contract_id' => ['nullable', 'uuid', 'exists:vendor_contracts,id'],
             'metadata' => ['nullable', 'array'],
         ]);
     }
