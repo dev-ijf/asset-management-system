@@ -81,6 +81,42 @@
         </div>
     </div>
 
+    <div class="row g-3 mt-2" id="changelog">
+        <div class="col-12">
+            <div class="card custom-card">
+                <div class="card-header">
+                    <div class="card-title mb-0">Changelog Aset</div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered text-nowrap align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Waktu</th>
+                                    <th>Aktor</th>
+                                    <th>Aksi</th>
+                                    <th>Payload</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($asset->changelogs()->latest()->get() as $log)
+                                    <tr>
+                                        <td>{{ optional($log->changed_at)->format('d/m/Y H:i') }}</td>
+                                        <td>{{ $log->changed_by }}</td>
+                                        <td>{{ data_get($log->changes, 'action') }}</td>
+                                        <td><pre class="mb-0 small">{{ json_encode(data_get($log->changes, 'data'), JSON_PRETTY_PRINT) }}</pre></td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="4" class="text-center text-muted">Belum ada perubahan.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-3 mt-2">
         <div class="col-xl-6">
             <div class="card custom-card">

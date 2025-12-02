@@ -9,6 +9,7 @@ use App\Models\AssetStatus;
 use App\Models\AssetMovement;
 use App\Models\AssetDisposal;
 use App\Models\AssetAudit;
+use App\Models\AssetChangelog;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -43,6 +44,7 @@ class AssetService
                 $this->generateQr($asset);
             }
             $this->logHistory($asset, 'created', 'Aset dibuat', $data);
+            $this->logChangelog($asset, 'created', $data);
 
             return $asset;
         });
@@ -59,6 +61,7 @@ class AssetService
                 $this->generateQr($asset);
             }
             $this->logHistory($asset, 'updated', 'Aset diperbarui', $data);
+            $this->logChangelog($asset, 'updated', $data);
 
             return $asset;
         });
@@ -103,6 +106,16 @@ class AssetService
         Storage::disk('public')->put($path, $image);
 
         $asset->updateQuietly(['qr_path' => $path]);
+    }
+
+    private function logChangelog(Asset $asset, string $action, array $payload = []): void
+    {
+        AssetChangelog::create([
+            'asset_id' => $asset->id,
+            'changed_by' => auth()->id(),
+            'changed_at' => now(),
+            'changes' => ['action' => $action, 'data' => $payload],
+        ]);
     }
 
     /**

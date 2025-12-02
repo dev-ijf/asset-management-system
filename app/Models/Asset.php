@@ -117,4 +117,9 @@ class Asset extends Model
     {
         return $this->hasOne(AssetPhoto::class)->where('is_primary', true);
     }
+
+    public function changelogs()
+    {
+        return $this->hasMany(AssetChangelog::class);
+    }
 }
