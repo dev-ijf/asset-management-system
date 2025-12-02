@@ -33,6 +33,14 @@
                                     <option value="completed" selected>Completed</option>
                                 </select>
                             </div>
+                            <div class="col-md-4">
+                                <label class="form-label">SLA Response (jam)</label>
+                                <input type="number" name="sla_response_hours" class="form-control" placeholder="cth: 4">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">SLA Resolution (jam)</label>
+                                <input type="number" name="sla_resolution_hours" class="form-control" placeholder="cth: 24">
+                            </div>
                             <div class="col-md-12">
                                 <label class="form-label">Catatan</label>
                                 <textarea name="notes" class="form-control" rows="2" placeholder="Catatan tambahan"></textarea>

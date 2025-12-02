@@ -24,6 +24,8 @@ class AssetMaintenance extends Model
         'rejected_by',
         'rejected_at',
         'decision_notes',
+        'sla_response_hours',
+        'sla_resolution_hours',
     ];
 
     protected $casts = [
@@ -31,6 +33,8 @@ class AssetMaintenance extends Model
         'cost' => 'decimal:2',
         'approved_at' => 'datetime',
         'rejected_at' => 'datetime',
+        'sla_response_hours' => 'integer',
+        'sla_resolution_hours' => 'integer',
     ];
 
     public function asset()

@@ -27,7 +27,13 @@ class Asset extends Model
         'warranty_id',
         'purchase_date',
         'warranty_end',
+        'warranty_reminder_sent_at',
         'cost',
+        'depreciation_method',
+        'useful_life_months',
+        'residual_value',
+        'capex_opex',
+        'vendor_contract_id',
         'qr_token',
         'qr_path',
         'metadata',
@@ -36,6 +42,8 @@ class Asset extends Model
     protected $casts = [
         'purchase_date' => 'date',
         'warranty_end' => 'date',
+        'warranty_reminder_sent_at' => 'datetime',
+        'residual_value' => 'decimal:2',
         'metadata' => 'array',
     ];
 
@@ -82,6 +90,11 @@ class Asset extends Model
     public function warranty()
     {
         return $this->belongsTo(Warranty::class);
+    }
+
+    public function vendorContract()
+    {
+        return $this->belongsTo(VendorContract::class);
     }
 
     public function histories()
@@ -168,5 +181,27 @@ class Asset extends Model
         }
 
         return $departmentMatch || $locationMatch;
+    }
+
+    public function bookValue(?\Carbon\Carbon $asOf = null): float
+    {
+        $asOf = $asOf ?: now();
+        $cost = (float) ($this->cost ?? 0);
+        $residual = (float) ($this->residual_value ?? 0);
+        $lifeMonths = (int) ($this->useful_life_months ?? 0);
+        if ($cost <= 0 || $lifeMonths <= 0 || !$this->purchase_date) {
+            return $cost;
+        }
+
+        $monthsUsed = max(0, $this->purchase_date->diffInMonths($asOf));
+        if ($this->depreciation_method === 'diminishing') {
+            $rate = pow($residual / max($cost, 1), 1 / max($lifeMonths, 1));
+            $value = $cost * pow($rate, $monthsUsed);
+            return max($value, $residual);
+        }
+
+        $monthlyDep = ($cost - $residual) / $lifeMonths;
+        $value = $cost - ($monthlyDep * $monthsUsed);
+        return max($value, $residual);
     }
 }
