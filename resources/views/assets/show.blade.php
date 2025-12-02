@@ -112,20 +112,29 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($logs as $log)
+                                @forelse($logs as $index => $log)
                                     @php
                                         $actorName = $log->changed_by ? optional(\App\Models\User::find($log->changed_by))->name : 'Sistem';
                                         $action = strtoupper(str_replace('_', ' ', data_get($log->changes, 'action', 'UPDATE')));
                                         $payload = (array) data_get($log->changes, 'data', []);
+                                        $previousPayload = (array) data_get($logs->get($index + 1), 'changes.data', []);
+                                        // Hanya tampilkan field yang berubah dibanding log sebelumnya
+                                        $diffPayload = [];
+                                        foreach ($payload as $key => $value) {
+                                            if (!array_key_exists($key, $previousPayload) || $previousPayload[$key] !== $value) {
+                                                $diffPayload[$key] = $value;
+                                            }
+                                        }
                                     @endphp
                                     <tr>
                                         <td>{{ optional($log->changed_at)->format('d/m/Y H:i') }}</td>
                                         <td>{{ $actorName ?? 'Tidak diketahui' }}</td>
                                         <td><span class="badge bg-primary-transparent">{{ $action }}</span></td>
                                         <td>
-                                            @if($payload)
+                                            @php $payloadToShow = $diffPayload ?: $payload; @endphp
+                                            @if($payloadToShow)
                                                 <div class="d-flex flex-wrap gap-2">
-                                                    @foreach($payload as $key => $value)
+                                                    @foreach($payloadToShow as $key => $value)
                                                         @php
                                                             $mappedValue = $value;
                                                             if (!is_array($value) && isset($refMaps[$key]) && $refMaps[$key]->has($value)) {
