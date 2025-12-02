@@ -30,6 +30,8 @@ use App\Http\Controllers\Controller;
 Route::view('/', 'pages.landing.index')->name('landing');
 Route::view('/landing', 'pages.landing.index');
 Route::get('asset-view/{asset}', [PublicAssetController::class, 'show'])->name('assets.public.show');
+Route::view('help', 'pages.landing.help')->name('landing.help');
+Route::view('changelog', 'pages.landing.changelog')->name('landing.changelog');
 
 Route::middleware(['auth','maintenance.readonly'])->prefix('dashboard')->group(function () {
     Route::get('index', [DashboardsController::class, 'index'])->name('index');
