@@ -31,7 +31,7 @@ Route::view('/', 'pages.landing.index')->name('landing');
 Route::view('/landing', 'pages.landing.index');
 Route::get('asset-view/{asset}', [PublicAssetController::class, 'show'])->name('assets.public.show');
 
-Route::middleware('auth')->prefix('dashboard')->group(function () {
+Route::middleware(['auth','maintenance.readonly'])->prefix('dashboard')->group(function () {
     Route::get('index', [DashboardsController::class, 'index'])->name('index');
 
     Route::resource('settings', SystemSettingController::class)->only(['index', 'store', 'update', 'destroy'])

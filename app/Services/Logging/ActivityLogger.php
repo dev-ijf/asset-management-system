@@ -27,6 +27,10 @@ class ActivityLogger
      */
     public function log(string $message, array $context = [], string $level = 'info'): void
     {
+        if (! config('system.security.audit_log', true)) {
+            return;
+        }
+
         $request = request();
 
         $payload = array_merge([
@@ -48,6 +52,10 @@ class ActivityLogger
      */
     public function logHttp(string $action, Request $request, mixed $response = null, array $context = [], string $level = 'info'): void
     {
+        if (! config('system.security.audit_log', true)) {
+            return;
+        }
+
         $payload = [
             'action' => $action,
             'actor_id' => optional(auth()->user())->getAuthIdentifier(),

@@ -12,7 +12,7 @@ class AssetMaintenanceController extends Controller
 {
     public function index(): View
     {
-        $maintenances = AssetMaintenance::with('asset')->latest()->paginate(20);
+        $maintenances = AssetMaintenance::with('asset')->latest()->paginate(config('system.ui.table_page_size', 20));
         $assets = Asset::orderBy('code')->get();
 
         return view('assets.maintenances', compact('maintenances', 'assets'));
