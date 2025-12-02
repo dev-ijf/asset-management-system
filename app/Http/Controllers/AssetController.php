@@ -118,7 +118,7 @@ class AssetController extends Controller
             'asset_category_id' => ['nullable', 'uuid', 'exists:asset_categories,id'],
             'unit_id' => ['nullable', 'uuid', 'exists:units,id'],
             'department_id' => ['nullable', 'uuid', 'exists:departments,id'],
-            'person_in_charge_id' => ['nullable', 'uuid', 'exists:people_in_charge,id'],
+            'person_in_charge_id' => ['nullable', 'uuid', 'exists:person_in_charges,id'],
             'asset_user_id' => ['nullable', 'uuid', 'exists:asset_users,id'],
             'asset_location_id' => ['nullable', 'uuid', 'exists:asset_locations,id'],
             'warranty_id' => ['nullable', 'uuid', 'exists:warranties,id'],
