@@ -107,4 +107,14 @@ class Asset extends Model
     {
         return $this->hasMany(AssetMaintenance::class);
     }
+
+    public function photos()
+    {
+        return $this->hasMany(AssetPhoto::class);
+    }
+
+    public function primaryPhoto()
+    {
+        return $this->hasOne(AssetPhoto::class)->where('is_primary', true);
+    }
 }

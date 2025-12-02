@@ -23,6 +23,7 @@ use App\Http\Controllers\AssetTransactionPageController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\AssetMaintenanceController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AssetPhotoController;
 use App\Http\Controllers\Controller;
 
 Route::view('/', 'pages.landing.index')->name('landing');
@@ -63,6 +64,10 @@ Route::middleware('auth')->group(function () {
     Route::get('assets/{asset}/history', [AssetController::class, 'history'])->name('assets.history')->middleware('permission:assets.view');
     Route::resource('assets', AssetController::class)->only(['index', 'store', 'update', 'show'])
         ->middleware(['permission:assets.view|assets.manage']);
+    Route::post('assets/{asset}/photos', [AssetPhotoController::class, 'store'])->name('assets.photos.store')
+        ->middleware('permission:assets.manage');
+    Route::delete('asset-photos/{asset_photo}', [AssetPhotoController::class, 'destroy'])->name('assets.photos.destroy')
+        ->middleware('permission:assets.manage');
 
     Route::post('assets/{asset}/movements', [AssetTransactionController::class, 'storeMovement'])->name('assets.movements.store')
         ->middleware('permission:movements.manage');

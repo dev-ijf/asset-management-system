@@ -45,16 +45,35 @@
         </div>
         <div class="col-xl-4">
             <div class="card custom-card h-100">
-                <div class="card-header">
-                    <div class="card-title mb-0">QR Aset</div>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="card-title mb-0">QR & Foto Aset</div>
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#uploadPhotoModal">Upload Foto</button>
                 </div>
-                <div class="card-body text-center">
-                    @if($asset->qr_path)
-                        <img src="{{ asset('storage/'.$asset->qr_path) }}" alt="QR {{ $asset->code }}" class="img-fluid mb-3">
-                    @else
-                        <p class="text-muted mb-3">QR belum tersedia.</p>
-                    @endif
-                    <p class="mb-0"><code>{{ route('assets.show', $asset) }}</code></p>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        @if($asset->qr_path)
+                            <img src="{{ asset('storage/'.$asset->qr_path) }}" alt="QR {{ $asset->code }}" class="img-fluid mb-2" style="max-height:180px;">
+                        @else
+                            <p class="text-muted mb-3">QR belum tersedia.</p>
+                        @endif
+                        <p class="mb-0"><code>{{ route('assets.show', $asset) }}</code></p>
+                    </div>
+                    <div class="row g-2">
+                        @forelse($asset->photos as $photo)
+                            <div class="col-6">
+                                <div class="position-relative">
+                                    <img src="{{ asset('storage/'.$photo->path) }}" alt="foto aset" class="img-fluid rounded shadow-sm">
+                                    <form action="{{ route('assets.photos.destroy', $photo) }}" method="POST" class="position-absolute top-0 end-0 m-1" onsubmit="return confirm('Hapus foto ini?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn btn-xs btn-outline-danger">x</button>
+                                    </form>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="col-12 text-center text-muted">Belum ada foto aset.</div>
+                        @endforelse
+                    </div>
                 </div>
             </div>
         </div>
@@ -269,6 +288,32 @@
                         </table>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal Upload Foto --}}
+    <div class="modal fade" id="uploadPhotoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Upload Foto Aset</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ route('assets.photos.store', $asset) }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Pilih Foto (bisa lebih dari satu)</label>
+                            <input type="file" name="photos[]" class="form-control" multiple accept="image/*" required>
+                            <small class="text-muted">Format: jpg, png, webp. Maks 4MB per file.</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">Upload</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
