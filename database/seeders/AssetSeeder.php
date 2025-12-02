@@ -57,7 +57,7 @@ class AssetSeeder extends Seeder
             'UPS APC 1500VA',
             'Tablet iPad Air',
             'Smartphone Samsung S24',
-            'Kursi Ergonomis',
+            'Kursi Ergonomis', // aset furnitur contoh pool
             'Meja Kerja Kayu',
             'Lemari Arsip',
             'Camera CCTV Hikvision',
@@ -98,6 +98,13 @@ class AssetSeeder extends Seeder
                 'depreciation_method' => $index % 2 === 0 ? 'straight_line' : 'diminishing',
                 'capex_opex' => $index % 3 === 0 ? 'capex' : 'opex',
                 'vendor_contract_id' => $contract->id,
+                'rfid_tag' => sprintf('RFID-%05d', $index + 1),
+                'nfc_tag' => sprintf('NFC-%05d', $index + 1),
+                'label_template' => 'default',
+                'is_consumable' => false,
+                'quantity' => 1,
+                'available_quantity' => 1,
+                'is_pool' => in_array($name, ['Kursi Ergonomis', 'Meja Kerja Kayu', 'Lemari Arsip']),
             ]);
 
             // Download 2 foto berbeda untuk tiap aset dari pool.
@@ -113,6 +120,56 @@ class AssetSeeder extends Seeder
                         'is_primary' => $idx === 0 && $asset->photos()->count() === 0,
                     ]);
                 }
+            }
+        }
+
+        // Consumable & pool assets sample (stok/batch)
+        $consumables = [
+            ['name' => 'Tinta Printer Hitam', 'qty' => 50],
+            ['name' => 'Kertas A4 80gsm', 'qty' => 200],
+            ['name' => 'Baterai AA', 'qty' => 100],
+            ['name' => 'Mouse Cadangan', 'qty' => 20],
+        ];
+
+        foreach ($consumables as $idx => $item) {
+            $asset = $service->create([
+                'name' => $item['name'],
+                'asset_status_id' => $status?->id,
+                'asset_class_id' => $class?->id,
+                'asset_category_id' => $category?->id,
+                'unit_id' => $unit?->id,
+                'department_id' => $dept?->id,
+                'person_in_charge_id' => $pic?->id,
+                'asset_user_id' => $user?->id,
+                'asset_location_id' => $location?->id,
+                'warranty_id' => null,
+                'purchase_date' => now()->subDays(10 + $idx),
+                'cost' => 10000,
+                'residual_value' => 0,
+                'useful_life_months' => 12,
+                'depreciation_method' => 'straight_line',
+                'capex_opex' => 'opex',
+                'vendor_contract_id' => $contract->id,
+                'rfid_tag' => null,
+                'nfc_tag' => null,
+                'label_template' => 'small',
+                'is_consumable' => true,
+                'quantity' => $item['qty'],
+                'available_quantity' => $item['qty'],
+                'is_pool' => false,
+            ]);
+
+            // Gunakan foto generik untuk consumable
+            $url = 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80';
+            $response = Http::get($url);
+            if ($response->ok()) {
+                $path = "assets/{$asset->id}/photo-consumable.jpg";
+                Storage::disk('public')->put($path, $response->body());
+                AssetPhoto::create([
+                    'asset_id' => $asset->id,
+                    'path' => $path,
+                    'is_primary' => true,
+                ]);
             }
         }
     }
