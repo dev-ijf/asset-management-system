@@ -89,7 +89,7 @@ class AssetService
     private function generateQr(Asset $asset): void
     {
         $path = "qr/{$asset->code}.svg";
-        $url = route('assets.show', $asset);
+        $url = route('assets.public.show', $asset);
 
         $image = QrCode::format('svg')
             ->size(300)

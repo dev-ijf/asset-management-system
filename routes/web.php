@@ -24,10 +24,12 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\AssetMaintenanceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AssetPhotoController;
+use App\Http\Controllers\PublicAssetController;
 use App\Http\Controllers\Controller;
 
 Route::view('/', 'pages.landing.index')->name('landing');
 Route::view('/landing', 'pages.landing.index');
+Route::get('asset-view/{asset}', [PublicAssetController::class, 'show'])->name('assets.public.show');
 
 Route::middleware('auth')->group(function () {
     Route::get('index', [DashboardsController::class, 'index'])->name('index');
