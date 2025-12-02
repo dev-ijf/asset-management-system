@@ -89,6 +89,7 @@ $bodyClass = 'bg-white';
                                                 <li>Gunakan header <code>X-Api-Key</code> untuk REST API: <code>{{ url('/api/v1') }}</code></li>
                                                 <li>Webhook event: movement/disposal/audit/maintenance & perubahan aset</li>
                                                 <li>Aktifkan webhook dan isi secret untuk signature HMAC di header <code>X-Webhook-Signature</code></li>
+                                                <li>Lihat dokumentasi lengkap di <a href="{{ route('api.docs') }}" target="_blank">API Docs</a></li>
                                             </ul>
                                             <div class="small text-muted">Contoh: <code>curl -H "X-Api-Key: YOUR_KEY" "{{ url('/api/v1/assets') }}"</code> | Dokumentasi API bisa ditambahkan di halaman help/changelog.</div>
                                         </div>
