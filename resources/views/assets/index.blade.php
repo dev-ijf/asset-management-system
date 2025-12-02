@@ -117,7 +117,8 @@
                             <th>Status</th>
                             <th>Kategori</th>
                             <th>Lokasi</th>
-                            <th>QR Token</th>
+                            <th>RFID/NFC</th>
+                            <th>Stok</th>
                             <th class="text-center" style="width: 10%;">Aksi</th>
                         </tr>
                     </thead>
@@ -129,7 +130,24 @@
                                 <td><span class="badge bg-primary-transparent text-primary">{{ $asset->status?->name ?: '-' }}</span></td>
                                 <td>{{ $asset->category?->name ?: '-' }}</td>
                                 <td>{{ $asset->location?->name ?: '-' }}</td>
-                                <td><code>{{ $asset->qr_token }}</code></td>
+                                <td>
+                                    @if($asset->rfid_tag || $asset->nfc_tag)
+                                        <div class="small mb-1">RFID: <code>{{ $asset->rfid_tag ?? '-' }}</code></div>
+                                        <div class="small">NFC: <code>{{ $asset->nfc_tag ?? '-' }}</code></div>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($asset->is_consumable)
+                                        <span class="badge bg-warning text-dark">Consumable</span>
+                                    @elseif($asset->is_pool)
+                                        <span class="badge bg-info text-dark">Pool</span>
+                                    @else
+                                        <span class="badge bg-secondary-transparent text-secondary">Per Unit</span>
+                                    @endif
+                                    <div class="small text-muted">Qty: {{ $asset->quantity ?? 1 }} | Ready: {{ $asset->available_quantity ?? $asset->quantity ?? 1 }}</div>
+                                </td>
                                 <td class="text-center">
                                     <div class="btn-list">
                                         <button class="btn btn-sm btn-outline-primary"
@@ -218,7 +236,8 @@
             const simpleFields = [
                 'name','serial_number','description','asset_status_id','asset_class_id','asset_category_id',
                 'unit_id','department_id','person_in_charge_id','asset_user_id','asset_location_id',
-                'warranty_id','cost','depreciation_method','useful_life_months','residual_value','capex_opex','vendor_contract_id'
+                'warranty_id','cost','depreciation_method','useful_life_months','residual_value','capex_opex','vendor_contract_id',
+                'rfid_tag','nfc_tag','label_template','quantity','available_quantity'
             ];
 
             simpleFields.forEach((field) => {
@@ -241,6 +260,13 @@
                 const el = form.querySelector(`[name="${field}"]`);
                 if (!el) return;
                 el.value = normalizeDate(payload[field]);
+            });
+
+            const booleanFields = ['is_consumable','is_pool'];
+            booleanFields.forEach((field) => {
+                const el = form.querySelector(`[name="${field}"]`);
+                if (!el) return;
+                el.value = (payload[field] ? '1' : '0');
             });
 
             // metadata not editable via modal here (bisa ditambah kemudian)

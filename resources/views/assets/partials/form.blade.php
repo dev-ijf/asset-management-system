@@ -144,4 +144,53 @@
         <label class="form-label">Deskripsi</label>
         <textarea name="description" class="form-control" rows="3" placeholder="Keterangan singkat aset"></textarea>
     </div>
+
+    <div class="col-12">
+        <hr>
+        <h6 class="fw-semibold mb-2">Identifikasi & Label</h6>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">RFID Tag</label>
+        <input type="text" name="rfid_tag" class="form-control" placeholder="mis: RFID-00001">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">NFC Tag</label>
+        <input type="text" name="nfc_tag" class="form-control" placeholder="mis: NFC-00001">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Template Label</label>
+        <select name="label_template" class="form-select">
+            <option value="">-- Pilih --</option>
+            <option value="default">Default</option>
+            <option value="small">Small</option>
+            <option value="large">Large</option>
+        </select>
+    </div>
+
+    <div class="col-12">
+        <hr>
+        <h6 class="fw-semibold mb-2">Stok & Pool</h6>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Jenis</label>
+        <select name="is_consumable" class="form-select">
+            <option value="0">Non-consumable</option>
+            <option value="1">Consumable / Habis Pakai</option>
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Quantity</label>
+        <input type="number" min="1" name="quantity" class="form-control" value="1">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Tersedia</label>
+        <input type="number" min="0" name="available_quantity" class="form-control" value="1">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Pool / Pinjaman</label>
+        <select name="is_pool" class="form-select">
+            <option value="0">Tidak</option>
+            <option value="1">Ya, aset pool</option>
+        </select>
+    </div>
 </div>
