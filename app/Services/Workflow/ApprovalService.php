@@ -147,6 +147,21 @@ class ApprovalService
         if (!$approved && $approval->approvable instanceof AssetMaintenance) {
             $approval->approvable->update([
                 'status' => 'rejected',
+                'decision_notes' => $notes,
+            ]);
+        }
+        // Jika movement ditolak, tandai status movement sebagai rejected
+        if (!$approved && $approval->approvable instanceof AssetMovement) {
+            $approval->approvable->update([
+                'status' => 'rejected',
+                'decision_notes' => $notes,
+            ]);
+        }
+        // Jika disposal ditolak, tandai status disposal sebagai rejected
+        if (!$approved && $approval->approvable instanceof AssetDisposal) {
+            $approval->approvable->update([
+                'status' => 'rejected',
+                'decision_notes' => $notes,
             ]);
         }
 

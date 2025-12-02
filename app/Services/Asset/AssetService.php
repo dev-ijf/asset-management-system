@@ -224,6 +224,7 @@ class AssetService
                 'reversed_at' => now(),
                 'reversed_by' => auth()->id(),
                 'reversed_notes' => $notes,
+                'status' => 'reversed',
             ]);
 
             $this->logHistory($asset, 'reverse_disposal', 'Aset di-restore dari disposal', [
