@@ -6,11 +6,22 @@ use App\Models\AssetApprovalRequest;
 use App\Services\Workflow\ApprovalService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class ApprovalController extends Controller
 {
     public function __construct(private readonly ApprovalService $approvals)
     {
+    }
+
+    public function index(): View
+    {
+        $pending = AssetApprovalRequest::with(['approvable', 'requester'])
+            ->where('status', 'pending')
+            ->orderByDesc('created_at')
+            ->paginate(config('system.ui.table_page_size', 15));
+
+        return view('approvals.index', compact('pending'));
     }
 
     public function approve(Request $request, AssetApprovalRequest $approval): RedirectResponse
