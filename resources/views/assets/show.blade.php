@@ -88,26 +88,81 @@
                     <div class="card-title mb-0">Changelog Aset</div>
                 </div>
                 <div class="card-body">
+                    @php
+                        $logs = $asset->changelogs()->latest()->get();
+                        $refMaps = [
+                            'asset_location_id' => \App\Models\AssetLocation::pluck('name', 'id'),
+                            'department_id' => \App\Models\Department::pluck('name', 'id'),
+                            'asset_user_id' => \App\Models\AssetUser::pluck('name', 'id'),
+                            'person_in_charge_id' => \App\Models\PersonInCharge::pluck('name', 'id'),
+                            'asset_status_id' => \App\Models\AssetStatus::pluck('name', 'id'),
+                            'asset_category_id' => \App\Models\AssetCategory::pluck('name', 'id'),
+                            'asset_class_id' => \App\Models\AssetClass::pluck('name', 'id'),
+                            'warranty_id' => \App\Models\Warranty::pluck('name', 'id'),
+                        ];
+                    @endphp
                     <div class="table-responsive">
-                        <table class="table table-bordered text-nowrap align-middle mb-0">
+                        <table class="table text-nowrap align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
                                     <th>Waktu</th>
                                     <th>Aktor</th>
                                     <th>Aksi</th>
-                                    <th>Payload</th>
+                                    <th>Detail Perubahan</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($asset->changelogs()->latest()->get() as $log)
+                                @forelse($logs as $log)
+                                    @php
+                                        $actorName = $log->changed_by ? optional(\App\Models\User::find($log->changed_by))->name : 'Sistem';
+                                        $action = strtoupper(str_replace('_', ' ', data_get($log->changes, 'action', 'UPDATE')));
+                                        $payload = (array) data_get($log->changes, 'data', []);
+                                    @endphp
                                     <tr>
                                         <td>{{ optional($log->changed_at)->format('d/m/Y H:i') }}</td>
-                                        <td>{{ $log->changed_by }}</td>
-                                        <td>{{ data_get($log->changes, 'action') }}</td>
-                                        <td><pre class="mb-0 small">{{ json_encode(data_get($log->changes, 'data'), JSON_PRETTY_PRINT) }}</pre></td>
+                                        <td>{{ $actorName ?? 'Tidak diketahui' }}</td>
+                                        <td><span class="badge bg-primary-transparent">{{ $action }}</span></td>
+                                        <td>
+                                            @if($payload)
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-bordered mb-0 align-middle">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th>Kolom</th>
+                                                                <th>Nilai</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="small">
+                                                            @foreach($payload as $key => $value)
+                                                                <tr>
+                                                                    <td class="text-muted">{{ ucfirst(str_replace('_',' ', $key)) }}</td>
+                                                                    <td class="fw-semibold">
+                                                                        @php
+                                                                            $mappedValue = $value;
+                                                                            if (!is_array($value) && isset($refMaps[$key]) && $refMaps[$key]->has($value)) {
+                                                                                $mappedValue = $refMaps[$key]->get($value);
+                                                                            }
+                                                                        @endphp
+                                                                        @if(is_array($mappedValue))
+                                                                            <code class="small">{{ json_encode($mappedValue, JSON_UNESCAPED_UNICODE) }}</code>
+                                                                        @else
+                                                                            {{ (string) $mappedValue }}
+                                                                        @endif
+                                                                    </td>
+                                                                </tr>
+                                                            @endforeach
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            @else
+                                                <span class="text-muted small">Tidak ada detail tambahan.</span>
+                                            @endif
+                                        </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="4" class="text-center text-muted">Belum ada perubahan.</td></tr>
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">Belum ada perubahan.</td>
+                                    </tr>
                                 @endforelse
                             </tbody>
                         </table>
