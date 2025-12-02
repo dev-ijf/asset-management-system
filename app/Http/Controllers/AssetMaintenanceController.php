@@ -17,10 +17,15 @@ class AssetMaintenanceController extends Controller
 
     public function index(): View
     {
-        $maintenances = AssetMaintenance::with('asset')->latest()->paginate(config('system.ui.table_page_size', 20));
+        $status = request('status');
+        $maintenances = AssetMaintenance::with('asset')
+            ->when($status, fn($q) => $q->where('status', $status))
+            ->latest()
+            ->paginate(config('system.ui.table_page_size', 20))
+            ->withQueryString();
         $assets = Asset::orderBy('code')->get();
 
-        return view('assets.maintenances', compact('maintenances', 'assets'));
+        return view('assets.maintenances', compact('maintenances', 'assets', 'status'));
     }
 
     public function store(Request $request): RedirectResponse

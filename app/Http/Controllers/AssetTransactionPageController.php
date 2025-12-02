@@ -11,20 +11,26 @@ class AssetTransactionPageController extends Controller
 {
     public function movements(): View
     {
+        $status = request('status');
         $items = AssetMovement::with(['asset', 'fromLocation', 'toLocation', 'fromDepartment', 'toDepartment', 'fromUser', 'toUser'])
+            ->when($status, fn($q) => $q->where('status', $status))
             ->latest()
-            ->paginate(config('system.ui.table_page_size', 20));
+            ->paginate(config('system.ui.table_page_size', 20))
+            ->withQueryString();
 
-        return view('assets.movements', compact('items'));
+        return view('assets.movements', compact('items', 'status'));
     }
 
     public function disposals(): View
     {
+        $status = request('status');
         $items = AssetDisposal::with(['asset', 'previousStatus', 'previousLocation', 'previousDepartment'])
+            ->when($status, fn($q) => $q->where('status', $status))
             ->latest()
-            ->paginate(config('system.ui.table_page_size', 20));
+            ->paginate(config('system.ui.table_page_size', 20))
+            ->withQueryString();
 
-        return view('assets.disposals', compact('items'));
+        return view('assets.disposals', compact('items', 'status'));
     }
 
     public function audits(): View

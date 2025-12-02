@@ -33,6 +33,23 @@
                 </div>
             @endif
 
+            <form class="row g-2 mb-3" method="GET">
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select" onchange="this.form.submit()">
+                        <option value="">Semua</option>
+                        <option value="pending" @selected(($status ?? '')==='pending')>Pending</option>
+                        <option value="approved" @selected(($status ?? '')==='approved')>Approved</option>
+                        <option value="rejected" @selected(($status ?? '')==='rejected')>Rejected</option>
+                        <option value="completed" @selected(($status ?? '')==='completed')>Completed</option>
+                    </select>
+                </div>
+                <div class="col-md-3 align-self-end">
+                    <button class="btn btn-outline-secondary">Filter</button>
+                    <a href="{{ route('asset-maintenances.index') }}" class="btn btn-link">Reset</a>
+                </div>
+            </form>
+
             <div class="table-responsive">
                 <table class="table table-bordered text-nowrap align-middle mb-0">
                     <thead class="table-light">

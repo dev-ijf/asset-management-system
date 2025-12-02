@@ -12,6 +12,21 @@
             <div class="card-title mb-0">Disposal</div>
         </div>
         <div class="card-body">
+            <form class="row g-2 mb-3" method="GET">
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select" onchange="this.form.submit()">
+                        <option value="">Semua</option>
+                        <option value="pending" @selected(($status ?? '')==='pending')>Pending</option>
+                        <option value="approved" @selected(($status ?? '')==='approved')>Approved</option>
+                        <option value="rejected" @selected(($status ?? '')==='rejected')>Rejected</option>
+                    </select>
+                </div>
+                <div class="col-md-3 align-self-end">
+                    <button class="btn btn-outline-secondary">Filter</button>
+                    <a href="{{ route('asset-disposals.index') }}" class="btn btn-link">Reset</a>
+                </div>
+            </form>
             <div class="table-responsive">
                 <table class="table table-bordered text-nowrap align-middle">
                     <thead class="table-light">
@@ -19,6 +34,7 @@
                             <th>Waktu</th>
                             <th>Aset</th>
                             <th>Alasan</th>
+                            <th>Status</th>
                             <th>Catatan</th>
                             <th>Status Reverse</th>
                         </tr>
@@ -29,6 +45,7 @@
                                 <td>{{ optional($item->disposed_at)->format('d/m/Y H:i') ?: '-' }}</td>
                                 <td>{{ $item->asset?->code }} - {{ $item->asset?->name }}</td>
                                 <td>{{ $item->reason ?: '-' }}</td>
+                                <td><span class="badge bg-info-transparent text-info text-uppercase">{{ $item->status }}</span></td>
                                 <td>{{ $item->notes ?: '-' }}</td>
                                 <td>
                                     @if($item->reversed_at)
@@ -40,7 +57,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center text-muted">Belum ada disposal.</td>
+                                <td colspan="6" class="text-center text-muted">Belum ada disposal.</td>
                             </tr>
                         @endforelse
                     </tbody>
