@@ -14,7 +14,11 @@ class AssetPhotoController extends Controller
     {
         $data = $request->validate([
             'photos' => ['required', 'array'],
-            'photos.*' => ['image', 'mimes:jpeg,png,jpg,webp', 'max:4096'],
+            'photos.*' => [
+                'image',
+                'mimes:jpeg,png,jpg,webp',
+                'max:' . (config('system.asset.attachment_max_size_mb', 20) * 1024),
+            ],
         ]);
 
         $stored = 0;

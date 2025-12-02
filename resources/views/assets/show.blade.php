@@ -308,7 +308,7 @@
                         <div class="mb-3">
                             <label class="form-label">Pilih Foto (bisa lebih dari satu)</label>
                             <input type="file" name="photos[]" class="form-control" multiple accept="image/*" required>
-                            <small class="text-muted">Format: jpg, png, webp. Maks 4MB per file.</small>
+                            <small class="text-muted">Format: jpg, png, webp. Maks {{ config('system.asset.attachment_max_size_mb', 20) }}MB per file.</small>
                         </div>
                     </div>
                     <div class="modal-footer">
