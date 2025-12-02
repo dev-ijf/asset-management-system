@@ -38,6 +38,7 @@ class AssetController extends Controller
         ]);
 
         $assets = Asset::with(['status', 'class', 'category', 'unit', 'department', 'personInCharge', 'user', 'location', 'warranty'])
+            ->forUser($request->user())
             ->when($filters['q'] ?? null, function ($query, $q) {
                 $query->where(function ($qBuilder) use ($q) {
                     $qBuilder->where('code', 'like', "%{$q}%")
@@ -82,6 +83,7 @@ class AssetController extends Controller
 
     public function update(Request $request, Asset $asset): RedirectResponse
     {
+        abort_unless($asset->isVisibleTo($request->user()), 403);
         $data = $this->validateRequest($request, $asset->id);
         $this->assets->update($asset, $data);
 
@@ -90,6 +92,7 @@ class AssetController extends Controller
 
     public function show(Asset $asset): View
     {
+        abort_unless($asset->isVisibleTo(request()->user()), 403);
         $asset->load([
             'status','class','category','unit','department',
             'personInCharge','user','location','warranty',
@@ -102,6 +105,7 @@ class AssetController extends Controller
 
     public function history(Asset $asset): View
     {
+        abort_unless($asset->isVisibleTo(request()->user()), 403);
         $asset->load('histories');
 
         return view('assets.history', compact('asset'));

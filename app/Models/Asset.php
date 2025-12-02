@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\User;
 
 class Asset extends Model
 {
@@ -121,5 +122,51 @@ class Asset extends Model
     public function changelogs()
     {
         return $this->hasMany(AssetChangelog::class);
+    }
+
+    public function scopeForUser($query, ?User $user)
+    {
+        if (!$user) {
+            return $query;
+        }
+
+        if ($user->can('assets.view_all')) {
+            return $query;
+        }
+
+        $departmentId = $user->department_id;
+        $locationId = $user->asset_location_id;
+
+        if (!$departmentId && !$locationId) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($departmentId, $locationId) {
+            if ($departmentId) {
+                $q->orWhere('department_id', $departmentId);
+            }
+            if ($locationId) {
+                $q->orWhere('asset_location_id', $locationId);
+            }
+        });
+    }
+
+    public function isVisibleTo(?User $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+        if ($user->can('assets.view_all')) {
+            return true;
+        }
+        $departmentMatch = $user->department_id && $this->department_id === $user->department_id;
+        $locationMatch = $user->asset_location_id && $this->asset_location_id === $user->asset_location_id;
+
+        // Jika user tidak punya scope, izinkan (asumsi admin terbatasi permission)
+        if (!$user->department_id && !$user->asset_location_id) {
+            return true;
+        }
+
+        return $departmentMatch || $locationMatch;
     }
 }

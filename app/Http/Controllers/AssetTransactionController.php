@@ -16,6 +16,7 @@ class AssetTransactionController extends Controller
 
     public function storeMovement(Request $request, Asset $asset): RedirectResponse
     {
+        abort_unless($asset->isVisibleTo($request->user()), 403);
         $data = $request->validate([
             'to_location_id' => ['nullable', 'uuid', 'exists:asset_locations,id'],
             'to_department_id' => ['nullable', 'uuid', 'exists:departments,id'],
@@ -31,6 +32,7 @@ class AssetTransactionController extends Controller
 
     public function storeDisposal(Request $request, Asset $asset): RedirectResponse
     {
+        abort_unless($asset->isVisibleTo($request->user()), 403);
         $data = $request->validate([
             'reason' => ['required', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
@@ -44,6 +46,7 @@ class AssetTransactionController extends Controller
 
     public function reverseDisposal(Request $request, AssetDisposal $disposal): RedirectResponse
     {
+        abort_unless(optional($disposal->asset)->isVisibleTo($request->user()), 403);
         $data = $request->validate([
             'notes' => ['nullable', 'string'],
         ]);

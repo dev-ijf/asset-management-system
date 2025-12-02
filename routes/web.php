@@ -26,6 +26,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AssetPhotoController;
 use App\Http\Controllers\PublicAssetController;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\ProfileController;
 
 Route::view('/', 'pages.landing.index')->name('landing');
 Route::view('/landing', 'pages.landing.index');
@@ -33,8 +34,15 @@ Route::get('asset-view/{asset}', [PublicAssetController::class, 'show'])->name('
 Route::view('help', 'pages.landing.help')->name('landing.help');
 Route::view('changelog', 'pages.landing.changelog')->name('landing.changelog');
 
-Route::middleware(['auth','maintenance.readonly'])->prefix('dashboard')->group(function () {
+Route::middleware(['auth','maintenance.readonly','session.timeout'])->prefix('dashboard')->group(function () {
     Route::get('index', [DashboardsController::class, 'index'])->name('index');
+
+    Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::put('profile', [ProfileController::class, 'updateProfile'])->name('profile.update');
+    Route::put('profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+    Route::post('profile/2fa/setup', [ProfileController::class, 'setup2fa'])->name('profile.2fa.setup');
+    Route::post('profile/2fa/confirm', [ProfileController::class, 'confirm2fa'])->name('profile.2fa.confirm');
+    Route::delete('profile/2fa/disable', [ProfileController::class, 'disable2fa'])->name('profile.2fa.disable');
 
     Route::resource('settings', SystemSettingController::class)->only(['index', 'store', 'update', 'destroy'])
         ->middleware('permission:settings.manage');

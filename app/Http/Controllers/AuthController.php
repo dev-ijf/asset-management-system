@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\Security\TwoFactorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -11,6 +12,10 @@ use Illuminate\Http\RedirectResponse;
 
 class AuthController extends Controller
 {
+    public function __construct(private readonly TwoFactorService $twoFactor)
+    {
+    }
+
     public function showLogin()
     {
         if (Auth::check()) {
@@ -24,11 +29,19 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
+            'code' => ['nullable', 'digits:6'],
         ]);
 
         $remember = $request->boolean('remember');
 
         if (Auth::attempt($credentials, $remember)) {
+            $user = Auth::user();
+            if ($user->two_factor_enabled) {
+                if (!$credentials['code'] || !$this->twoFactor->verifyCode($user->two_factor_secret, $credentials['code'])) {
+                    Auth::logout();
+                    return back()->withErrors(['code' => 'Kode 2FA tidak valid atau belum diisi.'])->withInput();
+                }
+            }
             $request->session()->regenerate();
             return redirect()->intended(route('index'));
         }

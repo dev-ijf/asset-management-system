@@ -15,6 +15,7 @@ class AssetAuditController extends Controller
 
     public function store(Request $request, Asset $asset): RedirectResponse
     {
+        abort_unless($asset->isVisibleTo($request->user()), 403);
         $data = $request->validate([
             'status' => ['required', 'string', 'in:matched,missing,damaged'],
             'notes' => ['nullable', 'string'],

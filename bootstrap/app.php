@@ -7,6 +7,7 @@ use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 use App\Http\Middleware\MaintenanceReadOnly;
+use App\Http\Middleware\SessionTimeout;
 use Illuminate\Console\Scheduling\Schedule;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission'         => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'maintenance.readonly' => MaintenanceReadOnly::class,
+            'session.timeout' => SessionTimeout::class,
         ]);
     })
     ->withSchedule(function (Schedule $schedule) {

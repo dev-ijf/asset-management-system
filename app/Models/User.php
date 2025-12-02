@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
+use App\Models\Department;
+use App\Models\AssetLocation;
 
 class User extends Authenticatable
 {
@@ -22,6 +24,13 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'department_id',
+        'asset_location_id',
+        'two_factor_enabled',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'two_factor_confirmed_at',
+        'last_active_at',
     ];
 
     /**
@@ -32,6 +41,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     /**
@@ -44,6 +55,20 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password'          => 'hashed',
+            'two_factor_confirmed_at' => 'datetime',
+            'two_factor_enabled' => 'boolean',
+            'two_factor_recovery_codes' => 'array',
+            'last_active_at' => 'datetime',
         ];
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function assetLocation()
+    {
+        return $this->belongsTo(AssetLocation::class);
     }
 }

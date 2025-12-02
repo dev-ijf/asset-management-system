@@ -12,6 +12,7 @@ class AssetPhotoController extends Controller
 {
     public function store(Request $request, Asset $asset): RedirectResponse
     {
+        abort_unless($asset->isVisibleTo($request->user()), 403);
         $data = $request->validate([
             'photos' => ['required', 'array'],
             'photos.*' => [
@@ -39,6 +40,7 @@ class AssetPhotoController extends Controller
 
     public function destroy(AssetPhoto $asset_photo): RedirectResponse
     {
+        abort_unless(optional($asset_photo->asset)->isVisibleTo(request()->user()), 403);
         Storage::disk('public')->delete($asset_photo->path);
         $asset = $asset_photo->asset;
         $wasPrimary = $asset_photo->is_primary;
