@@ -124,35 +124,25 @@
                                         <td><span class="badge bg-primary-transparent">{{ $action }}</span></td>
                                         <td>
                                             @if($payload)
-                                                <div class="table-responsive">
-                                                    <table class="table table-sm table-bordered mb-0 align-middle">
-                                                        <thead class="table-light">
-                                                            <tr>
-                                                                <th>Kolom</th>
-                                                                <th>Nilai</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody class="small">
-                                                            @foreach($payload as $key => $value)
-                                                                <tr>
-                                                                    <td class="text-muted">{{ ucfirst(str_replace('_',' ', $key)) }}</td>
-                                                                    <td class="fw-semibold">
-                                                                        @php
-                                                                            $mappedValue = $value;
-                                                                            if (!is_array($value) && isset($refMaps[$key]) && $refMaps[$key]->has($value)) {
-                                                                                $mappedValue = $refMaps[$key]->get($value);
-                                                                            }
-                                                                        @endphp
-                                                                        @if(is_array($mappedValue))
-                                                                            <code class="small">{{ json_encode($mappedValue, JSON_UNESCAPED_UNICODE) }}</code>
-                                                                        @else
-                                                                            {{ (string) $mappedValue }}
-                                                                        @endif
-                                                                    </td>
-                                                                </tr>
-                                                            @endforeach
-                                                        </tbody>
-                                                    </table>
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    @foreach($payload as $key => $value)
+                                                        @php
+                                                            $mappedValue = $value;
+                                                            if (!is_array($value) && isset($refMaps[$key]) && $refMaps[$key]->has($value)) {
+                                                                $mappedValue = $refMaps[$key]->get($value);
+                                                            }
+                                                        @endphp
+                                                        <span class="badge bg-light text-dark border small fw-normal">
+                                                            <span class="text-muted">{{ ucfirst(str_replace('_',' ', $key)) }}:</span>
+                                                            <span class="fw-semibold">
+                                                                @if(is_array($mappedValue))
+                                                                    <code class="small">{{ json_encode($mappedValue, JSON_UNESCAPED_UNICODE) }}</code>
+                                                                @else
+                                                                    {{ (string) $mappedValue }}
+                                                                @endif
+                                                            </span>
+                                                        </span>
+                                                    @endforeach
                                                 </div>
                                             @else
                                                 <span class="text-muted small">Tidak ada detail tambahan.</span>
