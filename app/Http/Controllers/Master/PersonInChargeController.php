@@ -14,7 +14,7 @@ class PersonInChargeController extends Controller
     {
         return view('masters.simple', [
             'title' => 'Penanggung Jawab',
-            'routeName' => 'people-in-charge',
+            'routeName' => 'person-in-charge', // samakan dengan resource route
             'items' => PersonInCharge::orderBy('name')->get(),
             'fields' => [
                 ['name' => 'name', 'label' => 'Nama', 'required' => true],
