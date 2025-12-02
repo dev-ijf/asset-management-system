@@ -39,9 +39,10 @@
                     <select name="status" class="form-select" onchange="this.form.submit()">
                         <option value="">Semua</option>
                         <option value="pending" @selected(($status ?? '')==='pending')>Pending</option>
-                        <option value="approved" @selected(($status ?? '')==='approved')>Approved</option>
+                        <option value="planned" @selected(($status ?? '')==='planned')>Planned</option>
                         <option value="rejected" @selected(($status ?? '')==='rejected')>Rejected</option>
                         <option value="completed" @selected(($status ?? '')==='completed')>Completed</option>
+                        <option value="in_progress" @selected(($status ?? '')==='in_progress')>In Progress</option>
                     </select>
                 </div>
                 <div class="col-md-3 align-self-end">

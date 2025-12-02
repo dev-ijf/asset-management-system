@@ -270,7 +270,8 @@ class AssetService
                 'description' => $data['description'] ?? null,
                 'vendor' => $data['vendor'] ?? null,
                 'cost' => $data['cost'] ?? null,
-                'status' => $requireApproval ? 'pending' : 'approved',
+                // Flow: pending (menunggu approval) -> planned (approved, belum mulai) -> in_progress -> completed
+                'status' => $requireApproval ? 'pending' : 'planned',
                 'notes' => $data['notes'] ?? null,
                 'requested_by' => auth()->id(),
                 'approved_by' => $requireApproval ? null : auth()->id(),

@@ -120,7 +120,7 @@ class ApprovalService
 
         if ($approvable instanceof AssetMaintenance) {
             $approvable->update([
-                'status' => 'approved',
+                'status' => 'planned',
                 'approved_by' => auth()->id(),
                 'approved_at' => now(),
             ]);
@@ -143,6 +143,13 @@ class ApprovalService
 
     private function notifyDecision(AssetApprovalRequest $approval, bool $approved, ?string $notes = null): void
     {
+        // Jika maintenance ditolak, tandai status maintenance sebagai rejected
+        if (!$approved && $approval->approvable instanceof AssetMaintenance) {
+            $approval->approvable->update([
+                'status' => 'rejected',
+            ]);
+        }
+
         if ($approval->requested_by) {
             $requester = \App\Models\User::find($approval->requested_by);
             if ($requester) {
