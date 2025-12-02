@@ -62,7 +62,9 @@
                         @forelse($asset->photos as $photo)
                             <div class="col-6">
                                 <div class="position-relative">
-                                    <img src="{{ asset('storage/'.$photo->path) }}" alt="foto aset" class="img-fluid rounded shadow-sm">
+                                    <a href="{{ asset('storage/'.$photo->path) }}" target="_blank" class="d-block">
+                                        <img src="{{ asset('storage/'.$photo->path) }}" alt="foto aset" class="img-fluid rounded shadow-sm w-100" style="height:140px;object-fit:cover;">
+                                    </a>
                                     <form action="{{ route('assets.photos.destroy', $photo) }}" method="POST" class="position-absolute top-0 end-0 m-1" onsubmit="return confirm('Hapus foto ini?')">
                                         @csrf
                                         @method('DELETE')
