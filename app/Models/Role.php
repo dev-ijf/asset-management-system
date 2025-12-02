@@ -12,4 +12,10 @@ class Role extends SpatieRole
     protected $primaryKey = 'uuid';
     public $incrementing = false;
     protected $keyType = 'string';
+
+    // Spatie still memanggil kolom "id" saat sync role, map-kan ke uuid agar tidak null.
+    public function getIdAttribute(): ?string
+    {
+        return $this->attributes['uuid'] ?? null;
+    }
 }
