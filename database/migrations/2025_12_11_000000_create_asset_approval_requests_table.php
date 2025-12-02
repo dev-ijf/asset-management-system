@@ -24,49 +24,10 @@ return new class extends Migration
             $table->json('metadata')->nullable();
             $table->timestamps();
         });
-
-        Schema::table('asset_movements', function (Blueprint $table) {
-            $table->string('status')->default('approved')->after('performed_at');
-            $table->uuid('requested_by')->nullable()->after('status');
-            $table->uuid('approved_by')->nullable()->after('requested_by');
-            $table->timestamp('approved_at')->nullable()->after('approved_by');
-            $table->uuid('rejected_by')->nullable()->after('approved_at');
-            $table->timestamp('rejected_at')->nullable()->after('rejected_by');
-            $table->text('decision_notes')->nullable()->after('rejected_at');
-        });
-
-        Schema::table('asset_disposals', function (Blueprint $table) {
-            $table->string('status')->default('approved')->after('reversed_notes');
-            $table->uuid('requested_by')->nullable()->after('status');
-            $table->uuid('approved_by')->nullable()->after('requested_by');
-            $table->timestamp('approved_at')->nullable()->after('approved_by');
-            $table->uuid('rejected_by')->nullable()->after('approved_at');
-            $table->timestamp('rejected_at')->nullable()->after('rejected_by');
-            $table->text('decision_notes')->nullable()->after('rejected_at');
-        });
-
-        Schema::table('asset_maintenances', function (Blueprint $table) {
-            $table->string('status')->default('approved')->after('notes');
-            $table->uuid('requested_by')->nullable()->after('status');
-            $table->uuid('approved_by')->nullable()->after('requested_by');
-            $table->timestamp('approved_at')->nullable()->after('approved_by');
-            $table->uuid('rejected_by')->nullable()->after('approved_at');
-            $table->timestamp('rejected_at')->nullable()->after('rejected_by');
-            $table->text('decision_notes')->nullable()->after('rejected_at');
-        });
     }
 
     public function down(): void
     {
-        Schema::table('asset_maintenances', function (Blueprint $table) {
-            $table->dropColumn(['status','requested_by','approved_by','approved_at','rejected_by','rejected_at','decision_notes']);
-        });
-        Schema::table('asset_disposals', function (Blueprint $table) {
-            $table->dropColumn(['status','requested_by','approved_by','approved_at','rejected_by','rejected_at','decision_notes']);
-        });
-        Schema::table('asset_movements', function (Blueprint $table) {
-            $table->dropColumn(['status','requested_by','approved_by','approved_at','rejected_by','rejected_at','decision_notes']);
-        });
         Schema::dropIfExists('asset_approval_requests');
     }
 };
