@@ -46,15 +46,14 @@
                     </div>
                     @auth
                         <div class="btn-list">
-                            <a href="{{ route('assets.show', $asset) }}" class="btn btn-primary">Buka di Dashboard</a>
                             @can('movements.manage')
-                                <a href="{{ route('assets.show', $asset) }}#movement" class="btn btn-outline-primary">Movement</a>
+                                <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalMovement">Movement</button>
                             @endcan
                             @can('disposals.manage')
-                                <a href="{{ route('assets.show', $asset) }}#disposal" class="btn btn-outline-danger">Disposal</a>
+                                <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalDisposal">Disposal</button>
                             @endcan
                             @can('maintenance.manage')
-                                <a href="{{ route('asset-maintenances.index') }}" class="btn btn-outline-success">Maintenance</a>
+                                <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalMaintenance">Maintenance</button>
                             @endcan
                         </div>
                     @else
@@ -85,10 +84,149 @@
                             </div>
                         </div>
                     </div>
+                    @guest
+                        <div class="card custom-card mt-3">
+                            <div class="card-body">
+                                <p class="mb-0 text-muted">Untuk melakukan transaksi movement/disposal/maintenance dari sini, silakan <a href="{{ route('login') }}">login</a> terlebih dahulu.</p>
+                            </div>
+                        </div>
+                    @endguest
                 </div>
             </div>
         </div>
     </section>
+
+    {{-- Modals transaksi --}}
+    @auth
+        @can('movements.manage')
+        <div class="modal fade" id="modalMovement" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Movement Aset</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form method="POST" action="{{ route('assets.public.movements.store', $asset) }}" class="row g-2">
+                        @csrf
+                        <div class="modal-body">
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">Lokasi Tujuan</label>
+                                    <select name="to_location_id" class="form-select">
+                                        <option value="">-- Pilih --</option>
+                                        @foreach(\App\Models\AssetLocation::orderBy('name')->get() as $loc)
+                                            <option value="{{ $loc->id }}">{{ $loc->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Departemen Tujuan</label>
+                                    <select name="to_department_id" class="form-select">
+                                        <option value="">-- Pilih --</option>
+                                        @foreach(\App\Models\Department::orderBy('name')->get() as $dept)
+                                            <option value="{{ $dept->id }}">{{ $dept->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Pengguna Tujuan</label>
+                                    <select name="to_asset_user_id" class="form-select">
+                                        <option value="">-- Pilih --</option>
+                                        @foreach(\App\Models\AssetUser::orderBy('name')->get() as $au)
+                                            <option value="{{ $au->id }}">{{ $au->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Catatan</label>
+                                    <input type="text" name="notes" class="form-control" placeholder="Catatan movement">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button class="btn btn-primary">Simpan Movement</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        @endcan
+
+        @can('disposals.manage')
+        <div class="modal fade" id="modalDisposal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Disposal Aset</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form method="POST" action="{{ route('assets.public.disposals.store', $asset) }}" class="row g-2">
+                        @csrf
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Alasan</label>
+                                <input type="text" name="reason" class="form-control" required placeholder="Alasan disposal">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Catatan</label>
+                                <textarea name="notes" class="form-control" rows="2" placeholder="Catatan tambahan"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button class="btn btn-danger">Simpan Disposal</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        @endcan
+
+        @can('maintenance.manage')
+        <div class="modal fade" id="modalMaintenance" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Maintenance Aset</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form method="POST" action="{{ route('assets.public.maintenances.store', $asset) }}" class="row g-2">
+                        @csrf
+                        <div class="modal-body">
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">Tanggal</label>
+                                    <input type="date" name="performed_at" class="form-control">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Vendor</label>
+                                    <input type="text" name="vendor" class="form-control" placeholder="Nama vendor">
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label">Deskripsi</label>
+                                    <input type="text" name="description" class="form-control" required placeholder="Pekerjaan maintenance">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Biaya</label>
+                                    <input type="number" step="0.01" name="cost" class="form-control" placeholder="0.00">
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label">Catatan</label>
+                                    <textarea name="notes" class="form-control" rows="2" placeholder="Catatan tambahan"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button class="btn btn-success">Simpan Maintenance</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        @endcan
+    @endauth
 @endsection
 
 
@@ -106,4 +244,19 @@
             });
         });
     </script>
+    @auth
+    <script>
+        // reset modal forms on hide to avoid stale values
+        ['modalMovement','modalDisposal','modalMaintenance'].forEach(id => {
+            const modalEl = document.getElementById(id);
+            if (!modalEl) return;
+            modalEl.addEventListener('hidden.bs.modal', () => {
+                modalEl.querySelectorAll('input, textarea, select').forEach(el => {
+                    if (el.tagName === 'SELECT') el.value = '';
+                    else el.value = '';
+                });
+            });
+        });
+    </script>
+    @endauth
 @endsection

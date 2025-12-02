@@ -34,6 +34,16 @@ Route::get('asset-view/{asset}', [PublicAssetController::class, 'show'])->name('
 Route::view('help', 'pages.landing.help')->name('landing.help');
 Route::view('changelog', 'pages.landing.changelog')->name('landing.changelog');
 
+// Transaksi dari halaman landing (user harus login)
+Route::middleware(['auth','audit.request'])->group(function () {
+    Route::post('asset-view/{asset}/movement', [AssetTransactionController::class, 'storeMovement'])->name('assets.public.movements.store')
+        ->middleware('permission:movements.manage');
+    Route::post('asset-view/{asset}/disposal', [AssetTransactionController::class, 'storeDisposal'])->name('assets.public.disposals.store')
+        ->middleware('permission:disposals.manage');
+    Route::post('asset-view/{asset}/maintenance', [AssetMaintenanceController::class, 'store'])->name('assets.public.maintenances.store')
+        ->middleware('permission:maintenance.manage');
+});
+
 Route::middleware(['auth','maintenance.readonly','session.timeout','audit.request'])->prefix('dashboard')->group(function () {
     Route::get('index', [DashboardsController::class, 'index'])->name('index');
 
