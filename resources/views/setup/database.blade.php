@@ -15,8 +15,8 @@ $bodyClass = 'bg-white';
                     <ol class="text-muted mb-3">
                         <li>Buat database (mis. <code>asset_management_system</code>).</li>
                         <li>Isi kredensial di file <code>.env</code> (DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD).</li>
-                        <li>Jalankan migrasi dan seeder: <code>php artisan migrate --seed</code>.</li>
-                        <li>Setelah itu, jalankan wizard di <a href="{{ route('setup.index') }}">/setup</a> bila diperlukan.</li>
+                        <li>Klik salah satu tombol di bawah untuk menjalankan migrasi (dengan/atau tanpa sample data).</li>
+                        <li>Setelah migrasi, lanjutkan wizard di <a href="{{ route('setup.index') }}">/setup</a>.</li>
                     </ol>
                     @if($errors->any())
                         <div class="alert alert-danger">
@@ -25,9 +25,17 @@ $bodyClass = 'bg-white';
                             @endforeach
                         </div>
                     @endif
-                    <div class="d-flex justify-content-between">
-                        <a href="{{ url()->previous() }}" class="btn btn-outline-secondary">Kembali</a>
-                        <a href="{{ route('setup.index') }}" class="btn btn-primary">Buka Setup</a>
+                    <div class="d-flex flex-wrap gap-2">
+                        <form method="POST" action="{{ route('setup.migrate') }}">
+                            @csrf
+                            <button type="submit" class="btn btn-primary">Migrate &amp; Seed Minimal (RBAC)</button>
+                        </form>
+                        <form method="POST" action="{{ route('setup.migrate') }}">
+                            @csrf
+                            <input type="hidden" name="with_sample" value="1">
+                            <button type="submit" class="btn btn-success">Migrate + Sample Data (Full Seed)</button>
+                        </form>
+                        <a href="{{ url()->previous() }}" class="btn btn-outline-secondary ms-auto">Kembali</a>
                     </div>
                 </div>
             </div>
