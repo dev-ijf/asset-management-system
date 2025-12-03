@@ -93,9 +93,14 @@ Route::middleware('db.ready')->group(function () {
         Route::resource('vendor-contracts', VendorController::class)->only(['index', 'store', 'update', 'destroy'])
             ->middleware('permission:assets.manage');
 
-        Route::get('assets/{asset}/history', [AssetController::class, 'history'])->name('assets.history')->middleware('permission:assets.view');
-        Route::resource('assets', AssetController::class)->only(['index', 'store', 'update', 'show'])
-            ->middleware(['permission:assets.view|assets.manage']);
+    Route::get('assets/{asset}/history', [AssetController::class, 'history'])->name('assets.history')->middleware('permission:assets.view');
+    Route::resource('assets', AssetController::class)->only(['index', 'store', 'update', 'show', 'destroy'])
+        ->middleware(['permission:assets.view|assets.manage']);
+    Route::post('assets/{asset}/archive', [AssetController::class, 'archive'])->name('assets.archive')->middleware('permission:assets.manage');
+    Route::post('assets/{asset}/unarchive', [AssetController::class, 'unarchive'])->name('assets.unarchive')->middleware('permission:assets.manage');
+    Route::post('assets/{asset}/restore', [AssetController::class, 'restore'])->name('assets.restore')->middleware('permission:assets.manage');
+    Route::get('assets-export', [AssetController::class, 'exportCsv'])->name('assets.export')->middleware('permission:assets.view');
+    Route::post('assets-import', [AssetController::class, 'import'])->name('assets.import')->middleware('permission:assets.manage');
         Route::post('assets/{asset}/photos', [AssetPhotoController::class, 'store'])->name('assets.photos.store')
             ->middleware('permission:assets.manage');
         Route::delete('asset-photos/{asset_photo}', [AssetPhotoController::class, 'destroy'])->name('assets.photos.destroy')

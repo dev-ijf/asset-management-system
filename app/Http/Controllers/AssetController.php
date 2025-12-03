@@ -14,9 +14,11 @@ use App\Models\Unit;
 use App\Models\VendorContract;
 use App\Models\Warranty;
 use App\Services\Asset\AssetService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Illuminate\Support\Str;
 
 class AssetController extends Controller
 {
@@ -36,6 +38,7 @@ class AssetController extends Controller
             'asset_user_id',
             'person_in_charge_id',
             'warranty_id',
+            'scope',
         ]);
 
         $assets = Asset::with(['status', 'class', 'category', 'unit', 'department', 'personInCharge', 'user', 'location', 'warranty'])
@@ -55,6 +58,10 @@ class AssetController extends Controller
             ->when($filters['asset_user_id'] ?? null, fn($q, $v) => $q->where('asset_user_id', $v))
             ->when($filters['person_in_charge_id'] ?? null, fn($q, $v) => $q->where('person_in_charge_id', $v))
             ->when($filters['warranty_id'] ?? null, fn($q, $v) => $q->where('warranty_id', $v))
+            ->when(($filters['scope'] ?? '') === 'archived', fn($q) => $q->whereNotNull('archived_at'))
+            ->when(($filters['scope'] ?? '') === 'trashed', fn($q) => $q->onlyTrashed())
+            ->when(($filters['scope'] ?? '') === 'all', fn($q) => $q->withTrashed())
+            ->when(!in_array($filters['scope'] ?? '', ['archived','trashed','all']), fn($q) => $q->whereNull('archived_at'))
             ->orderBy('created_at', 'desc')
             ->paginate(config('system.ui.table_page_size', 15))
             ->withQueryString();
@@ -72,6 +79,7 @@ class AssetController extends Controller
             'warranties' => Warranty::orderBy('duration_months')->get(),
             'vendorContracts' => VendorContract::orderBy('vendor_name')->get(),
             'filters' => $filters,
+            'importPreview' => session('import_preview'),
         ]);
     }
 
@@ -111,6 +119,179 @@ class AssetController extends Controller
         $asset->load('histories');
 
         return view('assets.history', compact('asset'));
+    }
+
+    public function archive(Asset $asset): RedirectResponse
+    {
+        $asset->update([
+            'archived_at' => now(),
+            'archived_by' => auth()->id(),
+        ]);
+
+        return back()->with('success', "Aset {$asset->code} diarsipkan.");
+    }
+
+    public function unarchive(Asset $asset): RedirectResponse
+    {
+        $asset->update([
+            'archived_at' => null,
+            'archived_by' => null,
+        ]);
+
+        return back()->with('success', "Aset {$asset->code} dikembalikan dari arsip.");
+    }
+
+    public function destroy(Asset $asset): RedirectResponse
+    {
+        $asset->delete();
+        return back()->with('success', "Aset {$asset->code} dihapus (soft delete).");
+    }
+
+    public function restore(string $asset): RedirectResponse
+    {
+        $model = Asset::onlyTrashed()->findOrFail($asset);
+        $model->restore();
+        return back()->with('success', "Aset {$model->code} berhasil di-restore.");
+    }
+
+    public function exportCsv(Request $request): JsonResponse|\Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $filters = $request->all();
+        $assets = Asset::with(['status','category','location'])
+            ->when($filters['scope'] ?? null, function ($q, $scope) {
+                if ($scope === 'archived') $q->whereNotNull('archived_at');
+                if ($scope === 'trashed') $q->onlyTrashed();
+                if ($scope === 'all') $q->withTrashed();
+            })
+            ->limit(2000)
+            ->get();
+
+        $filename = 'assets-export-'.now()->format('Ymd_His').'.csv';
+        $tmp = tempnam(sys_get_temp_dir(), 'csv');
+        $fh = fopen($tmp, 'w');
+        fputcsv($fh, [
+            'code','name','serial_number','status','category','location',
+            'rfid_tag','nfc_tag','is_consumable','quantity','available_quantity','is_pool','archived_at'
+        ]);
+        foreach ($assets as $asset) {
+            fputcsv($fh, [
+                $asset->code,
+                $asset->name,
+                $asset->serial_number,
+                $asset->status?->name,
+                $asset->category?->name,
+                $asset->location?->name,
+                $asset->rfid_tag,
+                $asset->nfc_tag,
+                $asset->is_consumable ? '1':'0',
+                $asset->quantity,
+                $asset->available_quantity,
+                $asset->is_pool ? '1':'0',
+                $asset->archived_at,
+            ]);
+        }
+        fclose($fh);
+        return response()->download($tmp, $filename)->deleteFileAfterSend(true);
+    }
+
+    public function import(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'file' => ['required','file','mimes:csv,txt'],
+            'action' => ['nullable','in:preview,import'],
+        ]);
+
+        $action = $request->input('action', 'preview');
+        $path = $request->file('file')->getRealPath();
+        $handle = fopen($path, 'r');
+        if (!$handle) {
+            return back()->withErrors(['file' => 'File tidak bisa dibaca']);
+        }
+
+        $header = fgetcsv($handle);
+        $rows = [];
+        $line = 1;
+        $existingCodes = Asset::pluck('id','code')->toArray();
+        $existingSerials = Asset::pluck('id','serial_number')->filter()->toArray();
+        $statuses = AssetStatus::pluck('id','name')->toArray();
+        $categories = AssetCategory::pluck('id','name')->toArray();
+        $locations = AssetLocation::pluck('id','name')->toArray();
+
+        while (($data = fgetcsv($handle)) !== false) {
+            $line++;
+            $row = array_combine($header, $data);
+            if (!$row) {
+                $rows[] = ['line' => $line, 'status' => 'error', 'message' => 'Header tidak sesuai', 'data' => $data];
+                continue;
+            }
+            $code = $row['code'] ?? null;
+            $serial = $row['serial_number'] ?? null;
+            $name = $row['name'] ?? null;
+            $errors = [];
+            if (!$name) $errors[] = 'Nama wajib';
+
+            $statusId = $statuses[$row['status'] ?? ''] ?? null;
+            $categoryId = $categories[$row['category'] ?? ''] ?? null;
+            $locationId = $locations[$row['location'] ?? ''] ?? null;
+
+            $targetId = $code && isset($existingCodes[$code]) ? $existingCodes[$code] : null;
+            if (!$targetId && $serial && isset($existingSerials[$serial])) {
+                $targetId = $existingSerials[$serial];
+            }
+
+            $rows[] = [
+                'line' => $line,
+                'status' => $errors ? 'invalid' : ($targetId ? 'update' : 'create'),
+                'errors' => $errors,
+                'payload' => [
+                    'code' => $code,
+                    'name' => $name,
+                    'serial_number' => $serial,
+                    'asset_status_id' => $statusId,
+                    'asset_category_id' => $categoryId,
+                    'asset_location_id' => $locationId,
+                    'rfid_tag' => $row['rfid_tag'] ?? null,
+                    'nfc_tag' => $row['nfc_tag'] ?? null,
+                    'is_consumable' => !empty($row['is_consumable']),
+                    'quantity' => (int) ($row['quantity'] ?? 1),
+                    'available_quantity' => (int) ($row['available_quantity'] ?? $row['quantity'] ?? 1),
+                    'is_pool' => !empty($row['is_pool']),
+                ],
+                'target_id' => $targetId,
+            ];
+        }
+        fclose($handle);
+
+        if ($action === 'preview') {
+            session()->flash('import_preview', [
+                'summary' => [
+                    'create' => collect($rows)->where('status','create')->count(),
+                    'update' => collect($rows)->where('status','update')->count(),
+                    'invalid' => collect($rows)->where('status','invalid')->count(),
+                ],
+                'rows' => collect($rows)->take(50)->toArray(),
+            ]);
+            return back()->with('success', 'Preview import siap. Silakan cek tabel preview.');
+        }
+
+        // commit import
+        $created = 0; $updated = 0; $invalid = 0;
+        foreach ($rows as $row) {
+            if ($row['status'] === 'invalid') { $invalid++; continue; }
+            $payload = $row['payload'];
+            if ($row['target_id']) {
+                Asset::where('id', $row['target_id'])->update($payload);
+                $updated++;
+            } else {
+                if (!$payload['code']) {
+                    $payload['code'] = 'IMP-'.Str::upper(Str::random(6));
+                }
+                Asset::create($payload + ['qr_token' => Str::uuid()]);
+                $created++;
+            }
+        }
+
+        return back()->with('success', "Import selesai. Create: {$created}, Update: {$updated}, Invalid: {$invalid}");
     }
 
     private function validateRequest(Request $request, ?string $assetId = null): array

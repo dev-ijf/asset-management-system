@@ -6,9 +6,17 @@
             <h1 class="page-title fw-medium fs-20 mb-0">Data Aset</h1>
             <p class="text-muted mb-0">Kelola aset, QR token, dan metadata terkait.</p>
         </div>
-        <button class="btn btn-primary btn-wave" data-bs-toggle="modal" data-bs-target="#createAssetModal">
-            <i class="ri-add-line me-1"></i>Tambah Aset
-        </button>
+        <div class="btn-list">
+            <a href="{{ route('assets.export', request()->query()) }}" class="btn btn-outline-secondary btn-wave">
+                <i class="ri-download-2-line me-1"></i>Export CSV
+            </a>
+            <button class="btn btn-outline-primary btn-wave" data-bs-toggle="modal" data-bs-target="#importAssetModal">
+                <i class="ri-upload-2-line me-1"></i>Import CSV
+            </button>
+            <button class="btn btn-primary btn-wave" data-bs-toggle="modal" data-bs-target="#createAssetModal">
+                <i class="ri-add-line me-1"></i>Tambah Aset
+            </button>
+        </div>
     </div>
 
     <div class="card custom-card">
@@ -85,6 +93,14 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="col-md-3">
+                        <select name="scope" class="form-select">
+                            <option value="">Status Data</option>
+                            <option value="archived" @selected(($filters['scope'] ?? '')==='archived')>Arsip</option>
+                            <option value="trashed" @selected(($filters['scope'] ?? '')==='trashed')>Terhapus (soft delete)</option>
+                            <option value="all" @selected(($filters['scope'] ?? '')==='all')>Semua (termasuk arsip & terhapus)</option>
+                        </select>
+                    </div>
                     <div class="col-md-12 d-flex gap-2">
                         <button type="submit" class="btn btn-primary btn-wave">Filter</button>
                         <a href="{{ route('assets.index') }}" class="btn btn-outline-secondary">Reset</a>
@@ -105,6 +121,61 @@
                             <li>{{ $error }}</li>
                         @endforeach
                     </ul>
+                </div>
+            @endif
+
+            @if(!empty($importPreview))
+                <div class="alert alert-info">
+                    <strong>Preview Import:</strong> Create {{ $importPreview['summary']['create'] ?? 0 }}, Update {{ $importPreview['summary']['update'] ?? 0 }}, Invalid {{ $importPreview['summary']['invalid'] ?? 0 }}.
+                    <form class="d-inline" action="{{ route('assets.import') }}" method="POST" enctype="multipart/form-data">
+                        @csrf
+                        <input type="hidden" name="action" value="import">
+                        @if(session()->has('_old_input.file'))
+                            {{-- file tidak bisa dipersist di old input; user perlu upload ulang untuk commit --}}
+                        @endif
+                        <button class="btn btn-sm btn-primary ms-2">Import Sekarang (unggah ulang file yang sama)</button>
+                    </form>
+                </div>
+                <div class="table-responsive mb-3">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Status</th>
+                                <th>Nama</th>
+                                <th>Kode</th>
+                                <th>SN</th>
+                                <th>RFID</th>
+                                <th>NFC</th>
+                                <th>Qty</th>
+                                <th>Catatan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($importPreview['rows'] as $row)
+                                <tr>
+                                    <td>{{ $row['line'] }}</td>
+                                    <td>
+                                        @if($row['status']==='invalid')
+                                            <span class="badge bg-danger">Invalid</span>
+                                        @elseif($row['status']==='update')
+                                            <span class="badge bg-warning text-dark">Update</span>
+                                        @else
+                                            <span class="badge bg-success">Create</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $row['payload']['name'] ?? '-' }}</td>
+                                    <td>{{ $row['payload']['code'] ?? '-' }}</td>
+                                    <td>{{ $row['payload']['serial_number'] ?? '-' }}</td>
+                                    <td>{{ $row['payload']['rfid_tag'] ?? '-' }}</td>
+                                    <td>{{ $row['payload']['nfc_tag'] ?? '-' }}</td>
+                                    <td>{{ $row['payload']['quantity'] ?? 1 }}</td>
+                                    <td class="small text-muted">{{ implode(', ', $row['errors'] ?? []) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                    <div class="text-muted small">Menampilkan maksimal 50 baris preview.</div>
                 </div>
             @endif
 
@@ -158,6 +229,29 @@
                                         </button>
                                         <a href="{{ route('assets.show', $asset) }}" class="btn btn-sm btn-outline-success">Show</a>
                                         <a href="{{ route('assets.history', $asset) }}" class="btn btn-sm btn-outline-secondary">History</a>
+                                        @if(!$asset->archived_at)
+                                            <form action="{{ route('assets.archive', $asset) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button class="btn btn-sm btn-outline-warning" onclick="return confirm('Arsipkan aset ini?')">Archive</button>
+                                            </form>
+                                        @else
+                                            <form action="{{ route('assets.unarchive', $asset) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button class="btn btn-sm btn-outline-info">Unarchive</button>
+                                            </form>
+                                        @endif
+                                        @if($asset->trashed())
+                                            <form action="{{ route('assets.restore', $asset->id) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button class="btn btn-sm btn-outline-primary">Restore</button>
+                                            </form>
+                                        @else
+                                            <form action="{{ route('assets.destroy', $asset) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Hapus (soft delete)?')">Delete</button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -214,6 +308,40 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
                         <button type="submit" class="btn btn-primary">Update</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal import --}}
+    <div class="modal fade" id="importAssetModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Import Aset (CSV/Excel)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ route('assets.import') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-body">
+                        <p class="text-muted">Unggah file CSV (Excel bisa ekspor ke CSV). Header yang didukung: <code>code,name,serial_number,status,category,location,rfid_tag,nfc_tag,is_consumable,quantity,available_quantity,is_pool</code>. Baris tanpa nama akan ditandai invalid.</p>
+                        <div class="mb-3">
+                            <label class="form-label">File</label>
+                            <input type="file" name="file" class="form-control" accept=".csv,.txt" required>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="action" id="importPreview" value="preview" checked>
+                            <label class="form-check-label" for="importPreview">Preview (tidak menyimpan)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="action" id="importNow" value="import">
+                            <label class="form-check-label" for="importNow">Import sekarang (buat/update langsung)</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">Proses</button>
                     </div>
                 </form>
             </div>

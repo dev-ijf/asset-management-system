@@ -5,11 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\User;
 
 class Asset extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'code',
@@ -44,6 +45,9 @@ class Asset extends Model
         'quantity',
         'available_quantity',
         'is_pool',
+        'archived_at',
+        'archived_by',
+        'retention_until',
     ];
 
     protected $casts = [
@@ -54,6 +58,8 @@ class Asset extends Model
         'metadata' => 'array',
         'is_consumable' => 'boolean',
         'is_pool' => 'boolean',
+        'archived_at' => 'datetime',
+        'retention_until' => 'date',
     ];
 
     public function status()
