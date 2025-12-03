@@ -325,7 +325,12 @@
                 <form action="{{ route('assets.import') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="modal-body">
-                        <p class="text-muted">Unggah file CSV (Excel bisa ekspor ke CSV). Header yang didukung: <code>code,name,serial_number,status,category,location,rfid_tag,nfc_tag,is_consumable,quantity,available_quantity,is_pool</code>. Baris tanpa nama akan ditandai invalid.</p>
+                        <p class="text-muted">
+                            Unggah file CSV (Excel bisa ekspor ke CSV). Header yang didukung:
+                            <code>code,name,serial_number,status,category,location,rfid_tag,nfc_tag,is_consumable,quantity,available_quantity,is_pool,image_url</code>.
+                            Baris tanpa nama akan ditandai invalid. Contoh file:
+                            <a href="{{ asset('samples/assets_import_sample.csv') }}" target="_blank">assets_import_sample.csv</a>
+                        </p>
                         <div class="mb-3">
                             <label class="form-label">File</label>
                             <input type="file" name="file" class="form-control" accept=".csv,.txt" required>

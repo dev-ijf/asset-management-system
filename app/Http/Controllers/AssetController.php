@@ -256,6 +256,7 @@ class AssetController extends Controller
                     'quantity' => (int) ($row['quantity'] ?? 1),
                     'available_quantity' => (int) ($row['available_quantity'] ?? $row['quantity'] ?? 1),
                     'is_pool' => !empty($row['is_pool']),
+                    'image_url' => $row['image_url'] ?? null,
                 ],
                 'target_id' => $targetId,
             ];
@@ -279,15 +280,38 @@ class AssetController extends Controller
         foreach ($rows as $row) {
             if ($row['status'] === 'invalid') { $invalid++; continue; }
             $payload = $row['payload'];
+            $imageUrl = $payload['image_url'] ?? null;
+            unset($payload['image_url']);
+
+            $assetModel = null;
             if ($row['target_id']) {
                 Asset::where('id', $row['target_id'])->update($payload);
+                $assetModel = Asset::find($row['target_id']);
                 $updated++;
             } else {
                 if (!$payload['code']) {
                     $payload['code'] = 'IMP-'.Str::upper(Str::random(6));
                 }
-                Asset::create($payload + ['qr_token' => Str::uuid()]);
+                $assetModel = Asset::create($payload + ['qr_token' => Str::uuid()]);
                 $created++;
+            }
+
+            // Download image jika disediakan
+            if ($assetModel && $imageUrl) {
+                try {
+                    $resp = \Illuminate\Support\Facades\Http::get($imageUrl);
+                    if ($resp->ok()) {
+                        $path = "assets/{$assetModel->id}/import-".Str::random(6).".jpg";
+                        \Illuminate\Support\Facades\Storage::disk('public')->put($path, $resp->body());
+                        \App\Models\AssetPhoto::create([
+                            'asset_id' => $assetModel->id,
+                            'path' => $path,
+                            'is_primary' => $assetModel->photos()->count() === 0,
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    // abaikan error download agar import tetap lanjut
+                }
             }
         }
 

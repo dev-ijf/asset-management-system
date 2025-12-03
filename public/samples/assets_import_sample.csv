@@ -1,0 +1,6 @@
+code,name,serial_number,status,category,location,rfid_tag,nfc_tag,is_consumable,quantity,available_quantity,is_pool,image_url
+AST-90001,Laptop Dell XPS 13,SN-XPS-90001,Active,Laptop,Warehouse,RFID-10001,NFC-10001,0,1,1,0,https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80
+AST-90002,Printer HP LaserJet,SN-HP-90002,Active,Printer,Warehouse,RFID-10002,NFC-10002,0,1,1,0,https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80
+AST-90003,Kursi Ergonomis,SN-CHAIR-90003,Active,Furniture,Office A,RFID-10003,NFC-10003,0,10,10,1,https://images.unsplash.com/photo-1433838552652-f9a46b332c40?auto=format&fit=crop&w=800&q=80
+AST-90004,Tinta Printer Hitam,,Active,Consumable,Warehouse,,,1,50,50,0,https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=800&q=80
+AST-90005,Router Mikrotik CCR,SN-RT-90005,Active,Network,Data Center,RFID-10005,NFC-10005,0,1,1,0,https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80
