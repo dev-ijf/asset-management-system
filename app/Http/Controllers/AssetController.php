@@ -14,6 +14,7 @@ use App\Models\Unit;
 use App\Models\VendorContract;
 use App\Models\Warranty;
 use App\Services\Asset\AssetService;
+use App\Services\System\SystemSettingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,7 +23,10 @@ use Illuminate\Support\Str;
 
 class AssetController extends Controller
 {
-    public function __construct(private readonly AssetService $assets)
+    public function __construct(
+        private readonly AssetService $assets,
+        private readonly SystemSettingService $settings
+    )
     {
     }
 
@@ -209,6 +213,13 @@ class AssetController extends Controller
             return back()->withErrors(['file' => 'File tidak bisa dibaca']);
         }
 
+        $maxRows = (int) $this->settings->get('asset.import_max_rows', 2000);
+        $allowRemoteImages = (bool) $this->settings->get('asset.import_allow_remote_images', true);
+        $dedupePriority = $this->settings->get('asset.import_dedupe_priority', 'code');
+        $defaultStatusName = $this->settings->get('asset.import_default_status');
+        $defaultCategoryName = $this->settings->get('asset.import_default_category');
+        $defaultLocationName = $this->settings->get('asset.import_default_location');
+
         // Jika ada ZIP gambar, siapkan mapping filename => binary
         $images = [];
         if ($request->hasFile('images_zip')) {
@@ -235,9 +246,15 @@ class AssetController extends Controller
         $statuses = AssetStatus::pluck('id','name')->toArray();
         $categories = AssetCategory::pluck('id','name')->toArray();
         $locations = AssetLocation::pluck('id','name')->toArray();
+        $defaultStatusId = $statuses[$defaultStatusName] ?? null;
+        $defaultCategoryId = $categories[$defaultCategoryName] ?? null;
+        $defaultLocationId = $locations[$defaultLocationName] ?? null;
 
         while (($data = fgetcsv($handle)) !== false) {
             $line++;
+            if ($maxRows && ($line-1) > $maxRows) {
+                break;
+            }
             $row = array_combine($header, $data);
             if (!$row) {
                 $rows[] = ['line' => $line, 'status' => 'error', 'message' => 'Header tidak sesuai', 'data' => $data];
@@ -249,13 +266,23 @@ class AssetController extends Controller
             $errors = [];
             if (!$name) $errors[] = 'Nama wajib';
 
-            $statusId = $statuses[$row['status'] ?? ''] ?? null;
-            $categoryId = $categories[$row['category'] ?? ''] ?? null;
-            $locationId = $locations[$row['location'] ?? ''] ?? null;
+            $statusId = $statuses[$row['status'] ?? ''] ?? $defaultStatusId;
+            $categoryId = $categories[$row['category'] ?? ''] ?? $defaultCategoryId;
+            $locationId = $locations[$row['location'] ?? ''] ?? $defaultLocationId;
 
-            $targetId = $code && isset($existingCodes[$code]) ? $existingCodes[$code] : null;
-            if (!$targetId && $serial && isset($existingSerials[$serial])) {
-                $targetId = $existingSerials[$serial];
+            $targetId = null;
+            if ($dedupePriority === 'serial') {
+                if ($serial && isset($existingSerials[$serial])) {
+                    $targetId = $existingSerials[$serial];
+                } elseif ($code && isset($existingCodes[$code])) {
+                    $targetId = $existingCodes[$code];
+                }
+            } else {
+                if ($code && isset($existingCodes[$code])) {
+                    $targetId = $existingCodes[$code];
+                } elseif ($serial && isset($existingSerials[$serial])) {
+                    $targetId = $existingSerials[$serial];
+                }
             }
 
             $rows[] = [
@@ -321,13 +348,15 @@ class AssetController extends Controller
             if ($assetModel) {
                 $binary = null;
                 if ($imageUrl) {
-                    try {
-                        $resp = \Illuminate\Support\Facades\Http::get($imageUrl);
-                        if ($resp->ok()) {
-                            $binary = $resp->body();
+                    if ($allowRemoteImages) {
+                        try {
+                            $resp = \Illuminate\Support\Facades\Http::get($imageUrl);
+                            if ($resp->ok()) {
+                                $binary = $resp->body();
+                            }
+                        } catch (\Throwable $e) {
+                            // abaikan error download agar import tetap lanjut
                         }
-                    } catch (\Throwable $e) {
-                        // abaikan error download agar import tetap lanjut
                     }
                 } elseif ($imageFile && isset($images[$imageFile])) {
                     $binary = $images[$imageFile];
@@ -350,6 +379,8 @@ class AssetController extends Controller
 
     private function validateRequest(Request $request, ?string $assetId = null): array
     {
+        $rfidRequired = $this->settings->get('asset.rfid_required', false);
+        $nfcRequired  = $this->settings->get('asset.nfc_required', false);
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'serial_number' => ['nullable', 'string', 'max:255'],
@@ -372,6 +403,21 @@ class AssetController extends Controller
             'capex_opex' => ['nullable', 'in:capex,opex'],
             'vendor_contract_id' => ['nullable', 'uuid', 'exists:vendor_contracts,id'],
             'metadata' => ['nullable', 'array'],
+            'rfid_tag' => array_filter([
+                'string','max:255',
+                $rfidRequired ? 'required' : null,
+                "unique:assets,rfid_tag,$assetId",
+            ]),
+            'nfc_tag' => array_filter([
+                'string','max:255',
+                $nfcRequired ? 'required' : null,
+                "unique:assets,nfc_tag,$assetId",
+            ]),
+            'label_template' => ['nullable','string','max:100'],
+            'is_consumable' => ['nullable','boolean'],
+            'quantity' => ['nullable','integer','min:1'],
+            'available_quantity' => ['nullable','integer','min:0'],
+            'is_pool' => ['nullable','boolean'],
         ]);
     }
 }

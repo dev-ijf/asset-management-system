@@ -12,6 +12,7 @@ use App\Models\AssetAudit;
 use App\Models\AssetChangelog;
 use App\Models\AssetMaintenance;
 use App\Services\Logging\ActivityLogger;
+use App\Services\Integration\WebhookDispatcher;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -21,7 +22,8 @@ class AssetService
 {
     public function __construct(
         private readonly SystemSettingService $settings,
-        private readonly ActivityLogger $logger
+        private readonly ActivityLogger $logger,
+        private readonly WebhookDispatcher $webhooks
     )
     {
     }
@@ -50,6 +52,7 @@ class AssetService
             }
             $this->logHistory($asset, 'created', 'Aset dibuat', $data);
             $this->logChangelog($asset, 'created', $data);
+            $this->dispatchWebhook('asset.created', $asset, $data);
 
             return $asset;
         });
@@ -67,6 +70,7 @@ class AssetService
             }
             $this->logHistory($asset, 'updated', 'Aset diperbarui', $data);
             $this->logChangelog($asset, 'updated', $data);
+            $this->dispatchWebhook('asset.updated', $asset, $data);
 
             return $asset;
         });
@@ -100,11 +104,13 @@ class AssetService
 
     private function generateQr(Asset $asset): void
     {
-        $path = "qr/{$asset->code}.svg";
+        $format = $this->settings->get('asset.qr_format', 'svg');
+        $size = (int) $this->settings->get('asset.qr_size', 300);
+        $path = "qr/{$asset->code}.{$format}";
         $url = route('assets.public.show', $asset);
 
-        $image = QrCode::format('svg')
-            ->size(300)
+        $image = QrCode::format($format)
+            ->size(max(100, $size))
             ->margin(1)
             ->generate($url);
 
@@ -161,6 +167,7 @@ class AssetService
             }
 
             $this->logHistory($asset, 'movement', 'Perpindahan aset', $movement->toArray());
+            $this->dispatchWebhook('asset.movement', $asset, $movement->toArray());
 
             return $movement;
         });
@@ -201,6 +208,7 @@ class AssetService
             }
 
             $this->logHistory($asset, 'disposal', 'Aset didispose', $disposal->toArray());
+            $this->dispatchWebhook('asset.disposal', $asset, $disposal->toArray());
 
             return $disposal;
         });
@@ -231,6 +239,7 @@ class AssetService
                 'disposal_id' => $disposal->id,
                 'notes' => $notes,
             ]);
+            $this->dispatchWebhook('asset.reverse_disposal', $asset, ['disposal_id' => $disposal->id, 'notes' => $notes]);
 
             return $asset;
         });
@@ -252,6 +261,7 @@ class AssetService
             ]);
 
             $this->logHistory($asset, 'audit', 'Audit aset', $audit->toArray());
+            $this->dispatchWebhook('asset.audit', $asset, $audit->toArray());
 
             return $audit;
         });
@@ -284,8 +294,19 @@ class AssetService
             }
 
             $this->logHistory($asset, 'maintenance', 'Perawatan aset', $maintenance->toArray());
+            $this->dispatchWebhook('asset.maintenance', $asset, $maintenance->toArray());
 
             return $maintenance;
         });
+    }
+
+    private function dispatchWebhook(string $event, Asset $asset, array $payload = []): void
+    {
+        $this->webhooks->send($event, [
+            'asset_id' => $asset->id,
+            'asset_code' => $asset->code ?? null,
+            'asset_status_id' => $asset->asset_status_id,
+            'payload' => $payload,
+        ]);
     }
 }
