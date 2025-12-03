@@ -333,14 +333,17 @@ class AssetController extends Controller
 
             $assetModel = null;
             if ($row['target_id']) {
-                Asset::where('id', $row['target_id'])->update($payload);
                 $assetModel = Asset::find($row['target_id']);
-                $updated++;
+                if ($assetModel) {
+                    // gunakan service agar auto-generate tag & QR tetap konsisten
+                    app(\App\Services\Asset\AssetService::class)->update($assetModel, $payload);
+                    $updated++;
+                }
             } else {
                 if (!$payload['code']) {
                     $payload['code'] = 'IMP-'.Str::upper(Str::random(6));
                 }
-                $assetModel = Asset::create($payload + ['qr_token' => Str::uuid()]);
+                $assetModel = app(\App\Services\Asset\AssetService::class)->create($payload);
                 $created++;
             }
 
