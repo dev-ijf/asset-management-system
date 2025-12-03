@@ -25,6 +25,13 @@
         </div>
         <div class="card-body">
             <form method="GET" class="mb-3">
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                    @php $scope = $filters['scope'] ?? ''; @endphp
+                    <a href="{{ route('assets.index', array_merge(request()->except('scope'), ['scope' => null])) }}" class="btn btn-sm {{ $scope==='' ? 'btn-primary' : 'btn-outline-primary' }}">Aktif</a>
+                    <a href="{{ route('assets.index', array_merge(request()->except('scope'), ['scope' => 'archived'])) }}" class="btn btn-sm {{ $scope==='archived' ? 'btn-primary' : 'btn-outline-primary' }}">Arsip</a>
+                    <a href="{{ route('assets.index', array_merge(request()->except('scope'), ['scope' => 'trashed'])) }}" class="btn btn-sm {{ $scope==='trashed' ? 'btn-primary' : 'btn-outline-primary' }}">Terhapus</a>
+                    <a href="{{ route('assets.index', array_merge(request()->except('scope'), ['scope' => 'all'])) }}" class="btn btn-sm {{ $scope==='all' ? 'btn-primary' : 'btn-outline-primary' }}">Semua</a>
+                </div>
                 <div class="row g-2">
                     <div class="col-md-3">
                         <input type="text" name="q" class="form-control" placeholder="Cari kode/nama/SN" value="{{ $filters['q'] ?? '' }}">
@@ -91,14 +98,6 @@
                             @foreach($warranties as $item)
                                 <option value="{{ $item->id }}" @selected(($filters['warranty_id'] ?? '') == $item->id)>{{ $item->name }}</option>
                             @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <select name="scope" class="form-select">
-                            <option value="">Status Data</option>
-                            <option value="archived" @selected(($filters['scope'] ?? '')==='archived')>Arsip</option>
-                            <option value="trashed" @selected(($filters['scope'] ?? '')==='trashed')>Terhapus (soft delete)</option>
-                            <option value="all" @selected(($filters['scope'] ?? '')==='all')>Semua (termasuk arsip & terhapus)</option>
                         </select>
                     </div>
                     <div class="col-md-12 d-flex gap-2">
@@ -197,7 +196,15 @@
                         @forelse($assets as $asset)
                             <tr>
                                 <td class="fw-semibold">{{ $asset->code }}</td>
-                                <td>{{ $asset->name }}</td>
+                                <td>
+                                    {{ $asset->name }}
+                                    @if($asset->archived_at)
+                                        <span class="badge bg-warning text-dark ms-1">Arsip</span>
+                                    @endif
+                                    @if($asset->trashed())
+                                        <span class="badge bg-danger ms-1">Deleted</span>
+                                    @endif
+                                </td>
                                 <td><span class="badge bg-primary-transparent text-primary">{{ $asset->status?->name ?: '-' }}</span></td>
                                 <td>{{ $asset->category?->name ?: '-' }}</td>
                                 <td>{{ $asset->location?->name ?: '-' }}</td>
