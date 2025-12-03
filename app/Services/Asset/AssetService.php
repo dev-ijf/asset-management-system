@@ -36,6 +36,7 @@ class AssetService
         return DB::transaction(function () use ($data) {
             $data['code'] = $this->generateCode();
             $data['qr_token'] = $data['qr_token'] ?? Str::uuid()->toString();
+            $this->maybeAutoTag($data);
 
             // Hitung warranty_end jika ada warranty dan purchase_date
             if (!empty($data['purchase_date']) && empty($data['warranty_end'])) {
@@ -64,6 +65,7 @@ class AssetService
     public function update(Asset $asset, array $data): Asset
     {
         return DB::transaction(function () use ($asset, $data) {
+            $this->maybeAutoTag($data, $asset);
             $asset->update($data);
             if ($this->settings->get('asset.qr_enabled', true)) {
                 $this->generateQr($asset);
@@ -308,5 +310,36 @@ class AssetService
             'asset_status_id' => $asset->asset_status_id,
             'payload' => $payload,
         ]);
+    }
+
+    /**
+     * Generate RFID/NFC tag otomatis sesuai setting jika belum diisi.
+     */
+    private function maybeAutoTag(array &$data, ?Asset $existing = null): void
+    {
+        $code = $data['code'] ?? $existing?->code ?? null;
+        if (!$code) {
+            return;
+        }
+        if ($this->settings->get('asset.rfid_auto_generate', false) && empty($data['rfid_tag'])) {
+            $data['rfid_tag'] = $this->uniqueTag("RFID-{$code}", 'rfid_tag', $existing?->id);
+        }
+        if ($this->settings->get('asset.nfc_auto_generate', false) && empty($data['nfc_tag'])) {
+            $data['nfc_tag'] = $this->uniqueTag("NFC-{$code}", 'nfc_tag', $existing?->id);
+        }
+    }
+
+    private function uniqueTag(string $base, string $column, ?string $exceptId = null): string
+    {
+        $candidate = $base;
+        $counter = 1;
+        while (
+            Asset::where($column, $candidate)
+                ->when($exceptId, fn($q) => $q->where('id', '!=', $exceptId))
+                ->exists()
+        ) {
+            $candidate = "{$base}-" . (++$counter);
+        }
+        return $candidate;
     }
 }

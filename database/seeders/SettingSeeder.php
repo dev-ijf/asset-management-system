@@ -34,6 +34,8 @@ class SettingSeeder extends Seeder
             ['key' => 'asset.consumable_enabled', 'value' => true, 'type' => 'boolean', 'group' => 'asset', 'description' => 'Aktifkan stok consumable/pool pinjaman'],
             ['key' => 'asset.rfid_required', 'value' => false, 'type' => 'boolean', 'group' => 'asset', 'description' => 'Wajibkan pengisian RFID ketika aset dibuat/di-update'],
             ['key' => 'asset.nfc_required', 'value' => false, 'type' => 'boolean', 'group' => 'asset', 'description' => 'Wajibkan pengisian NFC ketika aset dibuat/di-update'],
+            ['key' => 'asset.rfid_auto_generate', 'value' => true, 'type' => 'boolean', 'group' => 'asset', 'description' => 'Otomatis generate RFID jika kosong, menggunakan kode aset'],
+            ['key' => 'asset.nfc_auto_generate', 'value' => true, 'type' => 'boolean', 'group' => 'asset', 'description' => 'Otomatis generate NFC jika kosong, menggunakan kode aset'],
             ['key' => 'asset.qr_format', 'value' => 'svg', 'type' => 'string', 'group' => 'asset', 'description' => 'Format file QR (svg/png/pdf)'],
             ['key' => 'asset.qr_size', 'value' => 300, 'type' => 'integer', 'group' => 'asset', 'description' => 'Ukuran sisi QR dalam pixel'],
 
