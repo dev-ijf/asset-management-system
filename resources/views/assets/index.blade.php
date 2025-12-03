@@ -327,13 +327,18 @@
                     <div class="modal-body">
                         <p class="text-muted">
                             Unggah file CSV (Excel bisa ekspor ke CSV). Header yang didukung:
-                            <code>code,name,serial_number,status,category,location,rfid_tag,nfc_tag,is_consumable,quantity,available_quantity,is_pool,image_url</code>.
-                            Baris tanpa nama akan ditandai invalid. Contoh file:
+                            <code>code,name,serial_number,status,category,location,rfid_tag,nfc_tag,is_consumable,quantity,available_quantity,is_pool,image_url,image_file</code>.
+                            Kolom <code>image_url</code> akan di-download; kolom <code>image_file</code> akan dicari di ZIP gambar (opsional). Baris tanpa nama akan ditandai invalid. Contoh file:
                             <a href="{{ asset('samples/assets_import_sample.csv') }}" target="_blank">assets_import_sample.csv</a>
                         </p>
                         <div class="mb-3">
                             <label class="form-label">File</label>
                             <input type="file" name="file" class="form-control" accept=".csv,.txt" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">ZIP Gambar (opsional)</label>
+                            <input type="file" name="images_zip" class="form-control" accept=".zip">
+                            <small class="text-muted">Isi dengan gambar yang namanya sesuai kolom <code>image_file</code> (misal printer.jpg, tinta.jpg).</small>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="action" id="importPreview" value="preview" checked>

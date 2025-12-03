@@ -198,6 +198,7 @@ class AssetController extends Controller
     {
         $request->validate([
             'file' => ['required','file','mimes:csv,txt'],
+            'images_zip' => ['nullable','file','mimes:zip'],
             'action' => ['nullable','in:preview,import'],
         ]);
 
@@ -206,6 +207,24 @@ class AssetController extends Controller
         $handle = fopen($path, 'r');
         if (!$handle) {
             return back()->withErrors(['file' => 'File tidak bisa dibaca']);
+        }
+
+        // Jika ada ZIP gambar, siapkan mapping filename => binary
+        $images = [];
+        if ($request->hasFile('images_zip')) {
+            $zipPath = $request->file('images_zip')->getRealPath();
+            $zip = new \ZipArchive();
+            if ($zip->open($zipPath) === true) {
+                for ($i = 0; $i < $zip->numFiles; $i++) {
+                    $name = $zip->getNameIndex($i);
+                    // abaikan folder
+                    if (str_ends_with($name, '/')) {
+                        continue;
+                    }
+                    $images[basename($name)] = $zip->getFromIndex($i);
+                }
+                $zip->close();
+            }
         }
 
         $header = fgetcsv($handle);
@@ -257,6 +276,7 @@ class AssetController extends Controller
                     'available_quantity' => (int) ($row['available_quantity'] ?? $row['quantity'] ?? 1),
                     'is_pool' => !empty($row['is_pool']),
                     'image_url' => $row['image_url'] ?? null,
+                    'image_file' => $row['image_file'] ?? null,
                 ],
                 'target_id' => $targetId,
             ];
@@ -281,7 +301,8 @@ class AssetController extends Controller
             if ($row['status'] === 'invalid') { $invalid++; continue; }
             $payload = $row['payload'];
             $imageUrl = $payload['image_url'] ?? null;
-            unset($payload['image_url']);
+            $imageFile = $payload['image_file'] ?? null;
+            unset($payload['image_url'], $payload['image_file']);
 
             $assetModel = null;
             if ($row['target_id']) {
@@ -296,21 +317,30 @@ class AssetController extends Controller
                 $created++;
             }
 
-            // Download image jika disediakan
-            if ($assetModel && $imageUrl) {
-                try {
-                    $resp = \Illuminate\Support\Facades\Http::get($imageUrl);
-                    if ($resp->ok()) {
-                        $path = "assets/{$assetModel->id}/import-".Str::random(6).".jpg";
-                        \Illuminate\Support\Facades\Storage::disk('public')->put($path, $resp->body());
-                        \App\Models\AssetPhoto::create([
-                            'asset_id' => $assetModel->id,
-                            'path' => $path,
-                            'is_primary' => $assetModel->photos()->count() === 0,
-                        ]);
+            // Tambahkan foto jika disediakan via URL atau file name di ZIP
+            if ($assetModel) {
+                $binary = null;
+                if ($imageUrl) {
+                    try {
+                        $resp = \Illuminate\Support\Facades\Http::get($imageUrl);
+                        if ($resp->ok()) {
+                            $binary = $resp->body();
+                        }
+                    } catch (\Throwable $e) {
+                        // abaikan error download agar import tetap lanjut
                     }
-                } catch (\Throwable $e) {
-                    // abaikan error download agar import tetap lanjut
+                } elseif ($imageFile && isset($images[$imageFile])) {
+                    $binary = $images[$imageFile];
+                }
+
+                if ($binary) {
+                    $path = "assets/{$assetModel->id}/import-".Str::random(6).".jpg";
+                    \Illuminate\Support\Facades\Storage::disk('public')->put($path, $binary);
+                    \App\Models\AssetPhoto::create([
+                        'asset_id' => $assetModel->id,
+                        'path' => $path,
+                        'is_primary' => $assetModel->photos()->count() === 0,
+                    ]);
                 }
             }
         }
