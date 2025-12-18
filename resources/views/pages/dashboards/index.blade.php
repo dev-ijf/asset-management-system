@@ -216,23 +216,33 @@
 </div>
 
 <div class="row g-3 mt-0">
-    <div class="col-xl-6">
+    <div class="col-xl-4 col-md-6">
         <div class="card custom-card h-100">
             <div class="card-header">
                 <div class="card-title mb-0">Distribusi Aset per Status</div>
             </div>
             <div class="card-body">
-                <canvas id="chartStatus" height="140"></canvas>
+                <canvas id="chartStatus" height="110"></canvas>
             </div>
         </div>
     </div>
-    <div class="col-xl-6">
+    <div class="col-xl-4 col-md-6">
         <div class="card custom-card h-100">
             <div class="card-header">
                 <div class="card-title mb-0">Top Lokasi (10)</div>
             </div>
             <div class="card-body">
-                <canvas id="chartLocation" height="140"></canvas>
+                <canvas id="chartLocation" height="110"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4 col-md-12">
+        <div class="card custom-card h-100">
+            <div class="card-header">
+                <div class="card-title mb-0">Top Kategori (10)</div>
+            </div>
+            <div class="card-body">
+                <canvas id="chartCategory" height="110"></canvas>
             </div>
         </div>
     </div>
@@ -480,6 +490,27 @@
                     label: 'Jumlah Aset',
                     data: locData.map(i => i.value),
                     backgroundColor: '#22c55e'
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
+            }
+        });
+    }
+
+    const catCtx = document.getElementById('chartCategory');
+    const catData = @json($byCategory ?? []);
+    if (catCtx) {
+        new Chart(catCtx, {
+            type: 'bar',
+            data: {
+                labels: catData.map(i => i.label),
+                datasets: [{
+                    label: 'Jumlah Aset',
+                    data: catData.map(i => i.value),
+                    backgroundColor: '#a78bfa'
                 }]
             },
             options: {

@@ -5,6 +5,7 @@ namespace App\Services\Dashboard;
 use App\Models\Asset;
 use App\Models\AssetApprovalRequest;
 use App\Models\AssetAudit;
+use App\Models\AssetCategory;
 use App\Models\AssetDisposal;
 use App\Models\AssetLocation;
 use App\Models\AssetMaintenance;
@@ -102,6 +103,16 @@ class DashboardService
                 ->take(10)
                 ->values();
 
+            $byCategory = AssetCategory::query()
+                ->withCount(['assets as assets_count' => fn ($q) => $q->forUser($user)])
+                ->orderByDesc('assets_count')
+                ->orderBy('name')
+                ->get()
+                ->map(fn ($cat) => ['label' => $cat->name, 'value' => (int) $cat->assets_count])
+                ->filter(fn ($row) => $row['value'] > 0)
+                ->take(10)
+                ->values();
+
             $trendLabels = $this->buildTrendLabels($trendStart, $trendDays);
             $movementTrend = $this->buildDailyTrend(
                 AssetMovement::query()
@@ -176,6 +187,7 @@ class DashboardService
                 'pendingApprovalsCount',
                 'byStatus',
                 'byLocation',
+                'byCategory',
                 'trendLabels',
                 'movementTrend',
                 'disposalTrend',
@@ -220,4 +232,3 @@ class DashboardService
             ->all();
     }
 }
-
