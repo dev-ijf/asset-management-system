@@ -110,15 +110,23 @@ class AssetSeeder extends Seeder
             // Download 2 foto berbeda untuk tiap aset dari pool.
             $pics = collect($imagePool)->shuffle()->take(2);
             foreach ($pics as $idx => $url) {
-                $response = Http::get($url);
-                if ($response->ok()) {
-                    $path = "assets/{$asset->id}/photo-{$idx}.jpg";
-                    Storage::disk('public')->put($path, $response->body());
-                    AssetPhoto::create([
-                        'asset_id' => $asset->id,
-                        'path' => $path,
-                        'is_primary' => $idx === 0 && $asset->photos()->count() === 0,
-                    ]);
+                try {
+                    $response = Http::retry(3, 1000)
+                        ->connectTimeout(10)
+                        ->timeout(20)
+                        ->get($url);
+                    if ($response->ok()) {
+                        $path = "assets/{$asset->id}/photo-{$idx}.jpg";
+                        Storage::disk('public')->put($path, $response->body());
+                        AssetPhoto::create([
+                            'asset_id' => $asset->id,
+                            'path' => $path,
+                            'is_primary' => $idx === 0 && $asset->photos()->count() === 0,
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    // Jika download gagal (timeout/SSL/diblok), seeder tetap lanjut tanpa foto.
+                    continue;
                 }
             }
         }
@@ -161,15 +169,22 @@ class AssetSeeder extends Seeder
 
             // Gunakan foto generik untuk consumable
             $url = 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80';
-            $response = Http::get($url);
-            if ($response->ok()) {
-                $path = "assets/{$asset->id}/photo-consumable.jpg";
-                Storage::disk('public')->put($path, $response->body());
-                AssetPhoto::create([
-                    'asset_id' => $asset->id,
-                    'path' => $path,
-                    'is_primary' => true,
-                ]);
+            try {
+                $response = Http::retry(3, 1000)
+                    ->connectTimeout(10)
+                    ->timeout(20)
+                    ->get($url);
+                if ($response->ok()) {
+                    $path = "assets/{$asset->id}/photo-consumable.jpg";
+                    Storage::disk('public')->put($path, $response->body());
+                    AssetPhoto::create([
+                        'asset_id' => $asset->id,
+                        'path' => $path,
+                        'is_primary' => true,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                // ignore
             }
         }
     }
