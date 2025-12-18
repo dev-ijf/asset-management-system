@@ -12,7 +12,7 @@
                 <!-- Start:: Landing Banner -->
                 <div class="landing-banner" id="home">
                     <div class="banner-image-container">
-                        <img src="{{ asset('landing-asset-hero.jpg') }}" alt="Asset hero">
+                        <img src="{{ Vite::asset('resources/assets/images/landing/hero.jpg') }}" alt="Asset Management System">
                     </div>
                     <div class="container">
                         <div class="row">
@@ -21,100 +21,23 @@
                                 <h1 class="fw-semibold mt-3 landing-banner-heading">Audit, lacak, dan rawat <br> seluruh <span class="text-primary">aset fisik</span> Anda</h1>
                                 <span class="d-block fs-18">Registrasi aset lengkap, QR otomatis, movement/disposal, maintenance, audit, dan laporan siap unduh.</span>
                                 <div class="btn-list banner-buttons">
-                                    <a href="{{url('index')}}" class="btn btn-primary btn-lg rounded-pill btn-w-lg">Masuk Dashboard</a>
-                                    <a class="btn btn-lg btn-light border rounded-pill btn-w-lg" href="{{ route('assets.index') }}">Lihat Data Aset</a>
+                                    @auth
+                                        <a href="{{ route('index') }}" class="btn btn-primary btn-lg rounded-pill btn-w-lg">Masuk Dashboard</a>
+                                    @else
+                                        <a href="{{ route('login') }}" class="btn btn-primary btn-lg rounded-pill btn-w-lg">Login</a>
+                                    @endauth
+                                    <a class="btn btn-lg btn-light border rounded-pill btn-w-lg" href="#feature">Lihat Fitur</a>
                                 </div>
                             </div>
                             <div class="col-xl-6">
                                 <div class="banner-main-img text-end d-xl-block d-none">
-                                    <img src="{{ asset('landing-feature.jpg') }}" alt="" class="img-fluid">
+                                    <img src="{{ Vite::asset('resources/assets/images/landing/feature.jpg') }}" alt="Dashboard Preview" class="img-fluid">
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <!-- End:: Landing Banner -->
-
-                <!-- Start:: Section-1 -->
-                <section class="section">
-                    <div class="container">
-                        <div class="heading-section">
-                            <div class="heading-subtitle">Clients</div>
-                            <div class="heading-title">Trusted by Leading Companies Worldwide</div>
-                            <div class="heading-description">
-                                Thousands of businesses trust our solutions <br> to optimize their operations and drive growth.
-                            </div>
-                        </div>
-                        <div class="swiper trusted-clients">
-                            <div class="swiper-wrapper">
-                                <div class="swiper-slide">
-                                    <div class="card custom-card trusted-clients-container mb-0 border border-dashed">
-                                        <div class="card-body">
-                                            <img src="{{asset('build/assets/images/company-logos/13.png')}}" alt="" class="img-fluid">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="card custom-card trusted-clients-container mb-0 border border-dashed">
-                                        <div class="card-body">
-                                            <img src="{{asset('build/assets/images/company-logos/14.png')}}" alt="" class="img-fluid">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="card custom-card trusted-clients-container mb-0 border border-dashed">
-                                        <div class="card-body">
-                                            <img src="{{asset('build/assets/images/company-logos/15.png')}}" alt="" class="img-fluid">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="card custom-card trusted-clients-container mb-0 border border-dashed">
-                                        <div class="card-body">
-                                            <img src="{{asset('build/assets/images/company-logos/16.png')}}" alt="" class="img-fluid">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="card custom-card trusted-clients-container mb-0 border border-dashed">
-                                        <div class="card-body">
-                                            <img src="{{asset('build/assets/images/company-logos/17.png')}}" alt="" class="img-fluid">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="card custom-card trusted-clients-container mb-0 border border-dashed">
-                                        <div class="card-body">
-                                            <img src="{{asset('build/assets/images/company-logos/18.png')}}" alt="" class="img-fluid">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="card custom-card trusted-clients-container mb-0 border border-dashed">
-                                        <div class="card-body">
-                                            <img src="{{asset('build/assets/images/company-logos/19.png')}}" alt="" class="img-fluid">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="card custom-card trusted-clients-container mb-0 border border-dashed">
-                                        <div class="card-body">
-                                            <img src="{{asset('build/assets/images/company-logos/20.png')}}" alt="" class="img-fluid">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="swiper-slide">
-                                    <div class="card custom-card trusted-clients-container mb-0 border border-dashed">
-                                        <div class="card-body">
-                                            <img src="{{asset('build/assets/images/company-logos/12.png')}}" alt="" class="img-fluid">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-                <!-- End:: Section-1 -->
 
                 <!-- Start:: Section-2 -->
                 <section class="section" id="feature">
@@ -135,9 +58,9 @@
                                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><path d="M104,208V104H32v96a8,8,0,0,0,8,8H96" opacity="0.2"/><line x1="32" y1="104" x2="224" y2="104" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="104" y1="104" x2="104" y2="208" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><rect x="32" y="48" width="192" height="160" rx="8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/></svg>
                                             </span>
                                         </div>
-                                        <h5 class="fw-semibold">Registrasi Aset & QR</h5>
+                                        <h5 class="fw-semibold">Identifikasi QR / RFID / NFC</h5>
                                         <span class="fs-15 text-muted">
-                                            Kode aset otomatis, QR ter-generate, detail lengkap (status, kategori, lokasi, PIC, user).
+                                            Kode aset otomatis, QR ter-generate, dukungan RFID/NFC tag, detail lengkap (status, kategori, lokasi, PIC, user).
                                         </span>
                                     </div>
                                 </div>
@@ -195,9 +118,9 @@
                                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><rect x="32" y="104" width="56" height="96" opacity="0.2"/><path d="M32,56H224a0,0,0,0,1,0,0V192a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V56A0,0,0,0,1,32,56Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="32" y1="104" x2="224" y2="104" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="32" y1="152" x2="224" y2="152" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="88" y1="104" x2="88" y2="200" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/></svg>
                                             </span>
                                         </div>
-                                        <h5 class="fw-semibold">Table Management</h5>
+                                        <h5 class="fw-semibold">Bulk Import/Export</h5>
                                         <span class="fs-15 text-muted">
-                                            Manage and display large datasets with advanced table components, filters, and pagination.
+                                            Import CSV (preview, deduplikasi, gambar URL/ZIP) dan otomatis diproses via queue untuk data besar (mis. 25rb baris).
                                         </span>
                                     </div>
                                 </div>
@@ -210,9 +133,9 @@
                                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><path d="M192,120,136,64l29.66-29.66a8,8,0,0,1,11.31,0L221.66,79a8,8,0,0,1,0,11.31Z" opacity="0.2"/><path d="M92.69,216H48a8,8,0,0,1-8-8V163.31a8,8,0,0,1,2.34-5.65L165.66,34.34a8,8,0,0,1,11.31,0L221.66,79a8,8,0,0,1,0,11.31L98.34,213.66A8,8,0,0,1,92.69,216Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="136" y1="64" x2="192" y2="120" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="164" y1="92" x2="68" y2="188" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="95.49" y1="215.49" x2="40.51" y2="160.51" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/></svg>
                                             </span>
                                         </div>
-                                        <h5 class="fw-semibold">Forms and Validation</h5>
+                                        <h5 class="fw-semibold">Arsip & Retensi Data</h5>
                                         <span class="fs-15 text-muted">
-                                            Create robust forms with validation features for collecting and processing user data.
+                                            Soft delete + restore, mode arsip, dan kontrol retensi agar data tetap rapi dan mudah ditelusuri.
                                         </span>
                                     </div>
                                 </div>
@@ -225,9 +148,9 @@
                                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><path d="M108.11,28.11A96.09,96.09,0,0,0,227.89,147.89,96,96,0,1,1,108.11,28.11Z" opacity="0.2"/><path d="M108.11,28.11A96.09,96.09,0,0,0,227.89,147.89,96,96,0,1,1,108.11,28.11Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/></svg>
                                             </span>
                                         </div>
-                                        <h5 class="fw-semibold">Dark Mode / Light Mode</h5>
+                                        <h5 class="fw-semibold">Integrasi API & Webhook</h5>
                                         <span class="fs-15 text-muted">
-                                            Switch between dark and light modes to suit user preferences and improve readability.
+                                            Public REST API untuk sinkronisasi ERP/CMMS/Helpdesk serta webhook event (movement/disposal/audit/maintenance).
                                         </span>
                                     </div>
                                 </div>
@@ -274,7 +197,7 @@
                             <div class="heading-subtitle">Alur End-to-End</div>
                             <div class="heading-title">Dari registrasi sampai audit & perawatan</div>
                             <div class="heading-description">
-                                Ikuti alur standar manajemen aset: daftar & QR, movement, disposal/reverse, maintenance, audit, dan laporan.
+                                Ikuti alur standar manajemen aset: setup awal, identifikasi (QR/RFID/NFC), transaksi, approval, audit, dan laporan.
                             </div>
                         </div>
                         <div class="row">
@@ -290,8 +213,8 @@
                                                         </span>
                                                     </div>
                                                     <div>
-                                                        <h6 class="d-block fw-semibold">Registrasi & QR</h6>
-                                                        <span class="d-block text-muted">Kode aset otomatis, QR untuk scan cepat, link ke detail & transaksi.</span>
+                                                        <h6 class="d-block fw-semibold">Setup & Registrasi</h6>
+                                                        <span class="d-block text-muted">Wizard setup, setting, master data, lalu registrasi aset dengan kode otomatis.</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -342,7 +265,41 @@
                                                     </div>
                                                     <div>
                                                         <h6 class="d-block fw-semibold">Audit & Laporan</h6>
-                                                        <span class="d-block text-muted">Audit fisik, status matched/missing/damaged, laporan Excel/PDF multi-sheet.</span>
+                                                        <span class="d-block text-muted">Audit fisik (scan QR/NFC), changelog, dan laporan Excel/PDF siap kirim.</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="card custom-card landing-services-card info">
+                                            <div class="card-body">
+                                                <div class="d-flex align-items-start gap-3">
+                                                    <div class="lh-1">
+                                                        <span class="avatar avatar-lg avatar-rounded bg-info-transparent svg-info">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,40a16,16,0,1,1-16,16A16,16,0,0,1,128,64Zm24,128H104a8,8,0,0,1,0-16h8V120h-8a8,8,0,0,1,0-16h24a8,8,0,0,1,8,8v64h16a8,8,0,0,1,0,16Z" opacity="0.2"/><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,40a16,16,0,1,1-16,16A16,16,0,0,1,128,64Zm24,128H104a8,8,0,0,1,0-16h8V120h-8a8,8,0,0,1,0-16h24a8,8,0,0,1,8,8v64h16a8,8,0,0,1,0,16Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/></svg>
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="d-block fw-semibold">Approval & Audit Trail</h6>
+                                                        <span class="d-block text-muted">Movement/disposal/maintenance dapat butuh approval; notifikasi email & jejak audit tercatat.</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="card custom-card landing-services-card danger">
+                                            <div class="card-body">
+                                                <div class="d-flex align-items-start gap-3">
+                                                    <div class="lh-1">
+                                                        <span class="avatar avatar-lg avatar-rounded bg-danger-transparent svg-danger">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><rect width="256" height="256" fill="none"/><path d="M224,56V200a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V56a8,8,0,0,1,8-8H216A8,8,0,0,1,224,56Z" opacity="0.2"/><path d="M224,56V200a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V56a8,8,0,0,1,8-8H216A8,8,0,0,1,224,56Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="32" y1="96" x2="224" y2="96" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/><line x1="80" y1="96" x2="80" y2="208" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/></svg>
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="d-block fw-semibold">Import & Skalabilitas</h6>
+                                                        <span class="d-block text-muted">Import besar diproses via queue + status batch, pagination server-side, dan indexing DB.</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -352,7 +309,7 @@
                             </div>
                             <div class="col-xl-5 my-auto">
                                 <div class="services-image-container text-end d-xl-block d-none">
-                                    <img src="{{asset('build/assets/images/media/media-67.png')}}" alt="" class="img-fluid">
+                                    <img src="{{ Vite::asset('resources/assets/images/landing/flow.jpg') }}" alt="Alur Manajemen Aset" class="img-fluid rounded-3 shadow-sm">
                                 </div>
                             </div>
                         </div>
@@ -360,272 +317,14 @@
                 </section>
                 <!-- End:: Section-3 -->
 
-                <!-- Start:: Buy Now Section -->
-                <section class="section section-md section-primary text-fixed-white py-5 buy-now-section">
-                    <div class="testimonials-background-container">
-                        <img src="{{ asset('landing-cta.jpg') }}" alt="">
-                    </div>
-                    <div class="container">
-                        <div class="d-flex align-items-center gap-2 justify-content-between flex-wrap">
-                            <div>
-                                <h4 class="fw-semibold text-fixed-white">Transform Your Workflow Today</h4>
-                                <span class="d-block fs-16 op-8">Unlock all the powerful features of our admin template. <br> Purchase now or try the demo to see it in action!</span>
-                            </div>
-                            <div class="btn-list">
-                                <a href="{{url('index')}}" class="btn btn-danger btn-lg btn-w-md d-inline-flex align-items-center">View Demo<i class="ti ti-arrow-narrow-right ms-2"></i></a>
-                                <button class="btn btn-success btn-lg btn-w-md d-inline-flex align-items-center">Buy Now<i class="ti ti-shopping-cart ms-2"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-                <!-- End:: Buy Now Section -->
-
-                <!-- Start:: Section-4 -->
-                <section class="section" id="price">
-                    <div class="container">
-                        <div class="heading-section">
-                            <div class="heading-subtitle">Our Pricing</div>
-                            <div class="heading-title">Choose the Plan That Fits Your Needs</div>
-                            <div class="heading-description mb-3">
-                                Select the right fit and enjoy seamless access to all features.
-                            </div>
-                            <div class="tab-style-1 border bg-white rounded-0 d-inline-block"> 
-                                <ul class="nav nav-pills" role="tablist"> 
-                                    <li class="nav-item" role="presentation"> 
-                                        <button type="button" class="nav-link rounded-0 fw-medium active" data-bs-toggle="pill" data-bs-target="#pricing1-monthly" aria-selected="true" role="tab">Monthly</button> 
-                                    </li> 
-                                    <li class="nav-item" role="presentation"> 
-                                        <button type="button" class="nav-link rounded-0 fw-medium" data-bs-toggle="pill" data-bs-target="#pricing1-yearly" aria-selected="false" role="tab" tabindex="-1">Yearly</button> 
-                                    </li> 
-                                </ul> 
-                            </div>
-                        </div>
-                        <div class="tab-content">
-                            <div class="tab-pane show active p-0 border-0" id="pricing1-monthly" role="tabpanel">
-                                <div class="row">
-                                    <div class="col-xl-4">
-                                        <div class="card custom-card">
-                                            <div class="card-body p-4 text-center">
-                                                <h5 class="fw-semibold mb-3">Basic</h5>
-                                                <div class="d-flex align-items-end justify-content-center gap-1 mb-4">
-                                                    <h2 class="fw-semibold mb-0 lh-1 text-primary">$15</h2>
-                                                    <span class="fs-13 text-muted">/ Month</span>
-                                                </div>
-                                                <ul class="list-unstyled pricing-features-list-1 mx-5 text-start mb-4">
-                                                    <li>
-                                                        Access to core features
-                                                    </li>
-                                                    <li>
-                                                        5GB storage
-                                                    </li>
-                                                    <li>
-                                                        Basic customer support
-                                                    </li>
-                                                    <li>
-                                                        1 user access
-                                                    </li>
-                                                    <li>
-                                                        Email notifications
-                                                    </li>
-                                                </ul>
-                                                <div>
-                                                    <span class="badge bg-secondary-transparent py-1 px-3 fs-13 rounded-pill fw-normal">25% Off</span>
-                                                    <div class="d-grid mt-3">
-                                                        <button class="btn btn-primary btn-lg">Choose Plan</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-xl-4">
-                                        <div class="card custom-card card-bg-primary">
-                                            <div class="card-body p-4 text-center">
-                                                <h5 class="fw-semibold mb-3 text-fixed-white">Pro</h5>
-                                                <div class="d-flex align-items-end justify-content-center gap-1 mb-4">
-                                                    <h2 class="fw-semibold mb-0 lh-1 text-fixed-white">$45</h2>
-                                                    <span class="fs-13">/ Month</span>
-                                                </div>
-                                                <ul class="list-unstyled pricing-features-list-1 mx-5 text-start mb-4">
-                                                    <li>
-                                                        All Basic Plan Features
-                                                    </li>
-                                                    <li>
-                                                        50GB storage
-                                                    </li>
-                                                    <li>
-                                                        Priority customer support
-                                                    </li>
-                                                    <li>
-                                                        5 user access
-                                                    </li>
-                                                    <li>
-                                                        Advanced analytics
-                                                    </li>
-                                                </ul>
-                                                <div>
-                                                    <span class="badge bg-white-transparent py-1 px-3 fs-13 rounded-pill fw-normal">40% Off</span>
-                                                    <div class="d-grid mt-3">
-                                                        <button class="btn btn-light btn-lg">Choose Plan</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-xl-4">
-                                        <div class="card custom-card">
-                                            <div class="card-body p-4 text-center">
-                                                <h5 class="fw-semibold mb-3">Enterprise</h5>
-                                                <div class="d-flex align-items-end justify-content-center gap-1 mb-4">
-                                                    <h2 class="fw-semibold mb-0 lh-1 text-primary">$99</h2>
-                                                    <span class="fs-13 text-muted">/ Month</span>
-                                                </div>
-                                                <ul class="list-unstyled pricing-features-list-1 mx-5 text-start mb-4">
-                                                    <li>
-                                                        All Pro Plan Features
-                                                    </li>
-                                                    <li>
-                                                        Unlimited storage
-                                                    </li>
-                                                    <li>
-                                                        Dedicated account manager
-                                                    </li>
-                                                    <li>
-                                                        20 user access
-                                                    </li>
-                                                    <li>
-                                                        Customizable workflows
-                                                    </li>
-                                                </ul>
-                                                <div>
-                                                    <span class="badge bg-secondary-transparent py-1 px-3 fs-13 rounded-pill fw-normal">50% Off</span>
-                                                    <div class="d-grid mt-3">
-                                                        <button class="btn btn-primary btn-lg">Choose Plan</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="tab-pane p-0 border-0" id="pricing1-yearly" role="tabpanel">
-                                <div class="row">
-                                    <div class="col-xl-4">
-                                        <div class="card custom-card">
-                                            <div class="card-body p-4 text-center">
-                                                <h5 class="fw-semibold mb-3">Basic</h5>
-                                                <div class="d-flex align-items-end justify-content-center gap-1 mb-4">
-                                                    <h2 class="fw-semibold mb-0 lh-1 text-primary">$150</h2>
-                                                    <span class="fs-13 text-muted">/ Year</span>
-                                                </div>
-                                                <ul class="list-unstyled pricing-features-list-1 mx-5 text-start mb-4">
-                                                    <li>
-                                                        Access to core features
-                                                    </li>
-                                                    <li>
-                                                        5GB storage
-                                                    </li>
-                                                    <li>
-                                                        Basic customer support
-                                                    </li>
-                                                    <li>
-                                                        1 user access
-                                                    </li>
-                                                    <li>
-                                                        Email notifications
-                                                    </li>
-                                                </ul>
-                                                <div>
-                                                    <span class="badge bg-secondary-transparent py-1 px-3 fs-13 rounded-pill fw-normal">25% Off</span>
-                                                    <div class="d-grid mt-3">
-                                                        <button class="btn btn-primary btn-lg">Choose Plan</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-xl-4">
-                                        <div class="card custom-card card-bg-primary">
-                                            <div class="card-body p-4 text-center">
-                                                <h5 class="fw-semibold mb-3 text-fixed-white">Pro</h5>
-                                                <div class="d-flex align-items-end justify-content-center gap-1 mb-4">
-                                                    <h2 class="fw-semibold mb-0 lh-1 text-fixed-white">$450</h2>
-                                                    <span class="fs-13">/ Year</span>
-                                                </div>
-                                                <ul class="list-unstyled pricing-features-list-1 mx-5 text-start mb-4">
-                                                    <li>
-                                                        All Basic Plan Features
-                                                    </li>
-                                                    <li>
-                                                        50GB storage
-                                                    </li>
-                                                    <li>
-                                                        Priority customer support
-                                                    </li>
-                                                    <li>
-                                                        5 user access
-                                                    </li>
-                                                    <li>
-                                                        Advanced analytics
-                                                    </li>
-                                                </ul>
-                                                <div>
-                                                    <span class="badge bg-white-transparent py-1 px-3 fs-13 rounded-pill fw-normal">40% Off</span>
-                                                    <div class="d-grid mt-3">
-                                                        <button class="btn btn-light btn-lg">Choose Plan</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-xl-4">
-                                        <div class="card custom-card">
-                                            <div class="card-body p-4 text-center">
-                                                <h5 class="fw-semibold mb-3">Enterprise</h5>
-                                                <div class="d-flex align-items-end justify-content-center gap-1 mb-4">
-                                                    <h2 class="fw-semibold mb-0 lh-1 text-primary">$990</h2>
-                                                    <span class="fs-13 text-muted">/ Year</span>
-                                                </div>
-                                                <ul class="list-unstyled pricing-features-list-1 mx-5 text-start mb-4">
-                                                    <li>
-                                                        All Pro Plan Features
-                                                    </li>
-                                                    <li>
-                                                        Unlimited storage
-                                                    </li>
-                                                    <li>
-                                                        Dedicated account manager
-                                                    </li>
-                                                    <li>
-                                                        20 user access
-                                                    </li>
-                                                    <li>
-                                                        Customizable workflows
-                                                    </li>
-                                                </ul>
-                                                <div>
-                                                    <span class="badge bg-secondary-transparent py-1 px-3 fs-13 rounded-pill fw-normal">50% Off</span>
-                                                    <div class="d-grid mt-3">
-                                                        <button class="btn btn-primary btn-lg">Choose Plan</button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-                <!-- End:: Section-4 -->
-
                 <!-- Start:: Section-5 -->
-                <section class="section">
+                <section class="section" id="faq">
                     <div class="container">
                         <div class="heading-section">
-                            <div class="heading-subtitle">FAQ's</div>
-                            <div class="heading-title">Need Help? Find Your Answers Here</div>
+                            <div class="heading-subtitle">FAQ</div>
+                            <div class="heading-title">Pertanyaan Umum</div>
                             <div class="heading-description">
-                                Browse through common questions to get quick solutions. We're here to help!
+                                Ringkasan jawaban untuk alur, fitur, dan konfigurasi sistem manajemen aset.
                             </div>
                         </div>
                         <div class="row">
@@ -634,72 +333,72 @@
                                     <div class="accordion-item">
                                         <h2 class="accordion-header" id="headingcustomicon2Eleven">
                                             <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapsecustomicon2Eleven" aria-expanded="true" aria-controls="collapsecustomicon2Eleven">
-                                                <i class="ri-layout-4-line fw-medium avatar avatar-sm avatar-rounded bg-primary-transparent fs-5 me-2 text-primary flex-shrink-0"></i>How do I customize my dashboard layout?
+                                                <i class="ri-layout-4-line fw-medium avatar avatar-sm avatar-rounded bg-primary-transparent fs-5 me-2 text-primary flex-shrink-0"></i>Bagaimana cara memulai setup pertama kali?
                                             </button>
                                         </h2>
                                         <div id="collapsecustomicon2Eleven" class="accordion-collapse collapse show" aria-labelledby="headingcustomicon2Eleven" data-bs-parent="#accordionFAQ3">
                                             <div class="accordion-body">
-                                                You can easily customize the dashboard by dragging and dropping widgets. Go to the settings menu and select 'Customize Dashboard' to rearrange the layout.
+                                                Saat database belum siap, aplikasi otomatis mengarahkan ke Wizard Setup. Anda membuat admin, mengisi setting (termasuk SMTP), lalu master data, dan aset pertama.
                                             </div>
                                         </div>
                                     </div>
                                     <div class="accordion-item">
                                         <h2 class="accordion-header" id="headingcustomicon2Twelve">
                                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsecustomicon2Twelve" aria-expanded="false" aria-controls="collapsecustomicon2Twelve">
-                                                <i class="ri-plug-line fw-medium avatar avatar-sm avatar-rounded bg-primary-transparent fs-5 me-2 text-primary flex-shrink-0"></i>Can I integrate third-party apps with the admin template?
+                                                <i class="ri-plug-line fw-medium avatar avatar-sm avatar-rounded bg-primary-transparent fs-5 me-2 text-primary flex-shrink-0"></i>Apakah sistem mendukung integrasi ERP/Helpdesk?
                                             </button>
                                         </h2>
                                         <div id="collapsecustomicon2Twelve" class="accordion-collapse collapse" aria-labelledby="headingcustomicon2Twelve" data-bs-parent="#accordionFAQ3">
                                             <div class="accordion-body">
-                                                Yes! Our admin template supports seamless integrations with third-party apps. You can easily connect tools like Google Analytics, CRM software, and more.
+                                                Ya. Tersedia Public REST API (header X-Api-Key) dan webhook event aset (movement/disposal/audit/maintenance). Dokumentasi ada di halaman API Docs.
                                             </div>
                                         </div>
                                     </div>
                                     <div class="accordion-item">
                                         <h2 class="accordion-header" id="headingcustomicon2Thirteen">
                                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsecustomicon2Thirteen" aria-expanded="false" aria-controls="collapsecustomicon2Thirteen">
-                                                <i class="ri-phone-line fw-medium avatar avatar-sm avatar-rounded bg-primary-transparent fs-5 me-2 text-primary flex-shrink-0"></i>Is this admin template mobile responsive?
+                                                <i class="ri-phone-line fw-medium avatar avatar-sm avatar-rounded bg-primary-transparent fs-5 me-2 text-primary flex-shrink-0"></i>Apakah QR/RFID/NFC wajib untuk semua aset?
                                             </button>
                                         </h2>
                                         <div id="collapsecustomicon2Thirteen" class="accordion-collapse collapse" aria-labelledby="headingcustomicon2Thirteen" data-bs-parent="#accordionFAQ3">
                                             <div class="accordion-body">
-                                                Absolutely! The admin template is fully responsive and optimized for mobile, ensuring that it works perfectly on smartphones and tablets.
+                                                QR bisa diaktifkan/nonaktifkan lewat setting. RFID/NFC juga opsional, dan dapat dibuat otomatis berdasarkan kode aset (auto-generate) atau diwajibkan (required) sesuai kebutuhan perusahaan.
                                             </div>
                                         </div>
                                     </div>
                                     <div class="accordion-item">
                                         <h2 class="accordion-header" id="headingcustomicon2Fourteen">
                                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsecustomicon2Fourteen" aria-expanded="false" aria-controls="collapsecustomicon2Fourteen">
-                                                <i class="ri-user-settings-line fw-medium avatar avatar-sm avatar-rounded bg-primary-transparent fs-5 me-2 text-primary flex-shrink-0"></i>How do I manage user roles and permissions?
+                                                <i class="ri-user-settings-line fw-medium avatar avatar-sm avatar-rounded bg-primary-transparent fs-5 me-2 text-primary flex-shrink-0"></i>Bagaimana flow approval bekerja?
                                             </button>
                                         </h2>
                                         <div id="collapsecustomicon2Fourteen" class="accordion-collapse collapse" aria-labelledby="headingcustomicon2Fourteen" data-bs-parent="#accordionFAQ3">
                                             <div class="accordion-body">
-                                                You can manage user roles and permissions under the 'User Management' section. Simply assign roles like Admin, Manager, or Viewer to control access.
+                                                Untuk movement/disposal/maintenance, sistem dapat menandai transaksi sebagai pending. Approver menerima notifikasi email (SMTP setting) dan dapat approve/reject. Semua keputusan dicatat sebagai audit trail.
                                             </div>
                                         </div>
                                     </div>
                                     <div class="accordion-item">
                                         <h2 class="accordion-header" id="headingcustomicon2Fifteen">
                                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsecustomicon2Fifteen" aria-expanded="false" aria-controls="collapsecustomicon2Fifteen">
-                                                <i class="ri-file-excel-line fw-medium avatar avatar-sm avatar-rounded bg-primary-transparent fs-5 me-2 text-primary flex-shrink-0"></i>Can I export data from the reports section?
+                                                <i class="ri-file-excel-line fw-medium avatar avatar-sm avatar-rounded bg-primary-transparent fs-5 me-2 text-primary flex-shrink-0"></i>Bagaimana import data besar (mis. 25.000 baris)?
                                             </button>
                                         </h2>
                                         <div id="collapsecustomicon2Fifteen" class="accordion-collapse collapse" aria-labelledby="headingcustomicon2Fifteen" data-bs-parent="#accordionFAQ3">
                                             <div class="accordion-body">
-                                                Yes, you can easily export reports as CSV, PDF, or Excel files. Just click the export button at the top of the reports page."
+                                                Sistem menyediakan preview import dan deduplikasi. Jika jumlah baris melewati threshold, import otomatis diantrikan ke queue dan statusnya tercatat di batch (queued/processing/success/failed). Gambar bisa dari URL atau ZIP.
                                             </div>
                                         </div>
                                     </div>
                                     <div class="accordion-item">
                                         <h2 class="accordion-header" id="headingcustomicon2Sixteen">
                                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsecustomicon2Sixteen" aria-expanded="false" aria-controls="collapsecustomicon2Sixteen">
-                                                <i class="ri-notification-line fw-medium avatar avatar-sm avatar-rounded bg-primary-transparent fs-5 me-2 text-primary flex-shrink-0"></i>How do I enable notifications for updates?
+                                                <i class="ri-notification-line fw-medium avatar avatar-sm avatar-rounded bg-primary-transparent fs-5 me-2 text-primary flex-shrink-0"></i>Bagaimana mengaktifkan notifikasi email?
                                             </button>
                                         </h2>
                                         <div id="collapsecustomicon2Sixteen" class="accordion-collapse collapse" aria-labelledby="headingcustomicon2Sixteen" data-bs-parent="#accordionFAQ3">
                                             <div class="accordion-body">
-                                                Notifications can be enabled under the 'Settings' section. You can choose to receive real-time alerts via email or in-app for important updates.
+                                                Isi setting SMTP di menu Settings (mail.host/port/username/password/encryption/from). Setelah itu jalankan queue worker (php artisan queue:work) agar email notifikasi terkirim.
                                             </div>
                                         </div>
                                     </div>
@@ -710,6 +409,31 @@
                 </section>
                 <!-- End:: Section-5 -->
 
+                <!-- Start:: CTA -->
+                <section class="section section-md section-primary text-fixed-white py-5" id="get-started">
+                    <div class="testimonials-background-container">
+                        <img src="{{ Vite::asset('resources/assets/images/landing/cta.jpg') }}" alt="Get Started">
+                    </div>
+                    <div class="container">
+                        <div class="d-flex align-items-center gap-2 justify-content-between flex-wrap">
+                            <div>
+                                <h4 class="fw-semibold text-fixed-white mb-1">Mulai kelola aset dengan rapi, terukur, dan siap audit</h4>
+                                <span class="d-block fs-16 op-8">Setup cepat, role & permission, approval, audit trail, import besar via queue, dan integrasi API/webhook.</span>
+                            </div>
+                            <div class="btn-list">
+                                @auth
+                                    <a href="{{ route('index') }}" class="btn btn-light btn-lg btn-w-md d-inline-flex align-items-center">Dashboard<i class="ti ti-arrow-narrow-right ms-2"></i></a>
+                                @else
+                                    <a href="{{ route('register') }}" class="btn btn-light btn-lg btn-w-md d-inline-flex align-items-center">Buat Akun<i class="ti ti-arrow-narrow-right ms-2"></i></a>
+                                @endauth
+                                <a href="{{ route('api.docs') }}" class="btn btn-outline-light btn-lg btn-w-md d-inline-flex align-items-center">API Docs<i class="ti ti-book-2 ms-2"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- End:: CTA -->
+
+                {{--
                 <!-- Start:: Section-6 -->
                 <section class="section section-primary testimonials-section">
                     <div class="testimonials-background-container">
@@ -1227,6 +951,7 @@
                     </div>
                 </section>
                 <!-- End:: Buy Now Section -->
+                --}}
 
 @endsection
 
