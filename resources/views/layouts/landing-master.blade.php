@@ -17,7 +17,7 @@
     <title> Vyzor - Laravel Bootstrap 5 Premium Admin & Dashboard Template </title>
 
     <!-- Favicon -->
-    <link rel="icon" href="{{ asset('build/assets/images/brand-logos/favicon.ico') }}" type="image/x-icon">
+    <link rel="icon" href="{{ asset('build/assets/images/brand-logos/toggle-logo.png') }}" type="image/png">
 
     <!-- Icons CSS -->
     <link href="{{ asset('build/assets/icon-fonts/icons.css') }}" rel="stylesheet">

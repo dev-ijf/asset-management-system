@@ -11,7 +11,10 @@ class SessionTimeout
     public function handle(Request $request, Closure $next): Response
     {
         if ($request->user()) {
-            $timeout = config('system.security.session_idle_timeout_minutes', 30);
+            // Mengikuti key setting yang disimpan di database (`security.session_idle_minutes`).
+            // Fallback ke key lama jika ada, agar backward compatible.
+            $timeout = (int) (config('system.security.session_idle_minutes')
+                ?? config('system.security.session_idle_timeout_minutes', 30));
             $last = session('last_active_at');
 
             if ($last && now()->diffInMinutes($last) >= $timeout) {

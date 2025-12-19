@@ -18,7 +18,7 @@
     <title> Asset Management System</title>
 
     <!-- Favicon -->
-    <link rel="icon" href="{{ asset('build/assets/images/brand-logos/favicon.ico') }}" type="image/x-icon">
+    <link rel="icon" href="{{ asset('build/assets/images/brand-logos/toggle-logo.png') }}" type="image/png">
 
     <!-- Main Theme Js -->
     <script src="{{ asset('build/assets/main.js') }}"></script>

@@ -18,7 +18,7 @@
                 </div>
                 <div class="row justify-content-center gy-3">
                     <div class="col-xl-4">
-                        <p class="fw-semibold mb-3 brand-image"><a href="{{url('index')}}"><img src="{{asset('build/assets/images/brand-logos/desktop-dark.png')}}" alt=""></a></p>
+                        <p class="fw-semibold mb-3 brand-image"><a href="{{ route('landing') }}"><img src="{{asset('build/assets/images/brand-logos/desktop-dark.png')}}" alt=""></a></p>
                         <p class="mb-2 op-6 fw-normal">
                             Lorem ipsum dolor sit amet consectetur adipisicing elit. Reprehenderit et magnam, fuga est mollitia eius, quo illum illo inventore optio aut quas omnis rem. Dolores accusantium aspernatur minus ea incidunt.
                         </p>
