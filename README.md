@@ -30,6 +30,7 @@ Project ini dibuat dengan fokus pada **best practice**, **clean code**, dan siap
 - [Testing](#testing)
 - [Deployment Notes](#deployment-notes)
 - [Contributing](#contributing)
+- [Dokumentasi Lengkap](#dokumentasi-lengkap)
 
 ## Fitur Utama
 
@@ -358,3 +359,8 @@ Kontribusi sangat diterima.
 - Gunakan style & struktur yang sudah ada (controller tipis, logic di service)
 - Tambahkan test untuk fitur baru bila memungkinkan
 - Buat PR kecil dan fokus per fitur
+
+## Dokumentasi Lengkap
+
+Dokumentasi teknis terperinci (alur, setting, workflow, integrasi, notifikasi, dsb.) tersedia di:
+- `documentation/guide.md`
