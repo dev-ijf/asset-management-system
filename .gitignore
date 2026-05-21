@@ -15,11 +15,34 @@ Homestead.json
 Homestead.yaml
 npm-debug.log
 yarn-error.log
-composer.lock
-package-lock.json
 /auth.json
 /.fleet
 /.idea
 /.nova
 /.vscode
 /.zed
+
+# Next.js / TypeScript build output
+.next
+src/.next
+out
+src/generated
+*.tsbuildinfo
+next-env.d.ts
+src/next-env.d.ts
+
+# Local dev server logs
+.next-dev*.log
+.next-dev*.err.log
+.next-dev*.pid
+
+# Local uploads are not persistent on production hosting
+public/uploads
+src/public/uploads
+
+# Temporary scratch files
+css.css
+js.js
+js2.js
+public/asset_management_system
+reference screenshots/

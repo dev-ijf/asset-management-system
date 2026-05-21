@@ -1,0 +1,454 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AuditStatus {
+  MATCH
+  MATCHED
+  MISMATCH
+  MISSING
+  DAMAGED
+}
+
+enum TransactionStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+  REVERSED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum DepreciationMethod {
+  STRAIGHT_LINE     @map("straight_line")
+  DECLINING_BALANCE @map("declining_balance")
+  UNITS_OF_ACTIVITY @map("units_of_activity")
+  NONE              @map("none")
+}
+
+enum CapexOpex {
+  CAPEX @map("capex")
+  OPEX  @map("opex")
+}
+
+model User {
+  id                     String    @id @default(uuid()) @db.Uuid
+  name                   String
+  email                  String    @unique
+  emailVerifiedAt        DateTime? @map("email_verified_at")
+  password               String
+  rememberToken          String?   @map("remember_token")
+  departmentId           String?   @map("department_id") @db.Uuid
+  assetLocationId        String?   @map("asset_location_id") @db.Uuid
+  twoFactorEnabled       Boolean   @default(false) @map("two_factor_enabled")
+  twoFactorSecret        String?   @map("two_factor_secret")
+  twoFactorRecoveryCodes Json?     @map("two_factor_recovery_codes")
+  twoFactorConfirmedAt   DateTime? @map("two_factor_confirmed_at")
+  lastActiveAt           DateTime? @map("last_active_at")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  department        Department?        @relation("UserDepartment", fields: [departmentId], references: [id], onDelete: SetNull)
+  assetLocation     AssetLocation?     @relation("UserAssetLocation", fields: [assetLocationId], references: [id], onDelete: SetNull)
+  roles             UserRole[]
+  assetHistories    AssetHistory[]     @relation("AssetHistoryChangedBy")
+  archivedAssets    Asset[]            @relation("AssetArchivedBy")
+  assetMovements    AssetMovement[]    @relation("AssetMovementPerformedBy")
+  assetDisposals    AssetDisposal[]    @relation("AssetDisposalPerformedBy")
+  reversedDisposals AssetDisposal[]    @relation("AssetDisposalReversedBy")
+  assetAudits       AssetAudit[]       @relation("AssetAuditAuditedBy")
+  assetMaintenances AssetMaintenance[] @relation("AssetMaintenanceCreatedBy")
+
+  @@map("users")
+}
+
+model Role {
+  id          String           @id @default(uuid()) @map("uuid") @db.Uuid
+  name        String
+  guardName   String           @default("web") @map("guard_name")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@unique([name, guardName])
+  @@map("roles")
+}
+
+model Permission {
+  id        String           @id @default(uuid()) @map("uuid") @db.Uuid
+  name      String
+  guardName String           @default("web") @map("guard_name")
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+  roles     RolePermission[]
+
+  @@unique([name, guardName])
+  @@map("permissions")
+}
+
+model UserRole {
+  userId String @map("user_id") @db.Uuid
+  roleId String @map("role_id") @db.Uuid
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model AssetStatus {
+  id                String          @id @default(uuid()) @db.Uuid
+  name              String
+  code              String          @unique
+  description       String?
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  assets            Asset[]
+  previousDisposals AssetDisposal[] @relation("DisposalPreviousStatus")
+  disposedDisposals AssetDisposal[] @relation("DisposalDisposedStatus")
+
+  @@map("asset_statuses")
+}
+
+model AssetClass {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  code        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  assets      Asset[]
+
+  @@map("asset_classes")
+}
+
+model Unit {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  symbol      String   @unique @db.VarChar(20)
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  assets      Asset[]
+
+  @@map("units")
+}
+
+model Department {
+  id                      String          @id @default(uuid()) @db.Uuid
+  name                    String
+  code                    String          @unique
+  description             String?
+  createdAt               DateTime        @default(now()) @map("created_at")
+  updatedAt               DateTime        @updatedAt @map("updated_at")
+  assetUsers              AssetUser[]
+  assets                  Asset[]
+  users                   User[]          @relation("UserDepartment")
+  movementFromDepartments AssetMovement[] @relation("MovementFromDepartment")
+  movementToDepartments   AssetMovement[] @relation("MovementToDepartment")
+  previousDisposals       AssetDisposal[] @relation("DisposalPreviousDepartment")
+
+  @@map("departments")
+}
+
+model PersonInCharge {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  email     String?
+  phone     String?  @db.VarChar(30)
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  assets    Asset[]
+
+  @@map("person_in_charges")
+}
+
+model AssetUser {
+  id                     String          @id @default(uuid()) @db.Uuid
+  name                   String
+  email                  String?
+  phone                  String?         @db.VarChar(30)
+  departmentId           String?         @map("department_id") @db.Uuid
+  notes                  String?
+  createdAt              DateTime        @default(now()) @map("created_at")
+  updatedAt              DateTime        @updatedAt @map("updated_at")
+  department             Department?     @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  assets                 Asset[]
+  movementFromAssetUsers AssetMovement[] @relation("MovementFromAssetUser")
+  movementToAssetUsers   AssetMovement[] @relation("MovementToAssetUser")
+
+  @@map("asset_users")
+}
+
+model AssetCategory {
+  id          String          @id @default(uuid()) @db.Uuid
+  name        String
+  code        String          @unique
+  description String?
+  parentId    String?         @map("parent_id") @db.Uuid
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  parent      AssetCategory?  @relation("AssetCategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children    AssetCategory[] @relation("AssetCategoryHierarchy")
+  assets      Asset[]
+
+  @@map("asset_categories")
+}
+
+model AssetLocation {
+  id                    String          @id @default(uuid()) @db.Uuid
+  name                  String
+  code                  String          @unique
+  description           String?
+  parentId              String?         @map("parent_id") @db.Uuid
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+  parent                AssetLocation?  @relation("AssetLocationHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children              AssetLocation[] @relation("AssetLocationHierarchy")
+  assets                Asset[]
+  users                 User[]          @relation("UserAssetLocation")
+  movementFromLocations AssetMovement[] @relation("MovementFromLocation")
+  movementToLocations   AssetMovement[] @relation("MovementToLocation")
+  previousDisposals     AssetDisposal[] @relation("DisposalPreviousLocation")
+  audits                AssetAudit[]
+
+  @@map("asset_locations")
+}
+
+model Warranty {
+  id             String   @id @default(uuid()) @db.Uuid
+  name           String
+  durationMonths Int      @default(12) @map("duration_months")
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  assets         Asset[]
+
+  @@map("warranties")
+}
+
+model VendorContract {
+  id                 String    @id @default(uuid()) @db.Uuid
+  vendorName         String    @map("vendor_name")
+  contractNumber     String?   @map("contract_number")
+  startDate          DateTime? @map("start_date") @db.Date
+  endDate            DateTime? @map("end_date") @db.Date
+  slaResponseHours   Int?      @map("sla_response_hours")
+  slaResolutionHours Int?      @map("sla_resolution_hours")
+  notes              String?
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  assets             Asset[]
+
+  @@map("vendor_contracts")
+}
+
+model Asset {
+  id                     String             @id @default(uuid()) @db.Uuid
+  code                   String             @unique
+  name                   String
+  serialNumber           String?            @map("serial_number")
+  description            String?
+  assetStatusId          String?            @map("asset_status_id") @db.Uuid
+  assetClassId           String?            @map("asset_class_id") @db.Uuid
+  assetCategoryId        String?            @map("asset_category_id") @db.Uuid
+  unitId                 String?            @map("unit_id") @db.Uuid
+  departmentId           String?            @map("department_id") @db.Uuid
+  personInChargeId       String?            @map("person_in_charge_id") @db.Uuid
+  assetUserId            String?            @map("asset_user_id") @db.Uuid
+  assetLocationId        String?            @map("asset_location_id") @db.Uuid
+  warrantyId             String?            @map("warranty_id") @db.Uuid
+  purchaseDate           DateTime?          @map("purchase_date") @db.Date
+  warrantyEnd            DateTime?          @map("warranty_end") @db.Date
+  cost                   Decimal?           @db.Decimal(15, 2)
+  depreciationMethod     DepreciationMethod @default(STRAIGHT_LINE) @map("depreciation_method")
+  usefulLifeMonths       Int?               @map("useful_life_months")
+  residualValue          Decimal?           @map("residual_value") @db.Decimal(15, 2)
+  capexOpex              CapexOpex?         @map("capex_opex")
+  vendorContractId       String?            @map("vendor_contract_id") @db.Uuid
+  warrantyReminderSentAt DateTime?          @map("warranty_reminder_sent_at")
+  qrToken                String             @unique @map("qr_token")
+  qrPath                 String?            @map("qr_path")
+  rfidTag                String?            @unique @map("rfid_tag")
+  nfcTag                 String?            @unique @map("nfc_tag")
+  labelTemplate          String?            @map("label_template")
+  isConsumable           Boolean            @default(false) @map("is_consumable")
+  quantity               Int                @default(1)
+  availableQuantity      Int?               @map("available_quantity")
+  isPool                 Boolean            @default(false) @map("is_pool")
+  metadata               Json?
+  createdAt              DateTime           @default(now()) @map("created_at")
+  updatedAt              DateTime           @updatedAt @map("updated_at")
+  archivedAt             DateTime?          @map("archived_at")
+  archivedById           String?            @map("archived_by") @db.Uuid
+  retentionUntil         DateTime?          @map("retention_until") @db.Date
+  deletedAt              DateTime?          @map("deleted_at")
+
+  assetStatus    AssetStatus?       @relation(fields: [assetStatusId], references: [id], onDelete: SetNull)
+  assetClass     AssetClass?        @relation(fields: [assetClassId], references: [id], onDelete: SetNull)
+  assetCategory  AssetCategory?     @relation(fields: [assetCategoryId], references: [id], onDelete: SetNull)
+  unit           Unit?              @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  department     Department?        @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  personInCharge PersonInCharge?    @relation(fields: [personInChargeId], references: [id], onDelete: SetNull)
+  assetUser      AssetUser?         @relation(fields: [assetUserId], references: [id], onDelete: SetNull)
+  assetLocation  AssetLocation?     @relation(fields: [assetLocationId], references: [id], onDelete: SetNull)
+  warranty       Warranty?          @relation(fields: [warrantyId], references: [id], onDelete: SetNull)
+  vendorContract VendorContract?    @relation(fields: [vendorContractId], references: [id], onDelete: SetNull)
+  archivedBy     User?              @relation("AssetArchivedBy", fields: [archivedById], references: [id], onDelete: SetNull)
+  histories      AssetHistory[]
+  photos         AssetPhoto[]
+  movements      AssetMovement[]
+  disposals      AssetDisposal[]
+  audits         AssetAudit[]
+  maintenances   AssetMaintenance[]
+
+  /// TODO: Reconfirm whether pool/consumable stock should be split into a dedicated inventory ledger.
+  @@map("assets")
+}
+
+model AssetHistory {
+  id          String   @id @default(uuid()) @db.Uuid
+  assetId     String   @map("asset_id") @db.Uuid
+  action      String
+  description String?
+  changedById String?  @map("changed_by") @db.Uuid
+  payload     Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  asset     Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  changedBy User? @relation("AssetHistoryChangedBy", fields: [changedById], references: [id], onDelete: SetNull)
+
+  @@map("asset_histories")
+}
+
+model AssetPhoto {
+  id        String   @id @default(uuid()) @db.Uuid
+  assetId   String   @map("asset_id") @db.Uuid
+  path      String
+  isPrimary Boolean  @default(false) @map("is_primary")
+  caption   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@map("asset_photos")
+}
+
+model AssetMovement {
+  id               String   @id @default(uuid()) @db.Uuid
+  assetId          String   @map("asset_id") @db.Uuid
+  fromLocationId   String?  @map("from_location_id") @db.Uuid
+  toLocationId     String?  @map("to_location_id") @db.Uuid
+  fromDepartmentId String?  @map("from_department_id") @db.Uuid
+  toDepartmentId   String?  @map("to_department_id") @db.Uuid
+  fromAssetUserId  String?  @map("from_asset_user_id") @db.Uuid
+  toAssetUserId    String?  @map("to_asset_user_id") @db.Uuid
+  performedAt      DateTime @map("performed_at") @db.Date
+  notes            String?
+  performedById    String?  @map("performed_by") @db.Uuid
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  asset          Asset          @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  fromLocation   AssetLocation? @relation("MovementFromLocation", fields: [fromLocationId], references: [id], onDelete: SetNull)
+  toLocation     AssetLocation? @relation("MovementToLocation", fields: [toLocationId], references: [id], onDelete: SetNull)
+  fromDepartment Department?    @relation("MovementFromDepartment", fields: [fromDepartmentId], references: [id], onDelete: SetNull)
+  toDepartment   Department?    @relation("MovementToDepartment", fields: [toDepartmentId], references: [id], onDelete: SetNull)
+  fromAssetUser  AssetUser?     @relation("MovementFromAssetUser", fields: [fromAssetUserId], references: [id], onDelete: SetNull)
+  toAssetUser    AssetUser?     @relation("MovementToAssetUser", fields: [toAssetUserId], references: [id], onDelete: SetNull)
+  performedBy    User?          @relation("AssetMovementPerformedBy", fields: [performedById], references: [id], onDelete: SetNull)
+
+  @@map("asset_movements")
+}
+
+model AssetDisposal {
+  id                   String    @id @default(uuid()) @db.Uuid
+  assetId              String    @map("asset_id") @db.Uuid
+  previousStatusId     String?   @map("previous_status_id") @db.Uuid
+  previousLocationId   String?   @map("previous_location_id") @db.Uuid
+  previousDepartmentId String?   @map("previous_department_id") @db.Uuid
+  disposedStatusId     String?   @map("disposed_status_id") @db.Uuid
+  disposedAt           DateTime  @map("disposed_at") @db.Date
+  reason               String
+  performedById        String?   @map("performed_by") @db.Uuid
+  reversedAt           DateTime? @map("reversed_at")
+  reversedById         String?   @map("reversed_by") @db.Uuid
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  asset              Asset          @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  previousStatus     AssetStatus?   @relation("DisposalPreviousStatus", fields: [previousStatusId], references: [id], onDelete: SetNull)
+  disposedStatus     AssetStatus?   @relation("DisposalDisposedStatus", fields: [disposedStatusId], references: [id], onDelete: SetNull)
+  previousLocation   AssetLocation? @relation("DisposalPreviousLocation", fields: [previousLocationId], references: [id], onDelete: SetNull)
+  previousDepartment Department?    @relation("DisposalPreviousDepartment", fields: [previousDepartmentId], references: [id], onDelete: SetNull)
+  performedBy        User?          @relation("AssetDisposalPerformedBy", fields: [performedById], references: [id], onDelete: SetNull)
+  reversedBy         User?          @relation("AssetDisposalReversedBy", fields: [reversedById], references: [id], onDelete: SetNull)
+
+  @@map("asset_disposals")
+}
+
+model AssetAudit {
+  id          String      @id @default(uuid()) @db.Uuid
+  assetId     String      @map("asset_id") @db.Uuid
+  status      AuditStatus
+  locationId  String?     @map("location_id") @db.Uuid
+  auditedAt   DateTime    @map("audited_at") @db.Date
+  notes       String?
+  auditedById String?     @map("audited_by") @db.Uuid
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  asset     Asset          @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  location  AssetLocation? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  auditedBy User?          @relation("AssetAuditAuditedBy", fields: [auditedById], references: [id], onDelete: SetNull)
+
+  @@map("asset_audits")
+}
+
+model AssetMaintenance {
+  id            String    @id @default(uuid()) @db.Uuid
+  assetId       String    @map("asset_id") @db.Uuid
+  description   String
+  status        String    @default("OPEN")
+  scheduledDate DateTime? @map("scheduled_date") @db.Date
+  completedDate DateTime? @map("completed_date") @db.Date
+  cost          Decimal?  @db.Decimal(15, 2)
+  vendor        String?
+  notes         String?
+  createdById   String?   @map("created_by") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  asset     Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  createdBy User? @relation("AssetMaintenanceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@map("asset_maintenances")
+}
