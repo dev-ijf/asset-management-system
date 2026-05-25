@@ -2,6 +2,7 @@
     "private": true,
     "type": "module",
     "scripts": {
+        "prebuild": "node scripts/clean-next-build.mjs",
         "build": "next build",
         "dev": "next dev --turbopack",
         "db:migrate": "prisma migrate dev",
