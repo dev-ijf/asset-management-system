@@ -1,5 +1,5 @@
 import { cp, readFile, readdir, rm, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 
 const root = process.cwd();
 const source = resolve(root, "src/.next");
@@ -25,7 +25,31 @@ async function findFiles(directory, suffix) {
   return files;
 }
 
-function normalizeExternalTracePath(file) {
+function rootRelativePath(traceFile, target) {
+  const traceDirectory = dirname(traceFile);
+  return relative(traceDirectory, resolve(root, target)).replaceAll(sep, "/");
+}
+
+function normalizeExternalTracePath(traceFile, file) {
+  if (
+    file === ".env" ||
+    file === ".env.local" ||
+    file === ".env.production" ||
+    file.endsWith("/.env") ||
+    file.endsWith("/.env.local") ||
+    file.endsWith("/.env.production")
+  ) {
+    return null;
+  }
+
+  if (file === "package.json" || (file.endsWith("/package.json") && !file.includes("node_modules/"))) {
+    return rootRelativePath(traceFile, "package.json");
+  }
+
+  if (file === "package-lock.json" || (file.endsWith("/package-lock.json") && !file.includes("node_modules/"))) {
+    return rootRelativePath(traceFile, "package-lock.json");
+  }
+
   if (!file.startsWith("../")) {
     return file;
   }
@@ -58,7 +82,7 @@ async function normalizeTraceFiles() {
       continue;
     }
 
-    trace.files = trace.files.map(normalizeExternalTracePath);
+    trace.files = [...new Set(trace.files.map((file) => normalizeExternalTracePath(traceFile, file)).filter(Boolean))];
     await writeFile(traceFile, `${JSON.stringify(trace)}\n`);
   }
 }
