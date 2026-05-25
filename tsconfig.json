@@ -24,7 +24,7 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/**/*.d.ts",
-    ".next/types/**/*.ts"
+    "src/.next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "public", "resources", "vendor", "storage"]
+  "exclude": ["node_modules", ".next", "public", "resources", "vendor", "storage"]
 }
