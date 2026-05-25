@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { AuditStatus } from "@/generated/prisma/client";
+import { ApprovalTransactionType, AuditStatus } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/auth";
 import { createAssetHistory } from "@/lib/asset-history";
 import { prisma } from "@/lib/prisma";
@@ -16,6 +16,7 @@ const MOVEMENTS_PATH = "/dashboard/transactions/movements";
 const DISPOSALS_PATH = "/dashboard/transactions/disposals";
 const AUDITS_PATH = "/dashboard/transactions/audits";
 const MAINTENANCE_PATH = "/dashboard/maintenance";
+const APPROVALS_PATH = "/dashboard/approvals";
 
 function getString(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
@@ -52,6 +53,11 @@ function revalidateAsset(assetId: string) {
   revalidatePath("/dashboard/assets");
   revalidatePath(`/dashboard/assets/${assetId}`);
   revalidatePath(`/dashboard/assets/${assetId}/history`);
+}
+
+function revalidateApprovalQueues() {
+  revalidatePath(APPROVALS_PATH);
+  revalidatePath("/dashboard");
 }
 
 export async function createMovementAction(
@@ -113,55 +119,31 @@ export async function createMovementAction(
   }
 
   try {
-    await prisma.$transaction(async (tx) => {
-      const movement = await tx.assetMovement.create({
-        data: {
-          assetId,
+    await prisma.assetApprovalRequest.create({
+      data: {
+        transactionType: ApprovalTransactionType.MOVEMENT,
+        assetId,
+        requesterId: user.id,
+        payload: {
           fromLocationId: asset.assetLocationId,
           toLocationId: optional(toLocationId),
           fromDepartmentId: asset.departmentId,
           toDepartmentId: optional(toDepartmentId),
           fromAssetUserId: asset.assetUserId,
           toAssetUserId: optional(toAssetUserId),
-          performedAt,
+          performedAt: performedAt.toISOString(),
           notes: optional(notes),
-          performedById: user.id,
         },
-      });
-
-      await tx.asset.update({
-        where: { id: assetId },
-        data: {
-          assetLocationId: toLocationId || asset.assetLocationId,
-          departmentId: toDepartmentId || asset.departmentId,
-          assetUserId: toAssetUserId || asset.assetUserId,
-        },
-      });
-
-      await createAssetHistory({
-        action: "MOVED",
-        assetId,
-        changedById: user.id,
-        description: `Movement asset ${asset.code} dibuat.`,
-        payload: {
-          movementId: movement.id,
-          fromLocationId: movement.fromLocationId,
-          toLocationId: movement.toLocationId,
-          fromDepartmentId: movement.fromDepartmentId,
-          toDepartmentId: movement.toDepartmentId,
-          fromAssetUserId: movement.fromAssetUserId,
-          toAssetUserId: movement.toAssetUserId,
-        },
-        tx,
-      });
+      },
     });
 
     revalidatePath(MOVEMENTS_PATH);
+    revalidateApprovalQueues();
     revalidateAsset(assetId);
 
-    return { ok: true, message: "Movement asset berhasil dibuat." };
+    return { ok: true, message: "Request movement berhasil dibuat dan menunggu approval." };
   } catch {
-    return { message: "Movement asset gagal dibuat. Silakan coba lagi." };
+    return { message: "Request movement gagal dibuat. Silakan coba lagi." };
   }
 }
 
@@ -216,41 +198,29 @@ export async function createDisposalAction(
   }
 
   try {
-    await prisma.$transaction(async (tx) => {
-      const disposal = await tx.assetDisposal.create({
-        data: {
-          assetId,
+    await prisma.assetApprovalRequest.create({
+      data: {
+        transactionType: ApprovalTransactionType.DISPOSAL,
+        assetId,
+        requesterId: user.id,
+        payload: {
           previousStatusId: asset.assetStatusId,
           previousLocationId: asset.assetLocationId,
           previousDepartmentId: asset.departmentId,
           disposedStatusId: disposedStatus.id,
-          disposedAt,
+          disposedAt: disposedAt.toISOString(),
           reason,
-          performedById: user.id,
         },
-      });
-
-      await tx.asset.update({
-        where: { id: assetId },
-        data: { assetStatusId: disposedStatus.id },
-      });
-
-      await createAssetHistory({
-        action: "DISPOSED",
-        assetId,
-        changedById: user.id,
-        description: `Asset ${asset.code} didisposal.`,
-        payload: { disposalId: disposal.id, reason, disposedAt: disposedAt.toISOString() },
-        tx,
-      });
+      },
     });
 
     revalidatePath(DISPOSALS_PATH);
+    revalidateApprovalQueues();
     revalidateAsset(assetId);
 
-    return { ok: true, message: "Disposal asset berhasil dibuat." };
+    return { ok: true, message: "Request disposal berhasil dibuat dan menunggu approval." };
   } catch {
-    return { message: "Disposal asset gagal dibuat. Silakan coba lagi." };
+    return { message: "Request disposal gagal dibuat. Silakan coba lagi." };
   }
 }
 
@@ -402,37 +372,31 @@ export async function createMaintenanceAction(
   }
 
   try {
-    await prisma.$transaction(async (tx) => {
-      const maintenance = await tx.assetMaintenance.create({
-        data: {
+    await prisma.assetApprovalRequest.create({
+      data: {
+        transactionType: ApprovalTransactionType.MAINTENANCE,
+        assetId,
+        requesterId: user.id,
+        payload: {
           assetId,
           description,
           status,
-          scheduledDate,
-          completedDate,
+          scheduledDate: scheduledDate?.toISOString() ?? null,
+          completedDate: completedDate?.toISOString() ?? null,
           cost: costInput ? costInput : null,
           vendor: optional(vendor),
           notes: optional(notes),
-          createdById: user.id,
         },
-      });
-
-      await createAssetHistory({
-        action: status === "COMPLETED" ? "MAINTENANCE_COMPLETED" : "MAINTENANCE_CREATED",
-        assetId,
-        changedById: user.id,
-        description: `Maintenance asset ${asset.code} dibuat.`,
-        payload: { maintenanceId: maintenance.id, status },
-        tx,
-      });
+      },
     });
 
     revalidatePath(MAINTENANCE_PATH);
+    revalidateApprovalQueues();
     revalidateAsset(assetId);
 
-    return { ok: true, message: "Maintenance berhasil dibuat." };
+    return { ok: true, message: "Request maintenance berhasil dibuat dan menunggu approval." };
   } catch {
-    return { message: "Maintenance gagal dibuat. Silakan coba lagi." };
+    return { message: "Request maintenance gagal dibuat. Silakan coba lagi." };
   }
 }
 

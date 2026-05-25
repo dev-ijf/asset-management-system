@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Activity, Package, Repeat2, ShieldCheck, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
+import { ApprovalStatus } from "@/generated/prisma/client";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -173,6 +174,7 @@ export default async function DashboardPage() {
     activeDisposals,
     auditIssues,
     openMaintenances,
+    pendingApprovals,
     lowStockConsumables,
     expiringWarranties,
     statusGroups,
@@ -187,6 +189,7 @@ export default async function DashboardPage() {
     recentAudits,
     recentDisposals,
     recentMovements,
+    recentApprovals,
   ] = await Promise.all([
     prisma.asset.count({ where: { deletedAt: null } }),
     prisma.asset.count({ where: { deletedAt: null, archivedAt: { not: null } } }),
@@ -195,6 +198,7 @@ export default async function DashboardPage() {
     prisma.assetDisposal.count({ where: { reversedAt: null } }),
     prisma.assetAudit.count({ where: { status: { in: [...issueStatuses] } } }),
     prisma.assetMaintenance.count({ where: { status: { notIn: ["COMPLETED", "CANCELLED"] } } }),
+    prisma.assetApprovalRequest.count({ where: { status: ApprovalStatus.PENDING } }),
     prisma.asset.count({ where: { deletedAt: null, isConsumable: true, availableQuantity: { lte: 0 } } }),
     prisma.asset.count({
       where: {
@@ -248,6 +252,15 @@ export default async function DashboardPage() {
         toLocation: { select: { name: true } },
       },
     }),
+    prisma.assetApprovalRequest.findMany({
+      where: { status: ApprovalStatus.PENDING },
+      take: 5,
+      orderBy: { createdAt: "desc" },
+      include: {
+        asset: { select: { code: true, name: true } },
+        requester: { select: { name: true, email: true } },
+      },
+    }),
   ]);
 
   const statusNames = new Map(statuses.map((item) => [item.id, item.name]));
@@ -299,7 +312,7 @@ export default async function DashboardPage() {
     ["Maintenance Terbuka", "Status selain completed/cancelled.", openMaintenances, "/dashboard/maintenance"],
     ["Consumable Habis", "Consumable dengan available quantity <= 0.", lowStockConsumables, "/dashboard/assets"],
     ["Warranty Akan Habis", "Warranty end dalam 30 hari.", expiringWarranties, "/dashboard/reports/assets"],
-    ["Approval Pending", "Workflow approval belum diaktifkan.", 0, "/dashboard/approvals"],
+    ["Approval Pending", "Request movement/disposal/maintenance.", pendingApprovals, "/dashboard/approvals"],
   ];
 
   const auditRows: ReactNode[][] = recentAudits.map((audit) => [
@@ -324,6 +337,12 @@ export default async function DashboardPage() {
     movement.toLocation?.name ?? "-",
     "Applied",
     formatDate(movement.performedAt),
+  ]);
+
+  const approvalRows: ReactNode[][] = recentApprovals.map((approval) => [
+    approval.transactionType,
+    approval.requester ? `${approval.requester.name} (${approval.requester.email})` : "-",
+    formatDate(approval.createdAt),
   ]);
 
   return (
@@ -461,7 +480,7 @@ export default async function DashboardPage() {
             </Link>
           </CardHeader>
           <CardContent>
-            <DataTable columns={["Type", "Requester", "Dibuat"]} emptyTitle="Workflow approval belum diaktifkan." />
+            <DataTable columns={["Type", "Requester", "Dibuat"]} rows={approvalRows} emptyTitle="Tidak ada approval pending." />
           </CardContent>
         </Card>
       </section>

@@ -60,6 +60,11 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
           },
         },
       },
+      directPermissions: {
+        include: {
+          permission: true,
+        },
+      },
     },
   });
 
@@ -74,6 +79,10 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     for (const rolePermission of userRole.role.permissions) {
       permissions.add(rolePermission.permission.name);
     }
+  }
+
+  for (const userPermission of user.directPermissions) {
+    permissions.add(userPermission.permission.name);
   }
 
   return {

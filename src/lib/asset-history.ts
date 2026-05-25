@@ -15,7 +15,8 @@ export type AssetHistoryAction =
   | "AUDITED"
   | "MAINTENANCE_CREATED"
   | "MAINTENANCE_UPDATED"
-  | "MAINTENANCE_COMPLETED";
+  | "MAINTENANCE_COMPLETED"
+  | "REJECTED";
 
 type HistoryClient = typeof prisma | Prisma.TransactionClient;
 
