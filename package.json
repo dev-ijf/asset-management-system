@@ -2,8 +2,8 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "next build src && node scripts/sync-next-build.mjs",
-        "dev": "next dev src --turbopack",
+        "build": "next build",
+        "dev": "next dev --turbopack",
         "db:migrate": "prisma migrate dev",
         "db:seed": "prisma db seed",
         "prisma:format": "prisma format",
