@@ -11,7 +11,6 @@ import {
   Home,
   Package,
   Repeat2,
-  Settings2,
   ShieldCheck,
   Trash2,
   Users,
@@ -59,7 +58,6 @@ const utilityItems = [
   { label: "Charts", href: "/dashboard/charts", icon: BarChart3 },
   { label: "Approvals", href: "/dashboard/approvals", icon: ClipboardCheck },
   { label: "Security", href: "/dashboard/security", icon: ShieldCheck },
-  { label: "Settings", href: "/dashboard/settings", icon: Settings2 },
   { label: "Archive", href: "/dashboard/archive", icon: Trash2 },
 ];
 
