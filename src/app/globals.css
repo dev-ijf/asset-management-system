@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
-@source "../app/**/*.{ts,tsx}";
-@source "../components/**/*.{ts,tsx}";
-@source "../lib/**/*.{ts,tsx}";
+@source "../app";
+@source "../components";
+@source "../lib";
 
 :root {
   --app-bg: #f4f6fb;
