@@ -195,7 +195,7 @@ export default async function AssetDetailPage({ params }: AssetDetailPageProps) 
             </CardContent>
           </Card>
 
-          <AssetPhotoSection assetId={asset.id} canManage={canManage} photos={asset.photos} />
+          <AssetPhotoSection assetId={asset.id} canManage={canManage} photos={asset.photos.map(({ id, path, isPrimary }) => ({ id, path, isPrimary }))} />
 
           <Card>
             <CardHeader>

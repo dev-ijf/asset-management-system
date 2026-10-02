@@ -79,6 +79,7 @@ model User {
   assetMaintenances  AssetMaintenance[]     @relation("AssetMaintenanceCreatedBy")
   requestedApprovals AssetApprovalRequest[] @relation("AssetApprovalRequestedBy")
   reviewedApprovals  AssetApprovalRequest[] @relation("AssetApprovalReviewedBy")
+  bulkJobs           AssetBulkJob[]
 
   @@map("users")
 }
@@ -354,6 +355,23 @@ model Asset {
   @@map("assets")
 }
 
+model AssetBulkJob {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  mode        String
+  filename    String
+  status      String   @default("PREVIEW")
+  rows        Json
+  summary     Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  completedAt DateTime? @map("completed_at")
+  expiresAt   DateTime @map("expires_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@map("asset_bulk_jobs")
+}
+
 model AssetHistory {
   id          String   @id @default(uuid()) @db.Uuid
   assetId     String   @map("asset_id") @db.Uuid
@@ -376,12 +394,25 @@ model AssetPhoto {
   path      String
   isPrimary Boolean  @default(false) @map("is_primary")
   caption   String?
+  driveFileId String? @unique @map("drive_file_id")
+  filename    String?
+  mimeType    String? @map("mime_type")
+  size        Int?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
   @@map("asset_photos")
+}
+
+model DrivePhotoCleanup {
+  fileId    String   @id @map("file_id")
+  dueAt     DateTime @map("due_at")
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("drive_photo_cleanup")
 }
 
 model AssetMovement {

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { EmptyState } from "@/components/ui/empty-state";
 
 type DataTableProps = {
-  columns: string[];
+  columns: ReactNode[];
   rows?: ReactNode[][];
   emptyTitle?: string;
 };
@@ -13,9 +13,9 @@ export function DataTable({ columns, rows = [], emptyTitle }: DataTableProps) {
       <table className="w-full min-w-[760px] border-collapse text-sm">
         <thead className="bg-[var(--table-head)]">
           <tr>
-            {columns.map((column) => (
+            {columns.map((column, columnIndex) => (
               <th
-                key={column}
+                key={columnIndex}
                 className="border border-[var(--border)] px-6 py-4 text-left font-medium text-[var(--text)]"
               >
                 {column}

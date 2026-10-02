@@ -14,6 +14,10 @@ export type AssetActionState = {
   errors?: Record<string, string | undefined>;
 };
 
+import { optionalPhoto, PhotoError } from "@/lib/asset-image";
+import { prepareAssetPhoto, attachAssetPhoto, discardPreparedPhoto, removePhotoRecord, ensurePrimaryPhoto,
+  cleanupPhotosSafely, deleteLegacyPhoto, type PreparedPhoto } from "@/lib/asset-photo-storage";
+
 const ASSETS_PATH = "/dashboard/assets";
 const DEPRECIATION_METHODS = Object.values(DepreciationMethod);
 const CAPEX_OPEX_VALUES = Object.values(CapexOpex);
@@ -282,10 +286,13 @@ export async function createAssetAction(_previousState: AssetActionState, formDa
     return { errors };
   }
 
+  let photo: PreparedPhoto | undefined;
   try {
     const assetStatusId = await getDefaultStatusId(input.assetStatusId);
     const code = await generateAssetCode();
     const qrToken = await generateQrToken();
+    const file = optionalPhoto(formData);
+    if (file) photo = await prepareAssetPhoto(file, code);
 
     await prisma.$transaction(async (tx) => {
       const asset = await tx.asset.create({
@@ -296,6 +303,7 @@ export async function createAssetAction(_previousState: AssetActionState, formDa
         },
       });
 
+      if (photo) await attachAssetPhoto(tx, asset.id, photo, true);
       await createAssetHistory({
         action: "CREATED",
         assetId: asset.id,
@@ -306,6 +314,8 @@ export async function createAssetAction(_previousState: AssetActionState, formDa
       });
     });
   } catch (error) {
+    await discardPreparedPhoto(photo);
+    if (error instanceof PhotoError) return { errors: { photo: error.message, form: error.message } };
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return { errors: { form: "Code, QR token, RFID, atau NFC sudah digunakan. Coba simpan ulang." } };
     }
@@ -333,12 +343,27 @@ export async function updateAssetAction(_previousState: AssetActionState, formDa
     return { errors };
   }
 
+  let photo: PreparedPhoto | undefined;
+  let removed: { path: string; driveFileId: string | null } | undefined;
   try {
+    const existing = await prisma.asset.findFirst({ where: { id: input.id, deletedAt: null }, select: { code: true } });
+    if (!existing) return { errors: { form: "Asset tidak ditemukan atau sudah dihapus." } };
+    const file = optionalPhoto(formData);
+    if (file) photo = await prepareAssetPhoto(file, existing.code);
+    const oldPhotoId = String(formData.get("photoId") ?? "");
+    const removePhoto = formData.get("removePhoto") === "1";
     await prisma.$transaction(async (tx) => {
       const asset = await tx.asset.update({
-        where: { id: input.id },
+        where: { id: input.id, deletedAt: null },
         data: buildAssetData(input, input.assetStatusId || null),
       });
+
+      if ((photo || removePhoto) && oldPhotoId) removed = await removePhotoRecord(tx, asset.id, oldPhotoId);
+      if (photo) {
+        await tx.assetPhoto.updateMany({ where: { assetId: asset.id }, data: { isPrimary: false } });
+        await attachAssetPhoto(tx, asset.id, photo, true);
+      }
+      if (photo || removePhoto) await ensurePrimaryPhoto(tx, asset.id);
 
       await createAssetHistory({
         action: "UPDATED",
@@ -350,6 +375,8 @@ export async function updateAssetAction(_previousState: AssetActionState, formDa
       });
     });
   } catch (error) {
+    await discardPreparedPhoto(photo);
+    if (error instanceof PhotoError) return { errors: { photo: error.message, form: error.message } };
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return { errors: { form: "RFID atau NFC sudah digunakan." } };
     }
@@ -361,6 +388,8 @@ export async function updateAssetAction(_previousState: AssetActionState, formDa
     return { errors: { form: "Asset gagal diperbarui. Coba lagi." } };
   }
 
+  await deleteLegacyPhoto(removed);
+  await cleanupPhotosSafely(removed?.driveFileId ? [removed.driveFileId] : []);
   revalidatePath(ASSETS_PATH);
   revalidatePath(`${ASSETS_PATH}/${input.id}`);
 

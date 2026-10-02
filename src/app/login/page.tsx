@@ -2,10 +2,12 @@ import { Boxes } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { LoginForm } from "@/app/login/login-form";
+import { googleErrors } from "@/lib/google-oauth";
 
 type LoginPageProps = {
   searchParams: Promise<{
     next?: string;
+    google_error?: string;
   }>;
 };
 
@@ -16,7 +18,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     redirect("/dashboard");
   }
 
-  const { next } = await searchParams;
+  const { next, google_error } = await searchParams;
+  const googleError = google_error && Object.hasOwn(googleErrors, google_error) ? googleErrors[google_error] : undefined;
   const nextPath = next?.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
 
   return (
@@ -32,7 +35,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             Kelola aset, maintenance, audit, dan laporan dalam satu sistem.
           </p>
 
-          <LoginForm nextPath={nextPath} />
+          <LoginForm nextPath={nextPath} googleError={googleError} />
         </div>
       </section>
 

@@ -17,6 +17,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { AssetPhotoField } from "@/components/assets/asset-photo-field";
 
 export type AssetSelectOption = {
   id: string;
@@ -37,6 +38,7 @@ export type AssetFormOptions = {
 };
 
 export type AssetRow = {
+  photo?: { id: string; path: string };
   id: string;
   code: string;
   name: string;
@@ -172,6 +174,8 @@ function AssetFields({
           <FieldError message={state.errors?.description} />
         </label>
       </Section>
+
+      <AssetPhotoField existing={asset?.photo} error={state.errors?.photo} />
 
       <Section title="Classification">
         <SelectField name="assetStatusId" label="Status" options={options.statuses} defaultValue={asset?.assetStatusId} error={state.errors?.assetStatusId} />

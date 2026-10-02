@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell, Expand, LogOut, Menu, Search, ShieldCheck, UserCircle, Wrench } from "lucide-react";
+import { Bell, Expand, LogOut, Menu, Search, UserCircle, Wrench } from "lucide-react";
 import { logoutAction } from "@/app/logout/actions";
 import { Input } from "@/components/ui/input";
 import type { CurrentUser } from "@/lib/auth";
@@ -22,7 +22,7 @@ export function AppHeader({ user }: { user: CurrentUser }) {
   }
 
   function toggleSidebar() {
-    document.documentElement.classList.toggle("dashboard-sidebar-collapsed");
+    window.dispatchEvent(new Event("ams:toggle-sidebar"));
   }
 
   async function toggleFullscreen() {
@@ -39,7 +39,8 @@ export function AppHeader({ user }: { user: CurrentUser }) {
       <div className="flex items-center gap-4">
         <button
           className="inline-flex h-10 w-10 items-center justify-center rounded-full text-[#65738f] transition hover:bg-white"
-          aria-label="Toggle navigation"
+          aria-label="Buka atau ciutkan navigasi"
+          aria-controls="primary-sidebar"
           title="Toggle sidebar"
           onClick={toggleSidebar}
         >

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState } from "react";
 import { Camera, ImagePlus, Star, Trash2 } from "lucide-react";
 import {
   deleteAssetPhotoAction,
@@ -9,7 +9,7 @@ import {
   uploadAssetPhotoAction,
   type AssetPhotoActionState,
 } from "@/app/(dashboard)/dashboard/assets/photo-actions";
-import { FieldError } from "@/components/master/master-form-feedback";
+import { AssetPhotoField } from "@/components/assets/asset-photo-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,35 +36,18 @@ function PhotoFeedback({ state }: { state: AssetPhotoActionState }) {
 }
 
 function UploadPhotoForm({ assetId }: { assetId: string }) {
-  const fileRef = useRef<HTMLInputElement>(null);
   const [state, formAction, pending] = useActionState(uploadAssetPhotoAction, initialState);
-
-  useEffect(() => {
-    if (state.ok && fileRef.current) {
-      fileRef.current.value = "";
-    }
-  }, [state.ok]);
 
   return (
     <form action={formAction} className="space-y-3 rounded-md border border-[var(--border)] bg-[var(--table-head)] p-4">
       <input name="assetId" type="hidden" value={assetId} />
-      <label className="block">
-        <span className="text-sm font-medium text-[var(--text)]">Upload Foto</span>
-        <input
-          ref={fileRef}
-          name="photo"
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="mt-2 block w-full rounded-md border border-[var(--border)] bg-white px-3 py-2 text-sm text-[var(--text)] file:mr-4 file:rounded-md file:border-0 file:bg-[var(--primary-soft)] file:px-3 file:py-2 file:text-sm file:font-medium file:text-[var(--primary)]"
-        />
-        <FieldError message={state.errors?.photo} />
-      </label>
+      <AssetPhotoField error={state.errors?.photo} />
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={pending}>
           <ImagePlus className="h-4 w-4" />
           {pending ? "Uploading..." : "Upload Foto"}
         </Button>
-        <p className="text-xs text-[var(--muted)]">Format jpg, jpeg, png, webp. Maksimal 5 MB.</p>
+        <p className="text-xs text-[var(--muted)]">Format jpg, jpeg, png, webp. Maksimal 10 MB.</p>
       </div>
       <PhotoFeedback state={state} />
     </form>

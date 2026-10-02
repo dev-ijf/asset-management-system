@@ -1,7 +1,7 @@
 import { AlertCircle, Search } from "lucide-react";
 import Link from "next/link";
 import { AssetCreateAction, AssetRowActions, type AssetFormOptions, type AssetRow } from "@/components/assets/asset-form-client";
-import { DataTable } from "@/components/tables/data-table";
+import { AssetBulkProvider, AssetBulkTable, AssetImportButton } from "@/components/assets/asset-bulk-client";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,7 @@ function formatDateInput(date: Date | null) {
 
 function toAssetRow(asset: Awaited<ReturnType<typeof getAssets>>[number]): AssetRow {
   return {
+    photo: asset.photos[0] ? { id: asset.photos[0].id, path: asset.photos[0].path } : undefined,
     id: asset.id,
     code: asset.code,
     name: asset.name,
@@ -117,6 +118,7 @@ async function getAssets({
     },
     orderBy: [{ createdAt: "desc" }],
     include: {
+      photos: { orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }], take: 1 },
       assetStatus: true,
       assetClass: true,
       assetCategory: true,
@@ -189,11 +191,13 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
     const hasFilter = Boolean(query || statusId || classId || categoryId || locationId || departmentId);
 
     return (
-      <>
+      <AssetBulkProvider key={JSON.stringify(params)} canManage={canManage}>
         <PageHeader
           title="Data List Aset"
           subtitle="Kelola daftar aset, kode inventaris, status operasional, lokasi, dan kepemilikan aset."
-          actions={<AssetCreateAction canManage={canManage} options={options} />}
+          actions={<div className="flex flex-wrap gap-2"><AssetImportButton />
+            {hasPermission(user, "reports.view") ? <Link href="/dashboard/reports/assets/export" className="inline-flex h-10 items-center rounded-md border border-[var(--border)] bg-white px-5 text-sm font-medium hover:bg-slate-50">Export</Link> : null}
+            <AssetCreateAction canManage={canManage} options={options} /></div>}
         />
 
         <Card>
@@ -243,34 +247,36 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
                 description={hasFilter ? "Coba ubah kata kunci atau filter." : "Tambah aset pertama untuk mulai mengelola inventaris."}
               />
             ) : (
-              <DataTable
+              <AssetBulkTable
+                ids={assets.map(asset => asset.id)}
+                codes={assets.map(asset => asset.code)}
                 columns={["No", "Code", "Name", "Status", "Class", "Category", "Location", "Department", "User/PIC", "Cost", "Created At", "Action"]}
                 rows={assets.map((asset, index) => {
                   const row = toAssetRow(asset);
 
                   return [
-                    <span className="text-[var(--muted)]">{index + 1}</span>,
-                    <span className="font-semibold">{asset.code}</span>,
-                    <div>
+                    <span key="number" className="text-[var(--muted)]">{index + 1}</span>,
+                    <span key="code" className="font-semibold">{asset.code}</span>,
+                    <div key="name">
                       <p className="font-medium">{asset.name}</p>
                       {asset.serialNumber ? <p className="text-xs text-[var(--muted)]">{asset.serialNumber}</p> : null}
                     </div>,
-                    asset.assetStatus ? <Badge>{asset.assetStatus.name}</Badge> : <span className="text-[var(--muted)]">-</span>,
-                    <span className="text-[var(--muted)]">{asset.assetClass?.name ?? "-"}</span>,
-                    <span className="text-[var(--muted)]">{asset.assetCategory?.name ?? "-"}</span>,
-                    <span className="text-[var(--muted)]">{asset.assetLocation?.name ?? "-"}</span>,
-                    <span className="text-[var(--muted)]">{asset.department?.name ?? "-"}</span>,
-                    <span className="text-[var(--muted)]">{asset.assetUser?.name ?? asset.personInCharge?.name ?? "-"}</span>,
-                    <span className="text-[var(--muted)]">{formatMoney(asset.cost)}</span>,
-                    <span className="text-[var(--muted)]">{formatDate(asset.createdAt)}</span>,
-                    <AssetRowActions asset={row} canManage={canManage} options={options} />,
+                    asset.assetStatus ? <Badge key="status">{asset.assetStatus.name}</Badge> : <span key="status" className="text-[var(--muted)]">-</span>,
+                    <span key="class" className="text-[var(--muted)]">{asset.assetClass?.name ?? "-"}</span>,
+                    <span key="category" className="text-[var(--muted)]">{asset.assetCategory?.name ?? "-"}</span>,
+                    <span key="location" className="text-[var(--muted)]">{asset.assetLocation?.name ?? "-"}</span>,
+                    <span key="department" className="text-[var(--muted)]">{asset.department?.name ?? "-"}</span>,
+                    <span key="user" className="text-[var(--muted)]">{asset.assetUser?.name ?? asset.personInCharge?.name ?? "-"}</span>,
+                    <span key="cost" className="text-[var(--muted)]">{formatMoney(asset.cost)}</span>,
+                    <span key="created" className="text-[var(--muted)]">{formatDate(asset.createdAt)}</span>,
+                    <AssetRowActions key="actions" asset={row} canManage={canManage} options={options} />,
                   ];
                 })}
               />
             )}
           </CardContent>
         </Card>
-      </>
+      </AssetBulkProvider>
     );
   } catch {
     return (
