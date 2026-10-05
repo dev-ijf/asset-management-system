@@ -9,13 +9,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/layout/page-header";
+import { Pagination } from "@/components/tables/pagination";
+import type { Prisma } from "@/generated/prisma/client";
 import { formatDate, formatMoney, getTransactionOptions, requireAnyPermission } from "@/lib/asset-transaction-view";
 import { prisma } from "@/lib/prisma";
+import { paginate } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; limit?: string }>;
 };
 
 function dateInput(date: Date | null) {
@@ -24,11 +27,11 @@ function dateInput(date: Date | null) {
 
 export default async function MaintenancePage({ searchParams }: PageProps) {
   await requireAnyPermission(["assets.view", "maintenance.manage"]);
-  const { q = "" } = await searchParams;
+  const params = await searchParams;
+  const { q = "" } = params;
   const options = await getTransactionOptions();
 
-  const maintenances = await prisma.assetMaintenance.findMany({
-    where: q
+  const where: Prisma.AssetMaintenanceWhereInput | undefined = q
       ? {
           asset: {
             OR: [
@@ -37,13 +40,14 @@ export default async function MaintenancePage({ searchParams }: PageProps) {
             ],
           },
         }
-      : undefined,
-    include: {
+      : undefined;
+  const { items: maintenances, pagination } = await paginate(params,
+    () => prisma.assetMaintenance.count({ where }),
+    ({ skip, take }) => prisma.assetMaintenance.findMany({ where, skip, take, include: {
       asset: true,
       createdBy: { select: { name: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+    }, orderBy: { createdAt: "desc" } }),
+  );
 
   return (
     <>
@@ -53,6 +57,7 @@ export default async function MaintenancePage({ searchParams }: PageProps) {
         <Card>
           <CardContent className="space-y-4">
             <form>
+              <input type="hidden" name="limit" value={pagination.pageSize} />
               <Input name="q" defaultValue={q} placeholder="Search asset code/name..." />
             </form>
             {maintenances.length === 0 ? (
@@ -87,7 +92,7 @@ export default async function MaintenancePage({ searchParams }: PageProps) {
                       };
                       return (
                         <tr key={maintenance.id} className="align-top">
-                          <td className="px-4 py-3">{index + 1}</td>
+                          <td className="px-4 py-3">{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
                           <td className="px-4 py-3 font-medium">{maintenance.asset.code} - {maintenance.asset.name}</td>
                           <td className="px-4 py-3">{maintenance.description}</td>
                           <td className="px-4 py-3"><Badge variant={maintenance.status === "COMPLETED" ? "success" : "warning"}>{maintenance.status}</Badge></td>
@@ -109,6 +114,7 @@ export default async function MaintenancePage({ searchParams }: PageProps) {
                 </table>
               </div>
             )}
+            <Pagination {...pagination} />
           </CardContent>
         </Card>
       </div>

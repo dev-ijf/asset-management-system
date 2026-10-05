@@ -7,8 +7,11 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { PageHeader } from "@/components/layout/page-header";
+import { Pagination } from "@/components/tables/pagination";
+import type { Prisma } from "@/generated/prisma/client";
 import { formatReportDate, formatReportMoney, getReportOptions, parseReportDate, requireReportsView } from "@/lib/basic-reports";
 import { prisma } from "@/lib/prisma";
+import { paginate } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -33,11 +36,10 @@ export default async function AssetReportPage({ searchParams }: PageProps) {
   const to = parseReportDate(filters.to ?? null);
 
   for (const [key, value] of Object.entries(filters)) {
-    if (value) query.set(key, value);
+    if (value && key !== "page" && key !== "limit") query.set(key, value);
   }
 
-  const assets = await prisma.asset.findMany({
-    where: {
+  const where: Prisma.AssetWhereInput = {
       deletedAt: null,
       assetStatusId: filters.status || undefined,
       assetClassId: filters.class || undefined,
@@ -45,7 +47,10 @@ export default async function AssetReportPage({ searchParams }: PageProps) {
       assetLocationId: filters.location || undefined,
       departmentId: filters.department || undefined,
       createdAt: from || to ? { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } : undefined,
-    },
+    };
+  const { items: assets, pagination } = await paginate(filters,
+    () => prisma.asset.count({ where }),
+    ({ skip, take }) => prisma.asset.findMany({ where, skip, take,
     include: {
       assetStatus: true,
       assetClass: true,
@@ -56,8 +61,8 @@ export default async function AssetReportPage({ searchParams }: PageProps) {
       assetUser: true,
     },
     orderBy: { createdAt: "desc" },
-    take: 200,
-  });
+    }),
+  );
 
   return (
     <>
@@ -75,6 +80,7 @@ export default async function AssetReportPage({ searchParams }: PageProps) {
       <Card>
         <CardContent className="space-y-5">
           <form className="grid gap-4 md:grid-cols-5">
+            <input type="hidden" name="limit" value={pagination.pageSize} />
             <Select name="status" defaultValue={filters.status ?? ""}>
               <option value="">Semua Status</option>
               {optionList(options.statuses)}
@@ -128,7 +134,7 @@ export default async function AssetReportPage({ searchParams }: PageProps) {
                 <tbody className="divide-y divide-[var(--border)]">
                   {assets.map((asset, index) => (
                     <tr key={asset.id}>
-                      <td className="px-4 py-3">{index + 1}</td>
+                      <td className="px-4 py-3">{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
                       <td className="px-4 py-3 font-semibold">{asset.code}</td>
                       <td className="px-4 py-3">{asset.name}</td>
                       <td className="px-4 py-3">{asset.assetStatus ? <Badge>{asset.assetStatus.name}</Badge> : "-"}</td>
@@ -145,6 +151,7 @@ export default async function AssetReportPage({ searchParams }: PageProps) {
               </table>
             </div>
           )}
+          <Pagination {...pagination} />
         </CardContent>
       </Card>
     </>

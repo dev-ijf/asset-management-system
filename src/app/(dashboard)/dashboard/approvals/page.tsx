@@ -2,6 +2,7 @@ import { ApprovalStatus, ApprovalTransactionType, Prisma } from "@/generated/pri
 import { ApproveButton, RejectButton } from "@/components/approvals/approval-actions-client";
 import { PageHeader } from "@/components/layout/page-header";
 import { DataTable } from "@/components/tables/data-table";
+import { Pagination } from "@/components/tables/pagination";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,7 @@ import { Select } from "@/components/ui/select";
 import { hasPermission } from "@/lib/auth";
 import { requireAnyPermission } from "@/lib/asset-transaction-view";
 import { prisma } from "@/lib/prisma";
+import { paginate } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -87,28 +89,28 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
     ? (filters.type as ApprovalTransactionType)
     : undefined;
 
-  const [assets, requests] = await Promise.all([
+  const where: Prisma.AssetApprovalRequestWhereInput = {
+    status: ApprovalStatus.PENDING,
+    transactionType,
+    assetId: filters.asset || undefined,
+    createdAt: from || to ? { ...(from ? { gte: from } : {}), ...(to ? { lte: endOfDay(to) } : {}) } : undefined,
+  };
+  const [assets, result] = await Promise.all([
     prisma.asset.findMany({
       where: { deletedAt: null },
       orderBy: { code: "asc" },
       select: { id: true, code: true, name: true },
       take: 500,
     }),
-    prisma.assetApprovalRequest.findMany({
-      where: {
-        status: ApprovalStatus.PENDING,
-        transactionType,
-        assetId: filters.asset || undefined,
-        createdAt: from || to ? { ...(from ? { gte: from } : {}), ...(to ? { lte: endOfDay(to) } : {}) } : undefined,
-      },
+    paginate(filters, () => prisma.assetApprovalRequest.count({ where }), ({ skip, take }) => prisma.assetApprovalRequest.findMany({ where, skip, take,
       include: {
         asset: { select: { code: true, name: true } },
         requester: { select: { name: true, email: true } },
       },
       orderBy: { createdAt: "desc" },
-      take: 200,
-    }),
+    })),
   ]);
+  const { items: requests, pagination } = result;
 
   return (
     <>
@@ -119,6 +121,7 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
       <Card>
         <CardContent className="space-y-5">
           <form className="grid gap-4 md:grid-cols-5">
+            <input type="hidden" name="limit" value={pagination.pageSize} />
             <Select name="type" defaultValue={filters.type ?? ""}>
               <option value="">Semua Jenis</option>
               <option value={ApprovalTransactionType.MOVEMENT}>Movement</option>
@@ -166,6 +169,7 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
             })}
             emptyTitle="Tidak ada approval pending."
           />
+          <Pagination {...pagination} />
         </CardContent>
       </Card>
     </>

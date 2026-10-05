@@ -1,4 +1,5 @@
 import { AlertCircle, Search } from "lucide-react";
+import type { Prisma } from "@/generated/prisma/client";
 import Link from "next/link";
 import {
   createAssetClassAction,
@@ -7,6 +8,7 @@ import {
 } from "@/app/(dashboard)/dashboard/master/asset-class-actions";
 import { MasterCreateAction, MasterRowActions, type MasterCrudRecord, type MasterField } from "@/components/master/master-crud-client";
 import { DataTable } from "@/components/tables/data-table";
+import { Pagination } from "@/components/tables/pagination";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
@@ -14,9 +16,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { hasPermission, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { paginate, type PaginationQuery } from "@/lib/pagination";
 
 type Props = {
   search?: string;
+  paginationQuery: PaginationQuery;
 };
 
 const fields: MasterField[] = [
@@ -28,24 +32,26 @@ function formatDate(date: Date) {
   return new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric" }).format(date);
 }
 
-export async function AssetClassesPage({ search = "" }: Props) {
+export async function AssetClassesPage({ search = "", paginationQuery }: Props) {
   const user = await requirePermission("assets.view");
   const canManage = hasPermission(user, "assets.manage");
   const query = search.trim();
 
   try {
-    const classes = await prisma.assetClass.findMany({
-      where: query
+    const where: Prisma.AssetClassWhereInput | undefined = query
         ? {
             OR: [
               { code: { contains: query, mode: "insensitive" } },
               { name: { contains: query, mode: "insensitive" } },
             ],
           }
-        : undefined,
-      orderBy: [{ code: "asc" }],
+        : undefined;
+    const { items: classes, pagination } = await paginate(paginationQuery,
+      () => prisma.assetClass.count({ where }),
+      ({ skip, take }) => prisma.assetClass.findMany({ where, skip, take, orderBy: [{ code: "asc" }],
       include: { _count: { select: { assets: true } } },
-    });
+      }),
+    );
 
     return (
       <>
@@ -67,6 +73,7 @@ export async function AssetClassesPage({ search = "" }: Props) {
           <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <CardTitle>Daftar Kelas Aset</CardTitle>
             <form className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-lg">
+              <input type="hidden" name="limit" value={pagination.pageSize} />
               <div className="relative flex-1">
                 <Input name="q" placeholder="Cari code atau name" defaultValue={query} className="h-10 pr-10" />
                 <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
@@ -89,7 +96,7 @@ export async function AssetClassesPage({ search = "" }: Props) {
                   };
 
                   return [
-                    <span className="text-[var(--muted)]">{index + 1}</span>,
+                    <span className="text-[var(--muted)]">{(pagination.page - 1) * pagination.pageSize + index + 1}</span>,
                     <span className="font-semibold">{assetClass.code}</span>,
                     assetClass.name,
                     <span className="text-[var(--muted)]">{assetClass.description ?? "-"}</span>,
@@ -109,6 +116,7 @@ export async function AssetClassesPage({ search = "" }: Props) {
                 })}
               />
             )}
+            <div className="mt-4"><Pagination {...pagination} /></div>
           </CardContent>
         </Card>
       </>

@@ -1,25 +1,28 @@
 import { DisposalForm, ReverseDisposalButton } from "@/components/transactions/transaction-forms";
+import type { Prisma } from "@/generated/prisma/client";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/layout/page-header";
+import { Pagination } from "@/components/tables/pagination";
 import { formatDate, getTransactionOptions, requireAnyPermission } from "@/lib/asset-transaction-view";
 import { prisma } from "@/lib/prisma";
+import { paginate } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; limit?: string }>;
 };
 
 export default async function DisposalsPage({ searchParams }: PageProps) {
   await requireAnyPermission(["assets.view", "disposals.manage"]);
-  const { q = "" } = await searchParams;
+  const params = await searchParams;
+  const { q = "" } = params;
   const options = await getTransactionOptions();
 
-  const disposals = await prisma.assetDisposal.findMany({
-    where: q
+  const where: Prisma.AssetDisposalWhereInput | undefined = q
       ? {
           asset: {
             OR: [
@@ -28,15 +31,16 @@ export default async function DisposalsPage({ searchParams }: PageProps) {
             ],
           },
         }
-      : undefined,
-    include: {
+      : undefined;
+  const { items: disposals, pagination } = await paginate(params,
+    () => prisma.assetDisposal.count({ where }),
+    ({ skip, take }) => prisma.assetDisposal.findMany({ where, skip, take, include: {
       asset: true,
       previousStatus: true,
       disposedStatus: true,
       performedBy: { select: { name: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+    }, orderBy: { createdAt: "desc" } }),
+  );
 
   return (
     <>
@@ -46,6 +50,7 @@ export default async function DisposalsPage({ searchParams }: PageProps) {
         <Card>
           <CardContent className="space-y-4">
             <form>
+              <input type="hidden" name="limit" value={pagination.pageSize} />
               <Input name="q" defaultValue={q} placeholder="Search asset code/name..." />
             </form>
             {disposals.length === 0 ? (
@@ -67,7 +72,7 @@ export default async function DisposalsPage({ searchParams }: PageProps) {
                   <tbody className="divide-y divide-[var(--border)]">
                     {disposals.map((disposal, index) => (
                       <tr key={disposal.id}>
-                        <td className="px-4 py-3">{index + 1}</td>
+                        <td className="px-4 py-3">{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
                         <td className="px-4 py-3 font-medium">{disposal.asset.code} - {disposal.asset.name}</td>
                         <td className="px-4 py-3">{disposal.reversedAt ? <Badge variant="warning">Reversed</Badge> : <Badge>Disposed</Badge>}</td>
                         <td className="px-4 py-3">{formatDate(disposal.disposedAt)}</td>
@@ -80,6 +85,7 @@ export default async function DisposalsPage({ searchParams }: PageProps) {
                 </table>
               </div>
             )}
+            <Pagination {...pagination} />
           </CardContent>
         </Card>
       </div>

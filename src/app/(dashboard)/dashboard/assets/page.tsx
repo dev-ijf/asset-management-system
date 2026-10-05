@@ -1,7 +1,9 @@
 import { AlertCircle, Search } from "lucide-react";
+import type { Prisma } from "@/generated/prisma/client";
 import Link from "next/link";
 import { AssetCreateAction, AssetRowActions, type AssetFormOptions, type AssetRow } from "@/components/assets/asset-form-client";
 import { AssetBulkProvider, AssetBulkTable, AssetImportButton } from "@/components/assets/asset-bulk-client";
+import { Pagination } from "@/components/tables/pagination";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { hasPermission, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { createPagination, paginationQuery, parsePagination } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +25,8 @@ type AssetsPageProps = {
     category?: string;
     location?: string;
     department?: string;
+    page?: string;
+    limit?: string;
   }>;
 };
 
@@ -44,7 +49,7 @@ function formatDateInput(date: Date | null) {
   return date ? date.toISOString().slice(0, 10) : "";
 }
 
-function toAssetRow(asset: Awaited<ReturnType<typeof getAssets>>[number]): AssetRow {
+function toAssetRow(asset: Awaited<ReturnType<typeof getAssets>>["items"][number]): AssetRow {
   return {
     photo: asset.photos[0] ? { id: asset.photos[0].id, path: asset.photos[0].path } : undefined,
     id: asset.id,
@@ -90,6 +95,8 @@ async function getAssets({
   locationId,
   query,
   statusId,
+  requestedPage,
+  pageSize,
 }: {
   categoryId: string;
   classId: string;
@@ -97,9 +104,10 @@ async function getAssets({
   locationId: string;
   query: string;
   statusId: string;
+  requestedPage: number;
+  pageSize: number;
 }) {
-  return prisma.asset.findMany({
-    where: {
+  const where: Prisma.AssetWhereInput = {
       deletedAt: null,
       ...(query
         ? {
@@ -115,7 +123,12 @@ async function getAssets({
       ...(categoryId ? { assetCategoryId: categoryId } : {}),
       ...(locationId ? { assetLocationId: locationId } : {}),
       ...(departmentId ? { departmentId } : {}),
-    },
+    };
+  const total = await prisma.asset.count({ where });
+  const pagination = createPagination(total, requestedPage, pageSize);
+  const items = await prisma.asset.findMany({
+    where,
+    ...paginationQuery(pagination),
     orderBy: [{ createdAt: "desc" }],
     include: {
       photos: { orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }], take: 1 },
@@ -128,6 +141,7 @@ async function getAssets({
       assetUser: true,
     },
   });
+  return { items, pagination };
 }
 
 async function getOptions(): Promise<AssetFormOptions> {
@@ -182,12 +196,14 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
   const categoryId = String(params.category ?? "").trim();
   const locationId = String(params.location ?? "").trim();
   const departmentId = String(params.department ?? "").trim();
+  const { page: requestedPage, pageSize } = parsePagination(params);
 
   try {
-    const [assets, options] = await Promise.all([
-      getAssets({ categoryId, classId, departmentId, locationId, query, statusId }),
+    const [assetResult, options] = await Promise.all([
+      getAssets({ categoryId, classId, departmentId, locationId, query, statusId, requestedPage, pageSize }),
       getOptions(),
     ]);
+    const { items: assets, pagination } = assetResult;
     const hasFilter = Boolean(query || statusId || classId || categoryId || locationId || departmentId);
 
     return (
@@ -211,6 +227,7 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
               ) : null}
             </div>
             <form className="grid gap-3 lg:grid-cols-6">
+              <input type="hidden" name="limit" value={pagination.pageSize} />
               <div className="relative lg:col-span-2">
                 <Input name="q" placeholder="Cari code, name, serial number" defaultValue={query} className="h-10 pr-10" />
                 <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
@@ -255,7 +272,7 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
                   const row = toAssetRow(asset);
 
                   return [
-                    <span key="number" className="text-[var(--muted)]">{index + 1}</span>,
+                    <span key="number" className="text-[var(--muted)]">{(pagination.page - 1) * pagination.pageSize + index + 1}</span>,
                     <span key="code" className="font-semibold">{asset.code}</span>,
                     <div key="name">
                       <p className="font-medium">{asset.name}</p>
@@ -274,6 +291,7 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
                 })}
               />
             )}
+            <div className="mt-4"><Pagination {...pagination} /></div>
           </CardContent>
         </Card>
       </AssetBulkProvider>

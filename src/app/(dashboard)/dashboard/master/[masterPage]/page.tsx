@@ -19,10 +19,11 @@ export default async function MasterDetailPage({
   searchParams,
 }: {
   params: Promise<{ masterPage: string }>;
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; limit?: string }>;
 }) {
   const { masterPage } = await params;
-  const { q } = await searchParams;
+  const query = await searchParams;
+  const { q } = query;
   const config = masterPages[masterPage];
 
   if (!config) {
@@ -30,43 +31,43 @@ export default async function MasterDetailPage({
   }
 
   if (masterPage === "asset-statuses") {
-    return <AssetStatusesPage search={q} />;
+    return <AssetStatusesPage search={q} paginationQuery={query} />;
   }
 
   if (masterPage === "asset-categories") {
-    return <AssetCategoriesPage search={q} />;
+    return <AssetCategoriesPage search={q} paginationQuery={query} />;
   }
 
   if (masterPage === "asset-locations") {
-    return <AssetLocationsPage search={q} />;
+    return <AssetLocationsPage search={q} paginationQuery={query} />;
   }
 
   if (masterPage === "asset-classes") {
-    return <AssetClassesPage search={q} />;
+    return <AssetClassesPage search={q} paginationQuery={query} />;
   }
 
   if (masterPage === "units") {
-    return <UnitsPage search={q} />;
+    return <UnitsPage search={q} paginationQuery={query} />;
   }
 
   if (masterPage === "departments") {
-    return <DepartmentsPage search={q} />;
+    return <DepartmentsPage search={q} paginationQuery={query} />;
   }
 
   if (masterPage === "person-in-charge") {
-    return <PersonInChargePage search={q} />;
+    return <PersonInChargePage search={q} paginationQuery={query} />;
   }
 
   if (masterPage === "asset-users") {
-    return <AssetUsersPage search={q} />;
+    return <AssetUsersPage search={q} paginationQuery={query} />;
   }
 
   if (masterPage === "warranties") {
-    return <WarrantiesPage search={q} />;
+    return <WarrantiesPage search={q} paginationQuery={query} />;
   }
 
   if (masterPage === "vendor-contracts") {
-    return <VendorContractsPage search={q} />;
+    return <VendorContractsPage search={q} paginationQuery={query} />;
   }
 
   return <ModulePage config={config} />;

@@ -1,24 +1,27 @@
 import { MovementForm } from "@/components/transactions/transaction-forms";
+import type { Prisma } from "@/generated/prisma/client";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/layout/page-header";
+import { Pagination } from "@/components/tables/pagination";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { formatDate, getTransactionOptions, requireAnyPermission } from "@/lib/asset-transaction-view";
 import { prisma } from "@/lib/prisma";
+import { paginate } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; limit?: string }>;
 };
 
 export default async function MovementsPage({ searchParams }: PageProps) {
   await requireAnyPermission(["assets.view", "movements.manage"]);
-  const { q = "" } = await searchParams;
+  const params = await searchParams;
+  const { q = "" } = params;
   const options = await getTransactionOptions();
 
-  const movements = await prisma.assetMovement.findMany({
-    where: q
+  const where: Prisma.AssetMovementWhereInput | undefined = q
       ? {
           asset: {
             OR: [
@@ -27,8 +30,10 @@ export default async function MovementsPage({ searchParams }: PageProps) {
             ],
           },
         }
-      : undefined,
-    include: {
+      : undefined;
+  const { items: movements, pagination } = await paginate(params,
+    () => prisma.assetMovement.count({ where }),
+    ({ skip, take }) => prisma.assetMovement.findMany({ where, skip, take, include: {
       asset: true,
       fromLocation: true,
       toLocation: true,
@@ -37,9 +42,8 @@ export default async function MovementsPage({ searchParams }: PageProps) {
       fromAssetUser: true,
       toAssetUser: true,
       performedBy: { select: { name: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+    }, orderBy: { createdAt: "desc" } }),
+  );
 
   return (
     <>
@@ -49,6 +53,7 @@ export default async function MovementsPage({ searchParams }: PageProps) {
         <Card>
           <CardContent className="space-y-4">
             <form>
+              <input type="hidden" name="limit" value={pagination.pageSize} />
               <Input name="q" defaultValue={q} placeholder="Search asset code/name..." />
             </form>
             {movements.length === 0 ? (
@@ -70,7 +75,7 @@ export default async function MovementsPage({ searchParams }: PageProps) {
                   <tbody className="divide-y divide-[var(--border)]">
                     {movements.map((movement, index) => (
                       <tr key={movement.id}>
-                        <td className="px-4 py-3">{index + 1}</td>
+                        <td className="px-4 py-3">{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
                         <td className="px-4 py-3 font-medium">{movement.asset.code} - {movement.asset.name}</td>
                         <td className="px-4 py-3">{movement.fromLocation?.name ?? "-"} {"->"} {movement.toLocation?.name ?? "-"}</td>
                         <td className="px-4 py-3">{movement.fromDepartment?.name ?? "-"} {"->"} {movement.toDepartment?.name ?? "-"}</td>
@@ -83,6 +88,7 @@ export default async function MovementsPage({ searchParams }: PageProps) {
                 </table>
               </div>
             )}
+            <Pagination {...pagination} />
           </CardContent>
         </Card>
       </div>

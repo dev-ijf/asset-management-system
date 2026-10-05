@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { UsersSecurityClient, type SecurityOption, type UserSecurityRecord } from "@/components/security/security-management-client";
 import { requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { paginate } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -9,17 +10,18 @@ function formatDate(date: Date) {
   return new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric" }).format(date);
 }
 
-export default async function UsersPage() {
+export default async function UsersPage({ searchParams }: { searchParams: Promise<{ page?: string; limit?: string }> }) {
   await requirePermission("users.manage");
+  const params = await searchParams;
 
-  const [users, roles, permissions] = await Promise.all([
-    prisma.user.findMany({
+  const [{ items: users, pagination }, roles, permissions] = await Promise.all([
+    paginate(params, () => prisma.user.count(), ({ skip, take }) => prisma.user.findMany({ skip, take,
       orderBy: { createdAt: "desc" },
       include: {
         roles: { include: { role: true } },
         directPermissions: { include: { permission: true } },
       },
-    }),
+    })),
     prisma.role.findMany({ where: { guardName: "web" }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.permission.findMany({ where: { guardName: "web" }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
@@ -40,7 +42,7 @@ export default async function UsersPage() {
   return (
     <>
       <PageHeader title="User Management" subtitle="Kelola akun login, role, dan direct permission." />
-      <UsersSecurityClient users={records} roles={roleOptions} permissions={permissionOptions} />
+      <UsersSecurityClient users={records} roles={roleOptions} permissions={permissionOptions} pagination={pagination} />
     </>
   );
 }

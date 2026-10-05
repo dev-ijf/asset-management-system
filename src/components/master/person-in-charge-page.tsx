@@ -7,6 +7,7 @@ import {
 } from "@/app/(dashboard)/dashboard/master/person-in-charge-actions";
 import { MasterCreateAction, MasterRowActions, type MasterCrudRecord, type MasterField } from "@/components/master/master-crud-client";
 import { DataTable } from "@/components/tables/data-table";
+import { Pagination } from "@/components/tables/pagination";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
@@ -14,9 +15,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { hasPermission, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { paginate, type PaginationQuery } from "@/lib/pagination";
+import type { Prisma } from "@/generated/prisma/client";
 
 type Props = {
   search?: string;
+  paginationQuery: PaginationQuery;
 };
 
 const fields: MasterField[] = [
@@ -30,14 +34,13 @@ function formatDate(date: Date) {
   return new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric" }).format(date);
 }
 
-export async function PersonInChargePage({ search = "" }: Props) {
+export async function PersonInChargePage({ search = "", paginationQuery }: Props) {
   const user = await requirePermission("assets.view");
   const canManage = hasPermission(user, "assets.manage");
   const query = search.trim();
 
   try {
-    const people = await prisma.personInCharge.findMany({
-      where: query
+    const where: Prisma.PersonInChargeWhereInput | undefined = query
         ? {
             OR: [
               { name: { contains: query, mode: "insensitive" } },
@@ -45,10 +48,13 @@ export async function PersonInChargePage({ search = "" }: Props) {
               { phone: { contains: query, mode: "insensitive" } },
             ],
           }
-        : undefined,
-      orderBy: [{ name: "asc" }],
+        : undefined;
+    const { items: people, pagination } = await paginate(paginationQuery,
+      () => prisma.personInCharge.count({ where }),
+      ({ skip, take }) => prisma.personInCharge.findMany({ where, skip, take, orderBy: [{ name: "asc" }],
       include: { _count: { select: { assets: true } } },
-    });
+      }),
+    );
 
     return (
       <>
@@ -70,6 +76,7 @@ export async function PersonInChargePage({ search = "" }: Props) {
           <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <CardTitle>Daftar PIC</CardTitle>
             <form className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-lg">
+              <input type="hidden" name="limit" value={pagination.pageSize} />
               <div className="relative flex-1">
                 <Input name="q" placeholder="Cari name, email, atau phone" defaultValue={query} className="h-10 pr-10" />
                 <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
@@ -92,7 +99,7 @@ export async function PersonInChargePage({ search = "" }: Props) {
                   };
 
                   return [
-                    <span className="text-[var(--muted)]">{index + 1}</span>,
+                    <span className="text-[var(--muted)]">{(pagination.page - 1) * pagination.pageSize + index + 1}</span>,
                     person.name,
                     <span className="text-[var(--muted)]">{person.email ?? "-"}</span>,
                     <span className="text-[var(--muted)]">{person.phone ?? "-"}</span>,
@@ -113,6 +120,7 @@ export async function PersonInChargePage({ search = "" }: Props) {
                 })}
               />
             )}
+            <div className="mt-4"><Pagination {...pagination} /></div>
           </CardContent>
         </Card>
       </>

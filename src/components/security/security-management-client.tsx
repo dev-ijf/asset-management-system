@@ -17,6 +17,8 @@ import {
 import { FieldError } from "@/components/master/master-form-feedback";
 import { MasterRecordForm } from "@/components/master/master-record-form";
 import { DataTable } from "@/components/tables/data-table";
+import { Pagination } from "@/components/tables/pagination";
+import type { PaginationMeta } from "@/lib/pagination";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -360,10 +362,12 @@ export function UsersSecurityClient({
   permissions,
   roles,
   users,
+  pagination,
 }: {
   permissions: SecurityOption[];
   roles: SecurityOption[];
   users: UserSecurityRecord[];
+  pagination: PaginationMeta;
 }) {
   return (
     <Card>
@@ -392,6 +396,7 @@ export function UsersSecurityClient({
           ])}
           emptyTitle="Belum ada user."
         />
+        <div className="mt-4"><Pagination {...pagination} /></div>
       </CardContent>
     </Card>
   );
@@ -400,9 +405,11 @@ export function UsersSecurityClient({
 export function RolesSecurityClient({
   permissions,
   roles,
+  pagination,
 }: {
   permissions: SecurityOption[];
   roles: RoleSecurityRecord[];
+  pagination: PaginationMeta;
 }) {
   return (
     <Card>
@@ -431,12 +438,13 @@ export function RolesSecurityClient({
           ])}
           emptyTitle="Belum ada role."
         />
+        <div className="mt-4"><Pagination {...pagination} /></div>
       </CardContent>
     </Card>
   );
 }
 
-export function PermissionsSecurityClient({ permissions }: { permissions: PermissionSecurityRecord[] }) {
+export function PermissionsSecurityClient({ permissions, pagination }: { permissions: PermissionSecurityRecord[]; pagination: PaginationMeta }) {
   return (
     <Card>
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -464,6 +472,7 @@ export function PermissionsSecurityClient({ permissions }: { permissions: Permis
           ])}
           emptyTitle="Belum ada permission."
         />
+        <div className="mt-4"><Pagination {...pagination} /></div>
       </CardContent>
     </Card>
   );
