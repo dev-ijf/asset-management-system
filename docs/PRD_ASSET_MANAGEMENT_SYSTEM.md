@@ -22,7 +22,7 @@ Pencatatan aset secara manual (spreadsheet, catatan terpisah per departemen) mem
 | --- | --- | --- |
 | Data aset tersebar dan tidak seragam | Duplikasi, kode ganda, data usang | Master data terpusat, kode dan QR token dibuat sistem |
 | Perpindahan aset tidak terkontrol | Lokasi dan pemakai aktual tidak diketahui | Movement wajib approval, mencatat asal dan tujuan |
-| Disposal tanpa jejak | Risiko kehilangan aset dan temuan audit | Disposal wajib alasan dan approval, bisa di-reverse |
+| Disposal tanpa jejak | Risiko kehilangan aset dan temuan audit | Disposal dan pembatalannya wajib alasan dan approval |
 | Garansi dan maintenance terlewat | Biaya perbaikan naik, klaim garansi hangus | Endpoint alert garansi/maintenance ke webhook |
 | Stock opname lambat | Selisih data fisik vs sistem | Audit fisik per aset + label QR |
 | Input data awal berat | Onboarding aset lama memakan waktu | Impor massal dengan template dropdown dinamis |
@@ -143,7 +143,8 @@ Prioritas: **P0** = wajib untuk operasional, **P1** = penting, **P2** = peningka
 | --- | --- | --- | --- |
 | FR-TRX-01 | Movement: ubah lokasi, departemen, dan/atau Asset User; minimal satu tujuan berubah; ditolak untuk aset terhapus atau sedang disposal | P0 | Selesai |
 | FR-TRX-02 | Disposal: alasan wajib; maksimal satu disposal aktif dan satu request pending per asset; setelah disetujui status jadi DISPOSED dan status sebelumnya disimpan saat approval | P0 | Selesai |
-| FR-TRX-03 | Reverse disposal mengembalikan status sebelum disposal (ACTIVE bila tidak diketahui); status DISPOSED tidak bisa diubah manual | P1 | Selesai |
+| FR-TRX-03 | Pembatalan (reverse) disposal wajib alasan dan approval; setelah disetujui status kembali ke status sebelum disposal (ACTIVE bila tidak diketahui); maksimal satu pembatalan pending per asset; status DISPOSED tidak bisa diubah manual | P1 | Selesai |
+| FR-TRX-03a | Dropdown aset di form Disposal dan Movement hanya menampilkan aset yang bisa diproses (bukan disposed; Disposal juga tanpa request disposal pending) | P1 | Selesai |
 | FR-TRX-04 | Audit fisik: hasil MATCHED/MISMATCH/MISSING/DAMAGED, lokasi, pelaku, catatan; langsung tercatat tanpa approval | P0 | Selesai |
 | FR-TRX-05 | Maintenance: dibuat lewat approval; setelah ada dapat diubah, diselesaikan, atau dihapus | P1 | Selesai |
 
@@ -189,7 +190,7 @@ flowchart TD
     DEC -->|tidak| REJ[Ditolak, aset tetap]
 ```
 
-Disposal yang disetujui mengubah status menjadi DISPOSED dan bisa di-reverse ke kondisi sebelumnya. Aset terarsip dan aset soft delete dapat dipulihkan atau dihapus permanen dari menu Archive.
+Disposal yang disetujui mengubah status menjadi DISPOSED. Pembatalannya diajukan dengan alasan dan baru berlaku setelah disetujui. Aset terarsip dan aset soft delete dapat dipulihkan atau dihapus permanen dari menu Archive.
 
 ## 8. Model data utama
 

@@ -10,7 +10,9 @@ import {
   findActiveDisposal,
   findStatusIdByCode,
   lockAsset,
+  reverseDisposal,
 } from "@/lib/asset-disposal";
+import { approvalTypeLabel } from "@/lib/approval-types";
 import { prisma } from "@/lib/prisma";
 
 export type ApprovalActionState = {
@@ -186,6 +188,36 @@ async function applyDisposal(
   });
 }
 
+async function applyDisposalReversal(
+  tx: Prisma.TransactionClient,
+  request: { id: string; assetId: string; requesterId: string | null; payload: Prisma.JsonValue },
+  approverId: string,
+) {
+  const payload = payloadObject(request.payload);
+  const disposalId = optionalString(payload.disposalId);
+  const reason = optionalString(payload.reason);
+
+  if (!disposalId || !reason) throw new ApprovalRuleError("Data pembatalan disposal tidak lengkap. Tolak request ini.");
+
+  const result = await reverseDisposal(tx, { disposalId, assetId: request.assetId, reason, reversedById: approverId });
+
+  await createAssetHistory({
+    action: "DISPOSAL_REVERSED",
+    assetId: request.assetId,
+    changedById: approverId,
+    description: `Pembatalan disposal asset ${result.code} disetujui. Alasan: ${reason}`,
+    payload: {
+      approvalRequestId: request.id,
+      disposalId,
+      reason,
+      requesterId: request.requesterId,
+      fromStatusId: result.fromStatusId,
+      toStatusId: result.toStatusId,
+    },
+    tx,
+  });
+}
+
 async function applyMaintenance(
   tx: Prisma.TransactionClient,
   request: {
@@ -286,6 +318,10 @@ export async function approveApprovalRequestAction(
         await applyDisposal(tx, request, user.id);
       }
 
+      if (request.transactionType === ApprovalTransactionType.DISPOSAL_REVERSAL) {
+        await applyDisposalReversal(tx, request, user.id);
+      }
+
       if (request.transactionType === ApprovalTransactionType.MAINTENANCE) {
         await applyMaintenance(tx, request, user.id);
       }
@@ -336,7 +372,7 @@ export async function rejectApprovalRequestAction(
         action: "REJECTED",
         assetId: request.assetId,
         changedById: user.id,
-        description: `Approval ${request.transactionType.toLowerCase()} asset ${request.asset.code} ditolak.`,
+        description: `Approval ${approvalTypeLabel(request.transactionType).toLowerCase()} asset ${request.asset.code} ditolak.`,
         payload: {
           approvalRequestId: request.id,
           transactionType: request.transactionType,

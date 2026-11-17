@@ -19,7 +19,7 @@ export default async function MovementsPage({ searchParams }: PageProps) {
   await requireAnyPermission(["assets.view", "movements.manage"]);
   const params = await searchParams;
   const { q = "" } = params;
-  const options = await getTransactionOptions();
+  const options = await getTransactionOptions("movement");
 
   const where: Prisma.AssetMovementWhereInput | undefined = q
       ? {

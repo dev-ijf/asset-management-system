@@ -213,7 +213,12 @@ flowchart TD
     D -->|Setuju| E[Cek ulang: belum ada disposal aktif]
     E --> F[Simpan status sebelum disposal saat ini<br/>lalu set status DISPOSED]
     F --> G[Disposal aktif]
-    G -->|Reverse| H[Status kembali ke status sebelum disposal<br/>atau ACTIVE bila tidak diketahui]
+    G -->|Ajukan pembatalan + alasan| P{Sudah ada pembatalan pending?}
+    P -->|Ya| X2[Ditolak dengan pesan]
+    P -->|Tidak| Q[Request pembatalan PENDING<br/>status tetap DISPOSED]
+    Q --> S{Approver menyetujui?}
+    S -->|Tolak| G
+    S -->|Setuju| H[Status kembali ke status sebelum disposal<br/>atau ACTIVE bila tidak diketahui]
 ```
 
 Aturan konsistensi:
@@ -221,10 +226,12 @@ Aturan konsistensi:
 - Satu asset hanya boleh punya **satu** disposal aktif dan **satu** request disposal pending.
 - Setiap pengajuan, approval, dan reverse mengunci baris asset, sehingga klik ganda atau dua approver bersamaan tidak menghasilkan disposal ganda.
 - Status sebelum disposal direkam saat approval, bukan saat pengajuan.
+- Pembatalan (reverse) disposal wajib alasan dan harus disetujui di Approvals, sama seperti disposal. Satu asset hanya boleh punya satu pengajuan pembatalan pending. Alasan, waktu, dan approver pembatalan tersimpan di data disposal dan riwayat asset.
 - Reverse hanya mengembalikan status; lokasi dan department tidak diubah karena disposal tidak mengubahnya.
-- Status `DISPOSED` hanya bisa diset lewat disposal yang disetujui dan hanya bisa dilepas lewat Reverse Disposal. Form edit asset dan bulk import/update menolak perubahan status yang melanggar aturan ini.
+- Status `DISPOSED` hanya bisa diset lewat disposal yang disetujui dan hanya bisa dilepas lewat pembatalan disposal yang disetujui. Form edit asset dan bulk import/update menolak perubahan status yang melanggar aturan ini.
 - Status `ACTIVE` dan `DISPOSED` adalah status sistem: tidak bisa dihapus atau diganti kodenya di master.
 - Movement yang disetujui setelah asset didisposal ditolak.
+- Dropdown aset di form Disposal dan Movement tidak menampilkan aset yang sudah disposed. Form Disposal juga menyembunyikan aset yang masih punya request disposal pending.
 
 ## M. Audit dan Maintenance
 

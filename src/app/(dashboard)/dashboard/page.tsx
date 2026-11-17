@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/tables/data-table";
+import { approvalTypeLabel } from "@/lib/approval-types";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -340,7 +341,7 @@ export default async function DashboardPage() {
   ]);
 
   const approvalRows: ReactNode[][] = recentApprovals.map((approval) => [
-    approval.transactionType,
+    approvalTypeLabel(approval.transactionType),
     approval.requester ? `${approval.requester.name} (${approval.requester.email})` : "-",
     formatDate(approval.createdAt),
   ]);

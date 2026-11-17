@@ -5,13 +5,14 @@ import { ApprovalTransactionType, AuditStatus } from "@/generated/prisma/client"
 import { requirePermission } from "@/lib/auth";
 import { createAssetHistory } from "@/lib/asset-history";
 import {
-  ACTIVE_STATUS_CODE,
   DISPOSED_STATUS_CODE,
   DisposalRuleError,
   findActiveDisposal,
   findPendingDisposalRequest,
+  findPendingReversalRequest,
   findStatusIdByCode,
   lockAsset,
+  REVERSAL_REASON_MAX_LENGTH,
 } from "@/lib/asset-disposal";
 import { prisma } from "@/lib/prisma";
 
@@ -190,7 +191,7 @@ export async function createDisposalAction(
 
       if (!asset) throw new DisposalRuleError("Asset tidak ditemukan.");
       if (asset.deletedAt) throw new DisposalRuleError("Asset yang sudah dihapus tidak bisa disposal.");
-      if (await findActiveDisposal(tx, assetId)) throw new DisposalRuleError("Asset sudah didisposal. Reverse disposal lama terlebih dahulu.");
+      if (await findActiveDisposal(tx, assetId)) throw new DisposalRuleError("Asset sudah didisposal. Ajukan pembatalan disposal lama terlebih dahulu.");
       if (asset.assetStatusId === disposedStatusId) throw new DisposalRuleError("Status asset sudah DISPOSED.");
       if (await findPendingDisposalRequest(tx, assetId)) throw new DisposalRuleError("Asset sudah memiliki request disposal yang menunggu approval.");
 
@@ -220,15 +221,31 @@ export async function createDisposalAction(
   }
 }
 
-export async function reverseDisposalAction(
+/**
+ * Requests cancellation of an approved disposal. Nothing changes until an approver approves
+ * the DISPOSAL_REVERSAL request; the reason is required and kept on the request and the disposal.
+ */
+export async function requestDisposalReversalAction(
   _state: TransactionActionState,
   formData: FormData,
 ): Promise<TransactionActionState> {
   const user = await requirePermission("disposals.manage");
   const disposalId = getString(formData, "disposalId");
+  const reason = getString(formData, "reason");
 
   if (!disposalId) {
     return { errors: { disposalId: "Disposal tidak valid." }, message: "Disposal tidak valid." };
+  }
+
+  if (!reason) {
+    return { errors: { reason: "Alasan pembatalan wajib diisi." }, message: "Alasan pembatalan wajib diisi." };
+  }
+
+  if (reason.length > REVERSAL_REASON_MAX_LENGTH) {
+    return {
+      errors: { reason: `Alasan pembatalan maksimal ${REVERSAL_REASON_MAX_LENGTH} karakter.` },
+      message: `Alasan pembatalan maksimal ${REVERSAL_REASON_MAX_LENGTH} karakter.`,
+    };
   }
 
   const target = await prisma.assetDisposal.findUnique({ where: { id: disposalId }, select: { assetId: true } });
@@ -237,61 +254,40 @@ export async function reverseDisposalAction(
 
   try {
     await prisma.$transaction(async (tx) => {
+      // Same lock as disposal and approval, so the checks below cannot race with them.
       await lockAsset(tx, target.assetId);
 
       const disposal = await tx.assetDisposal.findUnique({
         where: { id: disposalId },
-        include: { asset: { select: { code: true, deletedAt: true, assetStatusId: true } } },
+        select: { id: true, reversedAt: true, asset: { select: { deletedAt: true } } },
       });
 
       if (!disposal) throw new DisposalRuleError("Disposal tidak ditemukan.");
-      if (disposal.reversedAt) throw new DisposalRuleError("Disposal sudah direverse.");
-      if (disposal.asset.deletedAt) throw new DisposalRuleError("Asset yang sudah dihapus tidak bisa direverse.");
+      if (disposal.reversedAt) throw new DisposalRuleError("Disposal sudah dibatalkan.");
+      if (disposal.asset.deletedAt) throw new DisposalRuleError("Asset yang sudah dihapus tidak bisa dibatalkan disposalnya.");
+      if (await findPendingReversalRequest(tx, target.assetId)) {
+        throw new DisposalRuleError("Pembatalan disposal untuk asset ini sudah diajukan dan menunggu approval.");
+      }
 
-      const now = new Date();
-      // Claim the reverse atomically; a second click or concurrent request finds nothing left to update.
-      const claimed = await tx.assetDisposal.updateMany({
-        where: { id: disposal.id, reversedAt: null },
-        data: { reversedAt: now, reversedById: user.id },
-      });
-
-      if (claimed.count !== 1) throw new DisposalRuleError("Disposal sudah direverse.");
-
-      // Disposal only changes the status, so reverse only restores the status.
-      // Location and department are left as they are now.
-      const disposedStatusId = disposal.disposedStatusId ?? (await findStatusIdByCode(tx, DISPOSED_STATUS_CODE));
-      const restorable = disposal.previousStatusId && disposal.previousStatusId !== disposedStatusId
-        ? await tx.assetStatus.findUnique({ where: { id: disposal.previousStatusId }, select: { id: true } })
-        : null;
-      const restoredStatusId = restorable?.id ?? (await findStatusIdByCode(tx, ACTIVE_STATUS_CODE));
-
-      await tx.asset.update({
-        where: { id: disposal.assetId },
-        data: { assetStatusId: restoredStatusId },
-      });
-
-      await createAssetHistory({
-        action: "DISPOSAL_REVERSED",
-        assetId: disposal.assetId,
-        changedById: user.id,
-        description: `Disposal asset ${disposal.asset.code} direverse.`,
-        payload: {
-          disposalId: disposal.id,
-          fromStatusId: disposal.asset.assetStatusId,
-          toStatusId: restoredStatusId,
+      await tx.assetApprovalRequest.create({
+        data: {
+          transactionType: ApprovalTransactionType.DISPOSAL_REVERSAL,
+          assetId: target.assetId,
+          requesterId: user.id,
+          payload: { disposalId: disposal.id, reason },
         },
-        tx,
       });
     });
 
     revalidatePath(DISPOSALS_PATH);
+    revalidateApprovalQueues();
     revalidateAsset(target.assetId);
 
-    return { ok: true, message: "Disposal berhasil direverse." };
+    return { ok: true, message: "Pembatalan disposal berhasil diajukan dan menunggu approval." };
   } catch (error) {
     if (error instanceof DisposalRuleError) return { message: error.message };
 
-    return { message: "Reverse disposal gagal. Silakan coba lagi." };
+    return { message: "Pembatalan disposal gagal diajukan. Silakan coba lagi." };
   }
 }
 

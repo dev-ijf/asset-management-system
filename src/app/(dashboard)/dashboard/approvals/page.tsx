@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { hasPermission } from "@/lib/auth";
 import { requireAnyPermission } from "@/lib/asset-transaction-view";
+import { approvalTypeLabel } from "@/lib/approval-types";
 import { prisma } from "@/lib/prisma";
 import { paginate } from "@/lib/pagination";
 
@@ -63,6 +64,10 @@ function payloadSummary(type: ApprovalTransactionType, payload: Prisma.JsonValue
 
   if (type === ApprovalTransactionType.DISPOSAL) {
     return typeof data.reason === "string" && data.reason ? data.reason : "Disposal asset";
+  }
+
+  if (type === ApprovalTransactionType.DISPOSAL_REVERSAL) {
+    return typeof data.reason === "string" && data.reason ? `Alasan pembatalan: ${data.reason}` : "Pembatalan disposal";
   }
 
   if (type === ApprovalTransactionType.MAINTENANCE) {
@@ -126,6 +131,7 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
               <option value="">Semua Jenis</option>
               <option value={ApprovalTransactionType.MOVEMENT}>Movement</option>
               <option value={ApprovalTransactionType.DISPOSAL}>Disposal</option>
+              <option value={ApprovalTransactionType.DISPOSAL_REVERSAL}>Pembatalan Disposal</option>
               <option value={ApprovalTransactionType.MAINTENANCE}>Maintenance</option>
             </Select>
             <Select name="asset" defaultValue={filters.asset ?? ""}>
@@ -146,10 +152,10 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
           <DataTable
             columns={["Jenis", "Asset", "Requester", "Tanggal Request", "Status", "Ringkasan", "Aksi"]}
             rows={requests.map((request) => {
-              const label = `${request.transactionType} ${request.asset.code}`;
+              const label = `${approvalTypeLabel(request.transactionType)} ${request.asset.code}`;
 
               return [
-                request.transactionType,
+                approvalTypeLabel(request.transactionType),
                 `${request.asset.code} - ${request.asset.name}`,
                 request.requester ? `${request.requester.name} (${request.requester.email})` : "-",
                 formatDateTime(request.createdAt),

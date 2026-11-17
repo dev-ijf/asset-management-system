@@ -9,7 +9,7 @@ import {
   createMaintenanceAction,
   createMovementAction,
   deleteMaintenanceAction,
-  reverseDisposalAction,
+  requestDisposalReversalAction,
   updateMaintenanceAction,
   type TransactionActionState,
 } from "@/app/(dashboard)/dashboard/transactions/transaction-actions";
@@ -146,17 +146,45 @@ export function DisposalForm({ assets }: { assets: SelectOption[] }) {
   );
 }
 
-export function ReverseDisposalButton({ disposalId, disabled }: { disposalId: string; disabled: boolean }) {
-  const [state, formAction, pending] = useActionState(reverseDisposalAction, initialState);
+export function ReverseDisposalButton({ disposalId, assetLabel, disabled }: { disposalId: string; assetLabel: string; disabled: boolean }) {
+  const [state, formAction, pending] = useActionState(requestDisposalReversalAction, initialState);
   const [open, setOpen] = useState(false);
-  useEffect(() => { if (state.ok) setOpen(false); }, [state.ok]);
+  useEffect(() => { if (state.ok) setOpen(false); }, [state]);
 
   return (
-    <><Button type="button" size="sm" variant="warning" disabled={disabled || pending} onClick={() => setOpen(true)}>
+    <>
+      <Button type="button" size="sm" variant="warning" disabled={disabled || pending} onClick={() => setOpen(true)}>
         <RotateCcw className="h-4 w-4" />
         Batalkan Disposal
       </Button>
-      {open ? <form action={formAction}><ConfirmDialog title="Batalkan disposal?" description="Apakah Anda yakin ingin membatalkan disposal aset ini?" confirmLabel="Ya, batalkan" pending={pending} onCancel={() => setOpen(false)}><input name="disposalId" type="hidden" value={disposalId} /><Feedback state={state} /></ConfirmDialog></form> : null}</>
+      {open ? (
+        <form action={formAction}>
+          <ConfirmDialog
+            title="Ajukan pembatalan disposal?"
+            description={`Pembatalan disposal ${assetLabel} akan dikirim ke Approvals. Status aset baru kembali setelah pengajuan disetujui.`}
+            confirmLabel="Ajukan Pembatalan"
+            pending={pending}
+            onCancel={() => setOpen(false)}
+          >
+            <input name="disposalId" type="hidden" value={disposalId} />
+            <label className="block">
+              <span className="text-sm font-medium text-[var(--text)]">Alasan Pembatalan <span className="text-[var(--danger)]">*</span></span>
+              <Textarea
+                name="reason"
+                className="mt-2"
+                rows={3}
+                maxLength={500}
+                required
+                placeholder="Contoh: aset ternyata masih bisa diperbaiki dan dipakai kembali"
+                disabled={pending}
+              />
+              <FieldError message={state.errors?.reason} />
+            </label>
+            <Feedback state={state} />
+          </ConfirmDialog>
+        </form>
+      ) : null}
+    </>
   );
 }
 

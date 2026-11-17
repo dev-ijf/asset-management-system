@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { selectableAssets, type TransactionPurpose } from "@/lib/asset-disposal";
 import { hasPermission, requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -33,10 +34,10 @@ export async function requireAnyPermission(permissions: string[]) {
   return user;
 }
 
-export async function getTransactionOptions() {
+export async function getTransactionOptions(purpose: TransactionPurpose = "other") {
   const [assets, locations, departments, users] = await Promise.all([
     prisma.asset.findMany({
-      where: { deletedAt: null },
+      where: selectableAssets(purpose),
       orderBy: { code: "asc" },
       select: { id: true, code: true, name: true },
     }),
