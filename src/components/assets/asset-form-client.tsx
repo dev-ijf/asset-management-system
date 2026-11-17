@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { useActionState, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Archive, Edit3, Eye, Plus, Trash2, X } from "lucide-react";
 import {
   archiveAssetAction,
@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AssetPhotoField } from "@/components/assets/asset-photo-field";
+import { useFormAction } from "@/components/ui/use-form-action";
 
 export type AssetSelectOption = {
   id: string;
@@ -140,10 +141,12 @@ function CheckboxField({
 function AssetFields({
   asset,
   options,
+  pending,
   state,
 }: {
   asset?: AssetRow;
   options: AssetFormOptions;
+  pending: boolean;
   state: AssetActionState;
 }) {
   return (
@@ -175,7 +178,7 @@ function AssetFields({
         </label>
       </Section>
 
-      <AssetPhotoField existing={asset?.photo} error={state.errors?.photo} required />
+      <AssetPhotoField existing={asset?.photo} error={state.errors?.photo} pending={pending} required />
 
       <Section title="Classification">
         <SelectField name="assetStatusId" label="Status" options={options.statuses} defaultValue={asset?.assetStatusId} error={state.errors?.assetStatusId} />
@@ -290,7 +293,7 @@ function AssetFormDialog({
   pending,
   state,
   title,
-  action,
+  form,
 }: {
   asset?: AssetRow;
   onClose: () => void;
@@ -298,11 +301,11 @@ function AssetFormDialog({
   pending: boolean;
   state: AssetActionState;
   title: string;
-  action: (formData: FormData) => void;
+  form: ReturnType<typeof useFormAction>[1];
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4 py-6">
-      <form action={action} className="flex max-h-[92vh] w-full max-w-5xl flex-col rounded-lg border border-[var(--border)] bg-white shadow-xl">
+      <form {...form} className="flex max-h-[92vh] w-full max-w-5xl flex-col rounded-lg border border-[var(--border)] bg-white shadow-xl">
         <div className="flex items-start justify-between gap-4 border-b border-[var(--border)] px-6 py-4">
           <div>
             <h2 className="text-lg font-semibold text-[var(--text)]">{title}</h2>
@@ -318,7 +321,7 @@ function AssetFormDialog({
           </button>
         </div>
         <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
-          <AssetFields asset={asset} options={options} state={state} />
+          <AssetFields asset={asset} options={options} pending={pending} state={state} />
         </div>
         <div className="flex justify-end gap-2 border-t border-[var(--border)] px-6 py-4">
           <Button variant="secondary" onClick={onClose}>Batal</Button>
@@ -331,7 +334,7 @@ function AssetFormDialog({
 
 export function AssetCreateAction({ canManage, options }: { canManage: boolean; options: AssetFormOptions }) {
   const [open, setOpen] = useState(false);
-  const [state, action, pending] = useActionState(createAssetAction, initialState);
+  const [state, form, pending] = useFormAction(createAssetAction, initialState);
 
   useEffect(() => {
     if (state.ok) {
@@ -350,7 +353,7 @@ export function AssetCreateAction({ canManage, options }: { canManage: boolean; 
         Tambah Aset
       </Button>
       {open ? (
-        <AssetFormDialog action={action} onClose={() => setOpen(false)} options={options} pending={pending} state={state} title="Tambah Aset" />
+        <AssetFormDialog form={form} onClose={() => setOpen(false)} options={options} pending={pending} state={state} title="Tambah Aset" />
       ) : null}
     </>
   );
@@ -358,7 +361,7 @@ export function AssetCreateAction({ canManage, options }: { canManage: boolean; 
 
 function AssetEditButton({ asset, options }: { asset: AssetRow; options: AssetFormOptions }) {
   const [open, setOpen] = useState(false);
-  const [state, action, pending] = useActionState(updateAssetAction, initialState);
+  const [state, form, pending] = useFormAction(updateAssetAction, initialState);
 
   useEffect(() => {
     if (state.ok) {
@@ -373,7 +376,7 @@ function AssetEditButton({ asset, options }: { asset: AssetRow; options: AssetFo
         Edit
       </Button>
       {open ? (
-        <AssetFormDialog action={action} asset={asset} onClose={() => setOpen(false)} options={options} pending={pending} state={state} title="Edit Aset" />
+        <AssetFormDialog form={form} asset={asset} onClose={() => setOpen(false)} options={options} pending={pending} state={state} title="Edit Aset" />
       ) : null}
     </>
   );
@@ -396,7 +399,7 @@ function AssetConfirmButton({
 }) {
   const [open, setOpen] = useState(false);
   const [archiveReason, setArchiveReason] = useState("");
-  const [state, formAction, pending] = useActionState(action, initialState);
+  const [state, form, pending] = useFormAction(action, initialState);
 
   useEffect(() => {
     if (state.ok) {
@@ -411,7 +414,7 @@ function AssetConfirmButton({
         {variant === "warning" ? "Arsipkan" : "Hapus"}
       </Button>
       {open ? (
-        <form action={formAction}>
+        <form {...form}>
           <ConfirmDialog title={title} description={description} confirmLabel={variant === "warning" ? "Arsipkan" : "Hapus"} pending={pending} onCancel={() => setOpen(false)}>
             <input name="id" type="hidden" value={asset.id} />
             {variant === "warning" ? (

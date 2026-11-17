@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
 import {
   approveApprovalRequestAction,
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useActionFeedback } from "@/components/ui/toast-provider";
+import { useFormAction } from "@/components/ui/use-form-action";
 
 const initialState: ApprovalActionState = {};
 
@@ -21,7 +22,7 @@ function Feedback({ state }: { state: ApprovalActionState }) {
 
 export function ApproveButton({ approvalId, label }: { approvalId: string; label: string }) {
   const [open, setOpen] = useState(false);
-  const [state, formAction, pending] = useActionState(approveApprovalRequestAction, initialState);
+  const [state, form, pending] = useFormAction(approveApprovalRequestAction, initialState);
 
   useEffect(() => {
     if (state.ok) setOpen(false);
@@ -34,7 +35,7 @@ export function ApproveButton({ approvalId, label }: { approvalId: string; label
         Approve
       </Button>
       {open ? (
-        <form action={formAction}>
+        <form {...form}>
           <ConfirmDialog
             title="Approve Request"
             description={`Setujui request ${label}. Perubahan asset akan diterapkan dan history akan dicatat.`}
@@ -53,7 +54,7 @@ export function ApproveButton({ approvalId, label }: { approvalId: string; label
 
 export function RejectButton({ approvalId, label }: { approvalId: string; label: string }) {
   const [open, setOpen] = useState(false);
-  const [state, formAction, pending] = useActionState(rejectApprovalRequestAction, initialState);
+  const [state, form, pending] = useFormAction(rejectApprovalRequestAction, initialState);
 
   useEffect(() => {
     if (state.ok) setOpen(false);
@@ -66,7 +67,7 @@ export function RejectButton({ approvalId, label }: { approvalId: string; label:
         Reject
       </Button>
       {open ? (
-        <form action={formAction}>
+        <form {...form}>
           <ConfirmDialog
             title="Reject Request"
             description={`Tolak request ${label}. Asset tidak akan berubah dan history rejected akan dicatat.`}

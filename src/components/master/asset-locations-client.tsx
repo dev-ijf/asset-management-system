@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Edit3, Plus, Trash2 } from "lucide-react";
 import {
   createAssetLocationAction,
@@ -15,6 +15,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useFormAction } from "@/components/ui/use-form-action";
 
 export type AssetLocationOption = {
   id: string;
@@ -92,7 +93,7 @@ function AssetLocationFields({
 
 function CreateAssetLocationButton({ parentOptions }: { parentOptions: AssetLocationOption[] }) {
   const [open, setOpen] = useState(false);
-  const [state, action, pending] = useActionState(createAssetLocationAction, initialState);
+  const [state, form, pending] = useFormAction(createAssetLocationAction, initialState);
 
   useEffect(() => {
     if (state.ok) {
@@ -107,7 +108,7 @@ function CreateAssetLocationButton({ parentOptions }: { parentOptions: AssetLoca
         Tambah Lokasi
       </Button>
       {open ? (
-        <form action={action}>
+        <form {...form}>
           <MasterRecordForm
             title="Tambah Lokasi Aset"
             description="Buat lokasi aset baru dan hubungkan ke parent jika diperlukan."
@@ -134,7 +135,7 @@ function EditAssetLocationButton({
   parentOptions: AssetLocationOption[];
 }) {
   const [open, setOpen] = useState(false);
-  const [state, action, pending] = useActionState(updateAssetLocationAction, initialState);
+  const [state, form, pending] = useFormAction(updateAssetLocationAction, initialState);
 
   useEffect(() => {
     if (state.ok) {
@@ -149,7 +150,7 @@ function EditAssetLocationButton({
         Edit
       </Button>
       {open ? (
-        <form action={action}>
+        <form {...form}>
           <MasterRecordForm
             title="Edit Lokasi Aset"
             description="Perbarui nama, parent, atau deskripsi lokasi."
@@ -170,7 +171,7 @@ function EditAssetLocationButton({
 
 function DeleteAssetLocationButton({ location }: { location: AssetLocationRow }) {
   const [open, setOpen] = useState(false);
-  const [state, action, pending] = useActionState(deleteAssetLocationAction, initialState);
+  const [state, form, pending] = useFormAction(deleteAssetLocationAction, initialState);
 
   useEffect(() => {
     if (state.ok) {
@@ -185,7 +186,7 @@ function DeleteAssetLocationButton({ location }: { location: AssetLocationRow })
         Hapus
       </Button>
       {open ? (
-        <form action={action}>
+        <form {...form}>
           <ConfirmDialog
             title="Hapus Lokasi Aset"
             description={`Lokasi "${location.name}" akan dihapus jika belum dipakai asset dan tidak punya child location.`}

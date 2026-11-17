@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Edit3, Plus, Trash2 } from "lucide-react";
 import {
   createAssetCategoryAction,
@@ -15,6 +15,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useFormAction } from "@/components/ui/use-form-action";
 
 export type AssetCategoryOption = {
   id: string;
@@ -97,7 +98,7 @@ function AssetCategoryFields({
 
 function CreateAssetCategoryButton({ parentOptions }: { parentOptions: AssetCategoryOption[] }) {
   const [open, setOpen] = useState(false);
-  const [state, action, pending] = useActionState(createAssetCategoryAction, initialState);
+  const [state, form, pending] = useFormAction(createAssetCategoryAction, initialState);
 
   useEffect(() => {
     if (state.ok) {
@@ -112,7 +113,7 @@ function CreateAssetCategoryButton({ parentOptions }: { parentOptions: AssetCate
         Tambah Kategori
       </Button>
       {open ? (
-        <form action={action}>
+        <form {...form}>
           <MasterRecordForm
             title="Tambah Kategori Aset"
             description="Buat kategori aset baru dan hubungkan ke parent jika diperlukan."
@@ -139,7 +140,7 @@ function EditAssetCategoryButton({
   parentOptions: AssetCategoryOption[];
 }) {
   const [open, setOpen] = useState(false);
-  const [state, action, pending] = useActionState(updateAssetCategoryAction, initialState);
+  const [state, form, pending] = useFormAction(updateAssetCategoryAction, initialState);
 
   useEffect(() => {
     if (state.ok) {
@@ -154,7 +155,7 @@ function EditAssetCategoryButton({
         Edit
       </Button>
       {open ? (
-        <form action={action}>
+        <form {...form}>
           <MasterRecordForm
             title="Edit Kategori Aset"
             description="Perbarui code, nama, parent, atau deskripsi kategori."
@@ -175,7 +176,7 @@ function EditAssetCategoryButton({
 
 function DeleteAssetCategoryButton({ category }: { category: AssetCategoryRow }) {
   const [open, setOpen] = useState(false);
-  const [state, action, pending] = useActionState(deleteAssetCategoryAction, initialState);
+  const [state, form, pending] = useFormAction(deleteAssetCategoryAction, initialState);
 
   useEffect(() => {
     if (state.ok) {
@@ -190,7 +191,7 @@ function DeleteAssetCategoryButton({ category }: { category: AssetCategoryRow })
         Hapus
       </Button>
       {open ? (
-        <form action={action}>
+        <form {...form}>
           <ConfirmDialog
             title="Hapus Kategori Aset"
             description={`Kategori "${category.name}" akan dihapus jika belum dipakai asset dan tidak punya child category.`}

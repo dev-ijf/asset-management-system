@@ -1,20 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+
 import { ArrowLeft, Loader2, Mail } from "lucide-react";
 import { AuthAlert } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { forgotPasswordAction, type ForgotPasswordState } from "@/app/forgot-password/actions";
+import { useFormAction } from "@/components/ui/use-form-action";
 
 const initialState: ForgotPasswordState = {};
 
 export function ForgotPasswordForm({ notice }: { notice?: string }) {
-  const [state, formAction, pending] = useActionState(forgotPasswordAction, initialState);
+  const [state, form, pending] = useFormAction(forgotPasswordAction, initialState);
 
   return (
-    <form action={formAction} className="mt-8 space-y-5">
+    <form {...form} className="mt-8 space-y-5">
       {state.error ? (
         <AuthAlert tone="error">{state.error}</AuthAlert>
       ) : state.sent ? (

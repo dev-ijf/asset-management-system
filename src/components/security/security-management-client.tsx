@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Edit3, Plus, Trash2 } from "lucide-react";
 import {
   createPermissionAction,
@@ -25,6 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { useActionFeedback } from "@/components/ui/toast-provider";
+import { useFormAction } from "@/components/ui/use-form-action";
 
 type SecurityAction = (previousState: SecurityActionState, formData: FormData) => Promise<SecurityActionState>;
 
@@ -135,7 +136,7 @@ function DeleteButton({
   title: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [state, formAction, pending] = useActionState(action, initialState);
+  const [state, form, pending] = useFormAction(action, initialState);
 
   useEffect(() => {
     if (state.ok) setOpen(false);
@@ -148,7 +149,7 @@ function DeleteButton({
         Hapus
       </Button>
       {open ? (
-        <form action={formAction}>
+        <form {...form}>
           <ConfirmDialog
             title={title}
             description={description}
@@ -179,7 +180,7 @@ function UserForm({
   roles: SecurityOption[];
 }) {
   const [open, setOpen] = useState(false);
-  const [state, formAction, pending] = useActionState(action, initialState);
+  const [state, form, pending] = useFormAction(action, initialState);
 
   useEffect(() => {
     if (state.ok) setOpen(false);
@@ -192,7 +193,7 @@ function UserForm({
         {mode === "create" ? "Tambah User" : "Edit"}
       </Button>
       {open ? (
-        <form action={formAction}>
+        <form {...form}>
           <MasterRecordForm
             title={mode === "create" ? "Tambah User" : "Edit User"}
             description="Kelola akun login, role, dan direct permission."
@@ -255,7 +256,7 @@ function RoleForm({
   record?: RoleSecurityRecord;
 }) {
   const [open, setOpen] = useState(false);
-  const [state, formAction, pending] = useActionState(action, initialState);
+  const [state, form, pending] = useFormAction(action, initialState);
 
   useEffect(() => {
     if (state.ok) setOpen(false);
@@ -268,7 +269,7 @@ function RoleForm({
         {mode === "create" ? "Tambah Role" : "Edit"}
       </Button>
       {open ? (
-        <form action={formAction}>
+        <form {...form}>
           <MasterRecordForm
             title={mode === "create" ? "Tambah Role" : "Edit Role"}
             description="Role mengelompokkan permission untuk user."
@@ -310,7 +311,7 @@ function PermissionForm({
   record?: PermissionSecurityRecord;
 }) {
   const [open, setOpen] = useState(false);
-  const [state, formAction, pending] = useActionState(action, initialState);
+  const [state, form, pending] = useFormAction(action, initialState);
 
   useEffect(() => {
     if (state.ok) setOpen(false);
@@ -323,7 +324,7 @@ function PermissionForm({
         {mode === "create" ? "Tambah Permission" : "Edit"}
       </Button>
       {open ? (
-        <form action={formAction}>
+        <form {...form}>
           <MasterRecordForm
             title={mode === "create" ? "Tambah Permission" : "Edit Permission"}
             description="Permission dipakai untuk server-side access control."

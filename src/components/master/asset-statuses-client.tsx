@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Edit3, Plus, Trash2 } from "lucide-react";
 import {
   createAssetStatusAction,
@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { MasterRecordForm } from "@/components/master/master-record-form";
 import { FieldError, FormFeedback } from "@/components/master/master-form-feedback";
+import { useFormAction } from "@/components/ui/use-form-action";
 
 export type AssetStatusRow = {
   id: string;
@@ -69,7 +70,7 @@ function AssetStatusFields({
 
 function CreateAssetStatusButton() {
   const [open, setOpen] = useState(false);
-  const [state, action, pending] = useActionState(createAssetStatusAction, initialState);
+  const [state, form, pending] = useFormAction(createAssetStatusAction, initialState);
 
   useEffect(() => {
     if (state.ok) {
@@ -84,7 +85,7 @@ function CreateAssetStatusButton() {
         Tambah Status
       </Button>
       {open ? (
-        <form action={action}>
+        <form {...form}>
           <MasterRecordForm
             title="Tambah Status Aset"
             description="Buat status siklus hidup aset baru."
@@ -105,7 +106,7 @@ function CreateAssetStatusButton() {
 
 function EditAssetStatusButton({ status }: { status: AssetStatusRow }) {
   const [open, setOpen] = useState(false);
-  const [state, action, pending] = useActionState(updateAssetStatusAction, initialState);
+  const [state, form, pending] = useFormAction(updateAssetStatusAction, initialState);
 
   useEffect(() => {
     if (state.ok) {
@@ -120,7 +121,7 @@ function EditAssetStatusButton({ status }: { status: AssetStatusRow }) {
         Edit
       </Button>
       {open ? (
-        <form action={action}>
+        <form {...form}>
           <MasterRecordForm
             title="Edit Status Aset"
             description="Perbarui code, nama, atau deskripsi status."
@@ -141,7 +142,7 @@ function EditAssetStatusButton({ status }: { status: AssetStatusRow }) {
 
 function DeleteAssetStatusButton({ status }: { status: AssetStatusRow }) {
   const [open, setOpen] = useState(false);
-  const [state, action, pending] = useActionState(deleteAssetStatusAction, initialState);
+  const [state, form, pending] = useFormAction(deleteAssetStatusAction, initialState);
 
   useEffect(() => {
     if (state.ok) {
@@ -156,7 +157,7 @@ function DeleteAssetStatusButton({ status }: { status: AssetStatusRow }) {
         Hapus
       </Button>
       {open ? (
-        <form action={action}>
+        <form {...form}>
           <ConfirmDialog
             title="Hapus Status Aset"
             description={`Status "${status.name}" akan dihapus jika belum dipakai asset.`}

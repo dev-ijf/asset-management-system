@@ -1,22 +1,23 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { Eye, EyeOff, Loader2, Lock } from "lucide-react";
 import { AuthAlert } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { resetPasswordAction, type ResetPasswordState } from "@/app/reset-password/actions";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@/lib/password-policy";
+import { useFormAction } from "@/components/ui/use-form-action";
 
 const initialState: ResetPasswordState = {};
 
 export function ResetPasswordForm({ token }: { token: string }) {
-  const [state, formAction, pending] = useActionState(resetPasswordAction, initialState);
+  const [state, form, pending] = useFormAction(resetPasswordAction, initialState);
   const [showPassword, setShowPassword] = useState(false);
   const inputType = showPassword ? "text" : "password";
 
   return (
-    <form action={formAction} className="mt-8 space-y-5">
+    <form {...form} className="mt-8 space-y-5">
       <input type="hidden" name="token" value={token} />
 
       {state.error ? <AuthAlert tone="error">{state.error}</AuthAlert> : null}

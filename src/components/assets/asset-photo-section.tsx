@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useActionState, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Camera, ImagePlus, Star, Trash2 } from "lucide-react";
 import {
   deleteAssetPhotoAction,
@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useActionFeedback } from "@/components/ui/toast-provider";
+import { useFormAction } from "@/components/ui/use-form-action";
 
 export type AssetPhotoItem = {
   id: string;
@@ -31,12 +32,12 @@ function PhotoFeedback({ state }: { state: AssetPhotoActionState }) {
 }
 
 function UploadPhotoForm({ assetId }: { assetId: string }) {
-  const [state, formAction, pending] = useActionState(uploadAssetPhotoAction, initialState);
+  const [state, form, pending] = useFormAction(uploadAssetPhotoAction, initialState);
 
   return (
-    <form action={formAction} className="space-y-3 rounded-md border border-[var(--border)] bg-[var(--table-head)] p-4">
+    <form {...form} className="space-y-3 rounded-md border border-[var(--border)] bg-[var(--table-head)] p-4">
       <input name="assetId" type="hidden" value={assetId} />
-      <AssetPhotoField error={state.errors?.photo} required />
+      <AssetPhotoField error={state.errors?.photo} pending={pending} required />
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={pending}>
           <ImagePlus className="h-4 w-4" />
@@ -64,19 +65,19 @@ function PhotoActionForm({
   photoId: string;
   variant: "secondary" | "danger" | "outline";
 }) {
-  const [state, formAction, pending] = useActionState(action, initialState);
+  const [state, form, pending] = useFormAction(action, initialState);
   const [open, setOpen] = useState(false);
   useEffect(() => { if (state.ok) setOpen(false); }, [state.ok]);
 
   if (confirmMessage) {
     return <>
       <Button type="button" size="sm" variant={variant} disabled={pending} onClick={() => setOpen(true)}>{icon}{buttonLabel}</Button>
-      {open ? <form action={formAction}><ConfirmDialog title="Hapus foto?" description={confirmMessage} confirmLabel="Hapus" pending={pending} onCancel={() => setOpen(false)}><input name="photoId" type="hidden" value={photoId} /><PhotoFeedback state={state} /></ConfirmDialog></form> : null}
+      {open ? <form {...form}><ConfirmDialog title="Hapus foto?" description={confirmMessage} confirmLabel="Hapus" pending={pending} onCancel={() => setOpen(false)}><input name="photoId" type="hidden" value={photoId} /><PhotoFeedback state={state} /></ConfirmDialog></form> : null}
     </>;
   }
 
   return (
-    <form action={formAction} className="space-y-2">
+    <form {...form} className="space-y-2">
       <input name="photoId" type="hidden" value={photoId} />
       <Button type="submit" size="sm" variant={variant} disabled={pending}>
         {icon}

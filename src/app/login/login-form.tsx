@@ -1,21 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import { AuthAlert } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { loginAction, type LoginState } from "@/app/login/actions";
+import { useFormAction } from "@/components/ui/use-form-action";
 
 const initialState: LoginState = {};
 
 export function LoginForm({ nextPath, googleError, notice }: { nextPath: string; googleError?: string; notice?: string }) {
-  const [state, formAction, pending] = useActionState(loginAction, initialState);
+  const [state, form, pending] = useFormAction(loginAction, initialState);
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <form action={formAction} className="mt-8 space-y-5">
+    <form {...form} className="mt-8 space-y-5">
       <input type="hidden" name="next" value={nextPath} />
 
       {state.error || googleError ? (

@@ -1,16 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useFormStatus } from "react-dom";
 import { Loader2, Upload, X } from "lucide-react";
 
-export function AssetPhotoField({ existing, error, required = false }: { existing?: { id: string; path: string }; error?: string; required?: boolean }) {
+export function AssetPhotoField({ existing, error, pending = false, required = false }: { existing?: { id: string; path: string }; error?: string; pending?: boolean; required?: boolean }) {
   const input = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [removed, setRemoved] = useState(false);
   const [localError, setLocalError] = useState("");
-  const { pending } = useFormStatus();
 
   useEffect(() => {
     if (!file) return;

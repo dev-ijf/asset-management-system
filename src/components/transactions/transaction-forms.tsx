@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle2, Plus, RotateCcw, Save, Trash2 } from "lucide-react";
 import {
   completeMaintenanceAction,
@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useActionFeedback } from "@/components/ui/toast-provider";
+import { useFormAction } from "@/components/ui/use-form-action";
 
 export type SelectOption = {
   id: string;
@@ -85,10 +86,10 @@ export function MovementForm({
   locations: SelectOption[];
   users: SelectOption[];
 }) {
-  const [state, formAction, pending] = useActionState(createMovementAction, initialState);
+  const [state, form, pending] = useFormAction(createMovementAction, initialState);
 
   return (
-    <form action={formAction} className="space-y-4 rounded-lg border border-[var(--border)] bg-white p-5">
+    <form {...form} className="space-y-4 rounded-lg border border-[var(--border)] bg-white p-5">
       <div className="grid gap-4 md:grid-cols-2">
         <AssetSelect assets={assets} error={state.errors?.assetId} />
         <label className="block">
@@ -115,10 +116,10 @@ export function MovementForm({
 }
 
 export function DisposalForm({ assets }: { assets: SelectOption[] }) {
-  const [state, formAction, pending] = useActionState(createDisposalAction, initialState);
+  const [state, form, pending] = useFormAction(createDisposalAction, initialState);
 
   return (
-    <form action={formAction} className="space-y-4 rounded-lg border border-[var(--border)] bg-white p-5">
+    <form {...form} className="space-y-4 rounded-lg border border-[var(--border)] bg-white p-5">
       <div>
         <h2 className="font-semibold text-[var(--text)]">Ajukan Disposal Aset</h2>
         <p className="mt-1 text-sm text-[var(--muted)]">Pilih aset dan jelaskan alasan aset dikeluarkan. Status aset baru berubah menjadi Disposed setelah request disetujui.</p>
@@ -147,7 +148,7 @@ export function DisposalForm({ assets }: { assets: SelectOption[] }) {
 }
 
 export function ReverseDisposalButton({ disposalId, assetLabel, disabled }: { disposalId: string; assetLabel: string; disabled: boolean }) {
-  const [state, formAction, pending] = useActionState(requestDisposalReversalAction, initialState);
+  const [state, form, pending] = useFormAction(requestDisposalReversalAction, initialState);
   const [open, setOpen] = useState(false);
   useEffect(() => { if (state.ok) setOpen(false); }, [state]);
 
@@ -158,7 +159,7 @@ export function ReverseDisposalButton({ disposalId, assetLabel, disabled }: { di
         Batalkan Disposal
       </Button>
       {open ? (
-        <form action={formAction}>
+        <form {...form}>
           <ConfirmDialog
             title="Ajukan pembatalan disposal?"
             description={`Pembatalan disposal ${assetLabel} akan dikirim ke Approvals. Status aset baru kembali setelah pengajuan disetujui.`}
@@ -189,10 +190,10 @@ export function ReverseDisposalButton({ disposalId, assetLabel, disabled }: { di
 }
 
 export function AuditForm({ assets, locations }: { assets: SelectOption[]; locations: SelectOption[] }) {
-  const [state, formAction, pending] = useActionState(createAuditAction, initialState);
+  const [state, form, pending] = useFormAction(createAuditAction, initialState);
 
   return (
-    <form action={formAction} className="space-y-4 rounded-lg border border-[var(--border)] bg-white p-5">
+    <form {...form} className="space-y-4 rounded-lg border border-[var(--border)] bg-white p-5">
       <div className="grid gap-4 md:grid-cols-2">
         <AssetSelect assets={assets} error={state.errors?.assetId} />
         <label className="block">
@@ -226,10 +227,10 @@ export function AuditForm({ assets, locations }: { assets: SelectOption[]; locat
 }
 
 export function MaintenanceCreateForm({ assets }: { assets: SelectOption[] }) {
-  const [state, formAction, pending] = useActionState(createMaintenanceAction, initialState);
+  const [state, form, pending] = useFormAction(createMaintenanceAction, initialState);
 
   return (
-    <form action={formAction} className="space-y-4 rounded-lg border border-[var(--border)] bg-white p-5">
+    <form {...form} className="space-y-4 rounded-lg border border-[var(--border)] bg-white p-5">
       <MaintenanceFields assets={assets} state={state} />
       <Button type="submit" disabled={pending}>
         <Plus className="h-4 w-4" />
@@ -306,7 +307,7 @@ export function MaintenanceEditForm({
   };
 }) {
   const [open, setOpen] = useState(false);
-  const [state, formAction, pending] = useActionState(updateMaintenanceAction, initialState);
+  const [state, form, pending] = useFormAction(updateMaintenanceAction, initialState);
 
   useEffect(() => {
     if (state.ok) setOpen(false);
@@ -321,7 +322,7 @@ export function MaintenanceEditForm({
   }
 
   return (
-    <form action={formAction} className="mt-3 space-y-4 rounded-md border border-[var(--border)] bg-[var(--table-head)] p-4">
+    <form {...form} className="mt-3 space-y-4 rounded-md border border-[var(--border)] bg-[var(--table-head)] p-4">
       <input name="id" type="hidden" value={maintenance.id} />
       <MaintenanceFields defaults={maintenance} state={state} />
       <div className="flex flex-wrap gap-2">
@@ -339,12 +340,12 @@ export function MaintenanceEditForm({
 }
 
 export function MaintenanceCompleteButton({ maintenance }: { maintenance: Record<string, string> }) {
-  const [state, formAction, pending] = useActionState(completeMaintenanceAction, initialState);
+  const [state, form, pending] = useFormAction(completeMaintenanceAction, initialState);
 
   if (maintenance.status === "COMPLETED") return null;
 
   return (
-    <form action={formAction} className="space-y-2">
+    <form {...form} className="space-y-2">
       {Object.entries(maintenance).map(([key, value]) => (
         <input key={key} name={key} type="hidden" value={value} />
       ))}
@@ -358,7 +359,7 @@ export function MaintenanceCompleteButton({ maintenance }: { maintenance: Record
 }
 
 export function MaintenanceDeleteButton({ id }: { id: string }) {
-  const [state, formAction, pending] = useActionState(deleteMaintenanceAction, initialState);
+  const [state, form, pending] = useFormAction(deleteMaintenanceAction, initialState);
   const [open, setOpen] = useState(false);
   useEffect(() => { if (state.ok) setOpen(false); }, [state.ok]);
 
@@ -367,6 +368,6 @@ export function MaintenanceDeleteButton({ id }: { id: string }) {
         <Trash2 className="h-4 w-4" />
         Hapus
       </Button>
-      {open ? <form action={formAction}><ConfirmDialog title="Hapus maintenance?" description="Apakah Anda yakin ingin menghapus data maintenance ini? Tindakan ini tidak dapat dibatalkan." confirmLabel="Hapus" pending={pending} onCancel={() => setOpen(false)}><input name="id" type="hidden" value={id} /><Feedback state={state} /></ConfirmDialog></form> : null}</>
+      {open ? <form {...form}><ConfirmDialog title="Hapus maintenance?" description="Apakah Anda yakin ingin menghapus data maintenance ini? Tindakan ini tidak dapat dibatalkan." confirmLabel="Hapus" pending={pending} onCancel={() => setOpen(false)}><input name="id" type="hidden" value={id} /><Feedback state={state} /></ConfirmDialog></form> : null}</>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Edit3, Plus, Trash2 } from "lucide-react";
 import { FieldError, FormFeedback } from "@/components/master/master-form-feedback";
 import { MasterRecordForm } from "@/components/master/master-record-form";
@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useFormAction } from "@/components/ui/use-form-action";
 
 export type MasterActionState = {
   ok?: boolean;
@@ -121,7 +122,7 @@ function CreateMasterButton({
   title: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [state, formAction, pending] = useActionState(action, initialState);
+  const [state, form, pending] = useFormAction(action, initialState);
 
   useEffect(() => {
     if (state.ok) {
@@ -136,7 +137,7 @@ function CreateMasterButton({
         {buttonLabel}
       </Button>
       {open ? (
-        <form action={formAction}>
+        <form {...form}>
           <MasterRecordForm
             title={title}
             description={description}
@@ -169,7 +170,7 @@ function EditMasterButton({
   title: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [state, formAction, pending] = useActionState(action, initialState);
+  const [state, form, pending] = useFormAction(action, initialState);
 
   useEffect(() => {
     if (state.ok) {
@@ -184,7 +185,7 @@ function EditMasterButton({
         Ubah
       </Button>
       {open ? (
-        <form action={formAction}>
+        <form {...form}>
           <MasterRecordForm
             title={title}
             description={description}
@@ -215,7 +216,7 @@ function DeleteMasterButton({
   record: MasterCrudRecord;
 }) {
   const [open, setOpen] = useState(false);
-  const [state, formAction, pending] = useActionState(action, initialState);
+  const [state, form, pending] = useFormAction(action, initialState);
 
   useEffect(() => {
     if (state.ok) {
@@ -230,7 +231,7 @@ function DeleteMasterButton({
         Hapus
       </Button>
       {open ? (
-        <form action={formAction}>
+        <form {...form}>
           <ConfirmDialog
             title={deleteTitle}
             description={deleteDescription}
