@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Camera, ImagePlus, Star, Trash2 } from "lucide-react";
 import {
   deleteAssetPhotoAction,
@@ -14,6 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useActionFeedback } from "@/components/ui/toast-provider";
 
 export type AssetPhotoItem = {
   id: string;
@@ -24,15 +26,8 @@ export type AssetPhotoItem = {
 const initialState: AssetPhotoActionState = {};
 
 function PhotoFeedback({ state }: { state: AssetPhotoActionState }) {
-  if (!state.message) {
-    return null;
-  }
-
-  const className = state.ok
-    ? "border border-[rgba(34,197,94,0.35)] bg-[#e7f9ef] text-[#13a251]"
-    : "border border-[rgba(255,91,82,0.35)] bg-[#ffecea] text-[var(--danger)]";
-
-  return <div className={`rounded-md px-4 py-3 text-sm font-medium ${className}`}>{state.message}</div>;
+  useActionFeedback(state);
+  return null;
 }
 
 function UploadPhotoForm({ assetId }: { assetId: string }) {
@@ -41,11 +36,11 @@ function UploadPhotoForm({ assetId }: { assetId: string }) {
   return (
     <form action={formAction} className="space-y-3 rounded-md border border-[var(--border)] bg-[var(--table-head)] p-4">
       <input name="assetId" type="hidden" value={assetId} />
-      <AssetPhotoField error={state.errors?.photo} />
+      <AssetPhotoField error={state.errors?.photo} required />
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={pending}>
           <ImagePlus className="h-4 w-4" />
-          {pending ? "Uploading..." : "Upload Foto"}
+          {pending ? "Mengunggah..." : "Upload Foto"}
         </Button>
         <p className="text-xs text-[var(--muted)]">Format jpg, jpeg, png, webp. Maksimal 10 MB.</p>
       </div>
@@ -70,21 +65,22 @@ function PhotoActionForm({
   variant: "secondary" | "danger" | "outline";
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
+  const [open, setOpen] = useState(false);
+  useEffect(() => { if (state.ok) setOpen(false); }, [state.ok]);
+
+  if (confirmMessage) {
+    return <>
+      <Button type="button" size="sm" variant={variant} disabled={pending} onClick={() => setOpen(true)}>{icon}{buttonLabel}</Button>
+      {open ? <form action={formAction}><ConfirmDialog title="Hapus foto?" description={confirmMessage} confirmLabel="Hapus" pending={pending} onCancel={() => setOpen(false)}><input name="photoId" type="hidden" value={photoId} /><PhotoFeedback state={state} /></ConfirmDialog></form> : null}
+    </>;
+  }
 
   return (
-    <form
-      action={formAction}
-      onSubmit={(event) => {
-        if (confirmMessage && !window.confirm(confirmMessage)) {
-          event.preventDefault();
-        }
-      }}
-      className="space-y-2"
-    >
+    <form action={formAction} className="space-y-2">
       <input name="photoId" type="hidden" value={photoId} />
       <Button type="submit" size="sm" variant={variant} disabled={pending}>
         {icon}
-        {pending ? "Memproses..." : buttonLabel}
+        {pending ? "Menyimpan perubahan..." : buttonLabel}
       </Button>
       <PhotoFeedback state={state} />
     </form>
@@ -149,14 +145,18 @@ export function AssetPhotoSection({
                           variant="outline"
                         />
                       ) : null}
-                      <PhotoActionForm
-                        action={deleteAssetPhotoAction}
-                        buttonLabel="Delete"
-                        confirmMessage="Hapus foto asset ini?"
-                        icon={<Trash2 className="h-4 w-4" />}
-                        photoId={photo.id}
-                        variant="danger"
-                      />
+                      {photos.length > 1 ? (
+                        <PhotoActionForm
+                          action={deleteAssetPhotoAction}
+                          buttonLabel="Hapus"
+                          confirmMessage="Hapus foto asset ini?"
+                          icon={<Trash2 className="h-4 w-4" />}
+                          photoId={photo.id}
+                          variant="danger"
+                        />
+                      ) : (
+                        <p className="text-xs text-[var(--muted)]">Foto wajib ada. Upload foto lain untuk bisa menghapus foto ini.</p>
+                      )}
                     </div>
                   ) : null}
                 </div>

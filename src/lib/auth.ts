@@ -72,6 +72,13 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     return null;
   }
 
+  // Sessions issued before the latest password reset are no longer valid.
+  const sessionIssuedAt = session.expiresAt - SESSION_MAX_AGE_SECONDS * 1000;
+
+  if (user.passwordChangedAt && sessionIssuedAt < user.passwordChangedAt.getTime()) {
+    return null;
+  }
+
   const roles = user.roles.map((userRole) => userRole.role.name);
   const permissions = new Set<string>();
 

@@ -181,7 +181,7 @@ function EditMasterButton({
     <>
       <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
         <Edit3 className="h-4 w-4" />
-        Edit
+        Ubah
       </Button>
       {open ? (
         <form action={formAction}>
@@ -227,7 +227,7 @@ function DeleteMasterButton({
     <>
       <Button variant="danger" size="sm" onClick={() => setOpen(true)}>
         <Trash2 className="h-4 w-4" />
-        Delete
+        Hapus
       </Button>
       {open ? (
         <form action={formAction}>

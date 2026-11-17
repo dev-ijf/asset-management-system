@@ -14,6 +14,10 @@ export type AssetPhotoActionState = {
   errors?: Record<string, string | undefined>;
 };
 
+const LAST_PHOTO_MESSAGE = "Asset wajib memiliki minimal satu foto. Upload foto pengganti sebelum menghapus foto ini.";
+
+class LastPhotoError extends Error {}
+
 function getString(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim();
 }
@@ -60,13 +64,18 @@ export async function deleteAssetPhotoAction(_state: AssetPhotoActionState, form
     if (!photo) return { message: "Foto tidak ditemukan." };
     removed = await prisma.$transaction(async tx => {
       await tx.asset.update({ where: { id: photo.assetId, deletedAt: null }, data: { updatedAt: new Date() } });
+      // The asset row update above locks it, so two concurrent deletes cannot both pass this check.
+      if (await tx.assetPhoto.count({ where: { assetId: photo.assetId } }) <= 1) throw new LastPhotoError();
       const old = await removePhotoRecord(tx, photo.assetId, photo.id);
       await ensurePrimaryPhoto(tx, photo.assetId);
       await createAssetHistory({ action: "PHOTO_DELETED", assetId: photo.assetId, changedById: user.id,
         description: "Foto asset dihapus.", payload: { photoId }, tx });
       return old;
     });
-  } catch { return { message: "Foto gagal dihapus. Silakan coba lagi." }; }
+  } catch (error) {
+    if (error instanceof LastPhotoError) return { message: LAST_PHOTO_MESSAGE };
+    return { message: "Foto gagal dihapus. Silakan coba lagi." };
+  }
   await deleteLegacyPhoto(removed);
   const result = await cleanupPhotosSafely(removed.driveFileId ? [removed.driveFileId] : []);
   revalidateAssetPages(removed.assetId);

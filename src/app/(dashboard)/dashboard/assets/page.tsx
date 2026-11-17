@@ -109,6 +109,7 @@ async function getAssets({
 }) {
   const where: Prisma.AssetWhereInput = {
       deletedAt: null,
+      archivedAt: null,
       ...(query
         ? {
             OR: [

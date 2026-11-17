@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
   const assets = await prisma.asset.findMany({
     where: {
       deletedAt: null,
+      archivedAt: null,
       assetStatusId: getParam(searchParams, "status") || undefined,
       assetClassId: getParam(searchParams, "class") || undefined,
       assetCategoryId: getParam(searchParams, "category") || undefined,

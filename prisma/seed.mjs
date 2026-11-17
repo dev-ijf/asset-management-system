@@ -135,6 +135,13 @@ async function seedMasterData() {
     create: { name: "Rusak", code: "BROKEN", description: "Butuh perbaikan/hasil inspeksi" },
   });
 
+  // Required by the disposal workflow; set only by an approved disposal.
+  await prisma.assetStatus.upsert({
+    where: { code: "DISPOSED" },
+    update: {},
+    create: { name: "Disposed", code: "DISPOSED", description: "Aset sudah didisposal melalui approval" },
+  });
+
   const assetClass = await prisma.assetClass.upsert({
     where: { code: "ELEC" },
     update: {},

@@ -4,6 +4,13 @@ import { revalidatePath } from "next/cache";
 import { ApprovalStatus, ApprovalTransactionType, Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/auth";
 import { createAssetHistory } from "@/lib/asset-history";
+import {
+  DISPOSED_STATUS_CODE,
+  DisposalRuleError as ApprovalRuleError,
+  findActiveDisposal,
+  findStatusIdByCode,
+  lockAsset,
+} from "@/lib/asset-disposal";
 import { prisma } from "@/lib/prisma";
 
 export type ApprovalActionState = {
@@ -64,6 +71,10 @@ async function applyMovement(
   },
   approverId: string,
 ) {
+  if (await findActiveDisposal(tx, request.assetId)) {
+    throw new ApprovalRuleError("Asset sudah didisposal sehingga movement tidak bisa diterapkan. Tolak request ini.");
+  }
+
   const payload = payloadObject(request.payload);
   const toLocationId = optionalString(payload.toLocationId);
   const toDepartmentId = optionalString(payload.toDepartmentId);
@@ -130,19 +141,25 @@ async function applyDisposal(
   approverId: string,
 ) {
   const payload = payloadObject(request.payload);
-  const disposedStatus = await tx.assetStatus.findUnique({ where: { code: "DISPOSED" }, select: { id: true } });
+  const disposedStatusId = await findStatusIdByCode(tx, DISPOSED_STATUS_CODE);
 
-  if (!disposedStatus) {
-    throw new Error("Status DISPOSED belum tersedia di master Asset Status.");
+  if (!disposedStatusId) {
+    throw new ApprovalRuleError("Status DISPOSED belum tersedia di master Asset Status.");
   }
 
+  if (await findActiveDisposal(tx, request.assetId)) {
+    throw new ApprovalRuleError("Asset sudah didisposal. Request disposal ini tidak bisa disetujui lagi; tolak request ini.");
+  }
+
+  // Snapshot the asset as it is now (row is locked), not as it was when the request was made,
+  // so reverse restores the state that disposal actually replaced.
   const disposal = await tx.assetDisposal.create({
     data: {
       assetId: request.assetId,
-      previousStatusId: optionalString(payload.previousStatusId) ?? request.asset.assetStatusId,
-      previousLocationId: optionalString(payload.previousLocationId) ?? request.asset.assetLocationId,
-      previousDepartmentId: optionalString(payload.previousDepartmentId) ?? request.asset.departmentId,
-      disposedStatusId: disposedStatus.id,
+      previousStatusId: request.asset.assetStatusId === disposedStatusId ? null : request.asset.assetStatusId,
+      previousLocationId: request.asset.assetLocationId,
+      previousDepartmentId: request.asset.departmentId,
+      disposedStatusId,
       disposedAt: payloadDate(payload.disposedAt),
       reason: optionalString(payload.reason) ?? "Disposal approved",
       performedById: request.requesterId,
@@ -151,7 +168,7 @@ async function applyDisposal(
 
   await tx.asset.update({
     where: { id: request.assetId },
-    data: { assetStatusId: disposedStatus.id },
+    data: { assetStatusId: disposedStatusId },
   });
 
   await createAssetHistory({
@@ -225,29 +242,42 @@ export async function approveApprovalRequestAction(
 
   if (!id) return { message: "Approval request tidak valid." };
 
-  const request = await prisma.assetApprovalRequest.findUnique({
-    where: { id },
-    include: {
-      asset: {
-        select: {
-          code: true,
-          name: true,
-          deletedAt: true,
-          assetStatusId: true,
-          assetLocationId: true,
-          departmentId: true,
-          assetUserId: true,
-        },
-      },
-    },
-  });
+  const target = await prisma.assetApprovalRequest.findUnique({ where: { id }, select: { assetId: true } });
 
-  if (!request) return { message: "Approval request tidak ditemukan." };
-  if (request.status !== ApprovalStatus.PENDING) return { message: "Approval request sudah diproses." };
-  if (request.asset.deletedAt) return { message: "Asset yang sudah dihapus tidak bisa diproses approval." };
+  if (!target) return { message: "Approval request tidak ditemukan." };
 
   try {
     await prisma.$transaction(async (tx) => {
+      // One approval at a time per asset: disposal/movement checks below see a stable asset.
+      await lockAsset(tx, target.assetId);
+
+      // Claim the request; a double click or a second approver gets count 0 and stops here.
+      const claimed = await tx.assetApprovalRequest.updateMany({
+        where: { id, status: ApprovalStatus.PENDING },
+        data: { status: ApprovalStatus.APPROVED, reviewedById: user.id, reviewedAt: new Date() },
+      });
+
+      if (claimed.count !== 1) throw new ApprovalRuleError("Approval request sudah diproses.");
+
+      const request = await tx.assetApprovalRequest.findUniqueOrThrow({
+        where: { id },
+        include: {
+          asset: {
+            select: {
+              code: true,
+              name: true,
+              deletedAt: true,
+              assetStatusId: true,
+              assetLocationId: true,
+              departmentId: true,
+              assetUserId: true,
+            },
+          },
+        },
+      });
+
+      if (request.asset.deletedAt) throw new ApprovalRuleError("Asset yang sudah dihapus tidak bisa diproses approval.");
+
       if (request.transactionType === ApprovalTransactionType.MOVEMENT) {
         await applyMovement(tx, request, user.id);
       }
@@ -259,22 +289,13 @@ export async function approveApprovalRequestAction(
       if (request.transactionType === ApprovalTransactionType.MAINTENANCE) {
         await applyMaintenance(tx, request, user.id);
       }
-
-      await tx.assetApprovalRequest.update({
-        where: { id: request.id },
-        data: {
-          status: ApprovalStatus.APPROVED,
-          reviewedById: user.id,
-          reviewedAt: new Date(),
-        },
-      });
     });
 
-    revalidateApprovalPaths(request.assetId);
+    revalidateApprovalPaths(target.assetId);
     return { ok: true, message: "Approval request berhasil disetujui." };
   } catch (error) {
     return {
-      message: error instanceof Error ? error.message : "Approval request gagal disetujui.",
+      message: error instanceof ApprovalRuleError ? error.message : "Approval request gagal disetujui. Silakan coba lagi.",
     };
   }
 }
@@ -299,8 +320,8 @@ export async function rejectApprovalRequestAction(
 
   try {
     await prisma.$transaction(async (tx) => {
-      await tx.assetApprovalRequest.update({
-        where: { id: request.id },
+      const claimed = await tx.assetApprovalRequest.updateMany({
+        where: { id: request.id, status: ApprovalStatus.PENDING },
         data: {
           status: ApprovalStatus.REJECTED,
           rejectNote: rejectNote || null,
@@ -308,6 +329,8 @@ export async function rejectApprovalRequestAction(
           reviewedAt: new Date(),
         },
       });
+
+      if (claimed.count !== 1) throw new ApprovalRuleError("Approval request sudah diproses.");
 
       await createAssetHistory({
         action: "REJECTED",
@@ -325,7 +348,7 @@ export async function rejectApprovalRequestAction(
 
     revalidateApprovalPaths(request.assetId);
     return { ok: true, message: "Approval request berhasil ditolak." };
-  } catch {
-    return { message: "Approval request gagal ditolak." };
+  } catch (error) {
+    return { message: error instanceof ApprovalRuleError ? error.message : "Approval request gagal ditolak." };
   }
 }

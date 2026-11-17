@@ -10,23 +10,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { useActionFeedback } from "@/components/ui/toast-provider";
 
 const initialState: ApprovalActionState = {};
 
 function Feedback({ state }: { state: ApprovalActionState }) {
-  if (!state.message) return null;
-
-  return (
-    <div
-      className={
-        state.ok
-          ? "rounded-md border border-[rgba(34,197,94,0.35)] bg-[#e7f9ef] px-4 py-3 text-sm font-medium text-[#13a251]"
-          : "rounded-md border border-[rgba(255,91,82,0.35)] bg-[#ffecea] px-4 py-3 text-sm font-medium text-[var(--danger)]"
-      }
-    >
-      {state.message}
-    </div>
-  );
+  useActionFeedback(state);
+  return null;
 }
 
 export function ApproveButton({ approvalId, label }: { approvalId: string; label: string }) {

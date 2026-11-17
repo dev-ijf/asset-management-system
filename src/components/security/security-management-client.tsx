@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
+import { useActionFeedback } from "@/components/ui/toast-provider";
 
 type SecurityAction = (previousState: SecurityActionState, formData: FormData) => Promise<SecurityActionState>;
 
@@ -65,19 +66,8 @@ export type PermissionSecurityRecord = {
 const initialState: SecurityActionState = {};
 
 function Feedback({ state }: { state: SecurityActionState }) {
-  if (!state.message) return null;
-
-  return (
-    <div
-      className={
-        state.ok
-          ? "rounded-md border border-[rgba(34,197,94,0.35)] bg-[#e7f9ef] px-4 py-3 text-sm font-medium text-[#13a251]"
-          : "rounded-md border border-[rgba(255,91,82,0.35)] bg-[#ffecea] px-4 py-3 text-sm font-medium text-[var(--danger)]"
-      }
-    >
-      {state.message}
-    </div>
-  );
+  useActionFeedback(state);
+  return null;
 }
 
 function BadgeList({ empty = "-", labels, variant = "primary" }: { empty?: string; labels: string[]; variant?: "primary" | "info" | "warning" }) {
@@ -155,7 +145,7 @@ function DeleteButton({
     <>
       <Button variant="danger" size="sm" onClick={() => setOpen(true)}>
         <Trash2 className="h-4 w-4" />
-        Delete
+        Hapus
       </Button>
       {open ? (
         <form action={formAction}>

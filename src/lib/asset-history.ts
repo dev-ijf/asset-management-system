@@ -5,6 +5,7 @@ export type AssetHistoryAction =
   | "CREATED"
   | "UPDATED"
   | "ARCHIVED"
+  | "RESTORED"
   | "DELETED"
   | "PHOTO_UPLOADED"
   | "PHOTO_DELETED"

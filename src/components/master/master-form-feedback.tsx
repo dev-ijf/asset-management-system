@@ -1,3 +1,7 @@
+"use client";
+
+import { useActionFeedback } from "@/components/ui/toast-provider";
+
 type MasterFormFeedbackState = {
   message?: string;
   errors?: {
@@ -14,6 +18,7 @@ export function FieldError({ message }: { message?: string }) {
 }
 
 export function FormFeedback({ state }: { state: MasterFormFeedbackState }) {
+  useActionFeedback(state);
   if (!state.errors?.form && !state.message) {
     return null;
   }
@@ -26,9 +31,5 @@ export function FormFeedback({ state }: { state: MasterFormFeedbackState }) {
     );
   }
 
-  return (
-    <div className="rounded-md border border-[rgba(34,197,94,0.35)] bg-[#e7f9ef] px-4 py-3 text-sm font-medium text-[#13a251]">
-      {state.message}
-    </div>
-  );
+  return null;
 }

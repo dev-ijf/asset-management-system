@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Loader2, Upload, X } from "lucide-react";
 
-export function AssetPhotoField({ existing, error }: { existing?: { id: string; path: string }; error?: string }) {
+export function AssetPhotoField({ existing, error, required = false }: { existing?: { id: string; path: string }; error?: string; required?: boolean }) {
   const input = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
@@ -27,17 +27,26 @@ export function AssetPhotoField({ existing, error }: { existing?: { id: string; 
   }, []);
 
   const image = file ? preview : !removed ? existing?.path : undefined;
+  // A required field is satisfied by the stored photo until the user removes it.
+  const needsUpload = required && !(existing && !removed);
   return (
     <div className="space-y-3 rounded-md border border-dashed border-[var(--border)] bg-[var(--table-head)] p-4">
       <input type="hidden" name="photoId" value={existing?.id ?? ""} />
       <input type="hidden" name="removePhoto" value={removed ? "1" : "0"} />
       <label className="block text-sm font-medium text-[var(--text)]">
-        <span className="inline-flex items-center gap-2"><Upload className="h-4 w-4" />Foto Asset</span>
-        <input ref={input} name="photo" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+        <span className="inline-flex items-center gap-2"><Upload className="h-4 w-4" />Foto Asset
+          {required ? <span className="text-[var(--danger)]" aria-hidden="true">*</span> : null}
+          {required ? <span className="rounded bg-[#ffecea] px-2 py-0.5 text-xs font-semibold text-[var(--danger)]">Wajib upload</span> : null}
+        </span>
+        <input ref={input} name={file ? "photo" : undefined} type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+          required={needsUpload} aria-required={needsUpload}
           disabled={pending} onChange={event => {
             const selected = event.target.files?.[0] ?? null;
-            const message = selected && (!/\.(jpe?g|png|webp)$/i.test(selected.name) || !["image/jpeg", "image/png", "image/webp"].includes(selected.type))
-              ? "Format foto harus JPG, JPEG, PNG, atau WebP." : selected && selected.size > 10 * 1024 * 1024 ? "Ukuran foto maksimal 10 MB." : "";
+            const message = selected?.size === 0
+              ? "File foto kosong. Pilih foto lain."
+              : selected && (!/\.(jpe?g|png|webp)$/i.test(selected.name) || !["image/jpeg", "image/png", "image/webp"].includes(selected.type))
+                ? "Format foto harus JPG, JPEG, PNG, atau WebP."
+                : selected && selected.size > 10 * 1024 * 1024 ? "Ukuran foto maksimal 10 MB." : "";
             setLocalError(message);
             event.target.setCustomValidity(message);
             setFile(message ? null : selected);
@@ -45,7 +54,10 @@ export function AssetPhotoField({ existing, error }: { existing?: { id: string; 
           }}
           className="mt-3 block w-full rounded-md border border-[var(--border)] bg-white p-2 text-sm file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-[var(--primary-soft)] file:px-3 file:py-2 file:text-[var(--primary)]" />
       </label>
-      <p className="text-xs text-[var(--muted)]">JPG, JPEG, PNG, WebP. Maksimal 10 MB. Foto akan diperkecil saat disimpan.</p>
+      <p className="text-xs text-[var(--muted)]">
+        {required ? (existing ? "Foto wajib ada. Jika foto dihapus, upload foto pengganti. " : "Foto wajib diupload. ") : null}
+        JPG, JPEG, PNG, WebP. Maksimal 10 MB. Foto akan diperkecil saat disimpan.
+      </p>
       {image ? <img src={image} alt="Preview foto asset" className="max-h-48 max-w-full rounded-md object-contain" /> : null}
       {file ? <p className="break-all text-xs text-[var(--muted)]">{file.name}</p> : null}
       {image || file || localError ? <button type="button" disabled={pending} className="inline-flex items-center gap-1 text-sm text-[var(--danger)] disabled:opacity-50"

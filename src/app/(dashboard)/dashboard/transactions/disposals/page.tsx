@@ -44,7 +44,10 @@ export default async function DisposalsPage({ searchParams }: PageProps) {
 
   return (
     <>
-      <PageHeader title="Disposal Aset" subtitle="Catat disposal asset dan reverse basic jika diperlukan." />
+      <PageHeader
+        title="Disposal Aset"
+        subtitle="Keluarkan aset yang sudah tidak digunakan, misalnya karena rusak permanen, dijual, hilang, atau dimusnahkan. Proses ini memerlukan persetujuan."
+      />
       <div className="space-y-5">
         <DisposalForm assets={options.assets} />
         <Card>

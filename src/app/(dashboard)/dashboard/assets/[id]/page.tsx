@@ -77,7 +77,7 @@ function PlaceholderCard({
 
 export default async function AssetDetailPage({ params }: AssetDetailPageProps) {
   const user = await requirePermission("assets.view");
-  const canManage = hasPermission(user, "assets.manage");
+  const hasManagePermission = hasPermission(user, "assets.manage");
   const { id } = await params;
 
   const asset = await prisma.asset.findUnique({
@@ -103,6 +103,7 @@ export default async function AssetDetailPage({ params }: AssetDetailPageProps) 
           email: true,
         },
       },
+      restoredBy: { select: { name: true, email: true } },
       photos: {
         orderBy: [
           { isPrimary: "desc" },
@@ -122,6 +123,7 @@ export default async function AssetDetailPage({ params }: AssetDetailPageProps) 
   if (!asset) {
     notFound();
   }
+  const canManage = hasManagePermission && !asset.archivedAt && !asset.deletedAt;
 
   return (
     <>
@@ -130,7 +132,7 @@ export default async function AssetDetailPage({ params }: AssetDetailPageProps) 
         subtitle={`${asset.code} • ${asset.serialNumber ?? "No serial number"}`}
         actions={
           <Link
-            href="/dashboard/assets"
+            href={asset.archivedAt ? "/dashboard/archive" : "/dashboard/assets"}
             className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-white px-5 text-sm font-medium text-[var(--text)] transition hover:bg-slate-50"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -235,6 +237,9 @@ export default async function AssetDetailPage({ params }: AssetDetailPageProps) 
             <CardContent className="space-y-4">
               <DetailItem label="Archived At" value={formatDateTime(asset.archivedAt)} />
               <DetailItem label="Archived By" value={asset.archivedBy ? `${asset.archivedBy.name} (${asset.archivedBy.email})` : "-"} />
+              <DetailItem label="Archive Reason" value={asset.archiveReason ?? "-"} />
+              <DetailItem label="Restored At" value={formatDateTime(asset.restoredAt)} />
+              <DetailItem label="Restored By" value={asset.restoredBy ? `${asset.restoredBy.name} (${asset.restoredBy.email})` : "-"} />
               <DetailItem label="Retention Until" value={formatDate(asset.retentionUntil)} />
               <DetailItem label="Deleted At" value={formatDateTime(asset.deletedAt)} />
             </CardContent>

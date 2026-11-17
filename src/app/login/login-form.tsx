@@ -1,14 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
+import { AuthAlert } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { loginAction, type LoginState } from "@/app/login/actions";
 
 const initialState: LoginState = {};
 
-export function LoginForm({ nextPath, googleError }: { nextPath: string; googleError?: string }) {
+export function LoginForm({ nextPath, googleError, notice }: { nextPath: string; googleError?: string; notice?: string }) {
   const [state, formAction, pending] = useActionState(loginAction, initialState);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -17,9 +19,9 @@ export function LoginForm({ nextPath, googleError }: { nextPath: string; googleE
       <input type="hidden" name="next" value={nextPath} />
 
       {state.error || googleError ? (
-        <div role="alert" className="rounded-md border border-[rgba(255,91,82,0.35)] bg-[#ffecea] px-4 py-3 text-sm font-medium text-[var(--danger)]">
-          {state.error || googleError}
-        </div>
+        <AuthAlert tone="error">{state.error || googleError}</AuthAlert>
+      ) : notice ? (
+        <AuthAlert tone="success">{notice}</AuthAlert>
       ) : null}
 
       <label className="block">
@@ -70,7 +72,9 @@ export function LoginForm({ nextPath, googleError }: { nextPath: string; googleE
           />
           Ingat saya
         </label>
-        <span className="text-[var(--primary)]">Lupa password?</span>
+        <Link href="/forgot-password" className="font-medium text-[var(--primary)] hover:underline">
+          Lupa password?
+        </Link>
       </div>
 
       <Button type="submit" className="h-11 w-full" disabled={pending}>

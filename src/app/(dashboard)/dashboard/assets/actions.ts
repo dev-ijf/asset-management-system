@@ -14,11 +14,14 @@ export type AssetActionState = {
   errors?: Record<string, string | undefined>;
 };
 
-import { optionalPhoto, PhotoError } from "@/lib/asset-image";
+import { optionalPhoto, PHOTO_REQUIRED_MESSAGE, PhotoError } from "@/lib/asset-image";
+import { DISPOSED_STATUS_CODE, findStatusIdByCode, statusChangeError } from "@/lib/asset-disposal";
 import { prepareAssetPhoto, attachAssetPhoto, discardPreparedPhoto, removePhotoRecord, ensurePrimaryPhoto,
   cleanupPhotosSafely, deleteLegacyPhoto, type PreparedPhoto } from "@/lib/asset-photo-storage";
 
 const ASSETS_PATH = "/dashboard/assets";
+const ARCHIVE_PATH = "/dashboard/archive";
+const ARCHIVE_REASONS = new Set(["Tidak digunakan lagi", "Rusak", "Diganti aset baru", "Tidak lagi dimiliki", "Relokasi", "Lainnya"]);
 const DEPRECIATION_METHODS = Object.values(DepreciationMethod);
 const CAPEX_OPEX_VALUES = Object.values(CapexOpex);
 
@@ -282,7 +285,18 @@ export async function createAssetAction(_previousState: AssetActionState, formDa
   const input = readAssetForm(formData);
   const errors = await validateAssetInput(input);
 
-  if (hasErrors(errors)) {
+  let file: File | null = null;
+  try {
+    file = optionalPhoto(formData);
+  } catch (error) {
+    if (error instanceof PhotoError) errors.photo = error.message;
+    else throw error;
+  }
+  if (!file && !errors.photo) errors.photo = PHOTO_REQUIRED_MESSAGE;
+  const createStatusError = statusChangeError(null, input.assetStatusId || null, await findStatusIdByCode(prisma, DISPOSED_STATUS_CODE));
+  if (createStatusError) errors.assetStatusId = createStatusError;
+
+  if (hasErrors(errors) || !file) {
     return { errors };
   }
 
@@ -291,8 +305,7 @@ export async function createAssetAction(_previousState: AssetActionState, formDa
     const assetStatusId = await getDefaultStatusId(input.assetStatusId);
     const code = await generateAssetCode();
     const qrToken = await generateQrToken();
-    const file = optionalPhoto(formData);
-    if (file) photo = await prepareAssetPhoto(file, code);
+    photo = await prepareAssetPhoto(file, code);
 
     await prisma.$transaction(async (tx) => {
       const asset = await tx.asset.create({
@@ -346,12 +359,23 @@ export async function updateAssetAction(_previousState: AssetActionState, formDa
   let photo: PreparedPhoto | undefined;
   let removed: { path: string; driveFileId: string | null } | undefined;
   try {
-    const existing = await prisma.asset.findFirst({ where: { id: input.id, deletedAt: null }, select: { code: true } });
+    const existing = await prisma.asset.findFirst({
+      where: { id: input.id, deletedAt: null },
+      select: { code: true, assetStatusId: true, _count: { select: { photos: true } } },
+    });
     if (!existing) return { errors: { form: "Asset tidak ditemukan atau sudah dihapus." } };
+    const updateStatusError = statusChangeError(
+      existing.assetStatusId,
+      input.assetStatusId || null,
+      await findStatusIdByCode(prisma, DISPOSED_STATUS_CODE),
+    );
+    if (updateStatusError) return { errors: { assetStatusId: updateStatusError, form: updateStatusError } };
     const file = optionalPhoto(formData);
-    if (file) photo = await prepareAssetPhoto(file, existing.code);
     const oldPhotoId = String(formData.get("photoId") ?? "");
     const removePhoto = formData.get("removePhoto") === "1";
+    const photosLeft = existing._count.photos - (removePhoto && oldPhotoId ? 1 : 0);
+    if (!file && photosLeft < 1) return { errors: { photo: PHOTO_REQUIRED_MESSAGE } };
+    if (file) photo = await prepareAssetPhoto(file, existing.code);
     await prisma.$transaction(async (tx) => {
       const asset = await tx.asset.update({
         where: { id: input.id, deletedAt: null },
@@ -399,18 +423,29 @@ export async function updateAssetAction(_previousState: AssetActionState, formDa
 export async function archiveAssetAction(_previousState: AssetActionState, formData: FormData): Promise<AssetActionState> {
   const user = await requirePermission("assets.manage");
   const id = String(formData.get("id") ?? "").trim();
+  const reasonOption = String(formData.get("archiveReason") ?? "").trim();
+  const customReason = String(formData.get("customArchiveReason") ?? "").trim();
+  const reason = reasonOption === "Lainnya" ? customReason : reasonOption;
 
   if (!id) {
     return { errors: { form: "Asset tidak valid." } };
   }
+  if (!ARCHIVE_REASONS.has(reasonOption) || !reason || reason.length > 500) {
+    return { errors: { archiveReason: "Pilih atau isi alasan arsip (maksimal 500 karakter)." } };
+  }
 
   try {
     await prisma.$transaction(async (tx) => {
+      const current = await tx.asset.findFirst({ where: { id, deletedAt: null, archivedAt: null }, select: { id: true } });
+      if (!current) throw new Error("ASSET_NOT_ACTIVE");
       const asset = await tx.asset.update({
         where: { id },
         data: {
           archivedAt: new Date(),
           archivedById: user.id,
+          archiveReason: reason,
+          restoredAt: null,
+          restoredById: null,
         },
       });
 
@@ -418,12 +453,15 @@ export async function archiveAssetAction(_previousState: AssetActionState, formD
         action: "ARCHIVED",
         assetId: asset.id,
         changedById: user.id,
-        description: `Asset ${asset.code} diarsipkan.`,
-        payload: { archivedAt: asset.archivedAt?.toISOString() ?? null },
+        description: `Asset ${asset.code} diarsipkan. Alasan: ${reason}`,
+        payload: { archivedAt: asset.archivedAt?.toISOString() ?? null, reason },
         tx,
       });
     });
   } catch (error) {
+    if (error instanceof Error && error.message === "ASSET_NOT_ACTIVE") {
+      return { errors: { form: "Asset tidak ditemukan atau sudah diarsipkan." } };
+    }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
       return { errors: { form: "Asset tidak ditemukan." } };
     }
@@ -432,9 +470,35 @@ export async function archiveAssetAction(_previousState: AssetActionState, formD
   }
 
   revalidatePath(ASSETS_PATH);
+  revalidatePath(ARCHIVE_PATH);
   revalidatePath(`${ASSETS_PATH}/${id}`);
 
   return { ok: true, message: "Asset berhasil diarsipkan." };
+}
+
+export async function bulkArchiveAssetsAction(ids: string[], reasonOption: string, customReason = ""): Promise<{ ok?: boolean; message?: string; error?: string }> {
+  const user = await requirePermission("assets.manage");
+  const uniqueIds = [...new Set(ids)].slice(0, 200);
+  const reason = reasonOption === "Lainnya" ? customReason.trim() : reasonOption.trim();
+  if (!uniqueIds.length) return { error: "Pilih minimal satu aset." };
+  if (!ARCHIVE_REASONS.has(reasonOption) || !reason || reason.length > 500) return { error: "Pilih atau isi alasan arsip (maksimal 500 karakter)." };
+  try {
+    const count = await prisma.$transaction(async (tx) => {
+      const assets = await tx.asset.findMany({ where: { id: { in: uniqueIds }, deletedAt: null, archivedAt: null }, select: { id: true, code: true } });
+      if (assets.length !== uniqueIds.length) throw new Error("INVALID_ACTIVE_SELECTION");
+      const archivedAt = new Date();
+      for (const asset of assets) {
+        await tx.asset.update({ where: { id: asset.id }, data: { archivedAt, archivedById: user.id, archiveReason: reason, restoredAt: null, restoredById: null } });
+        await createAssetHistory({ action: "ARCHIVED", assetId: asset.id, changedById: user.id, description: `Asset ${asset.code} diarsipkan. Alasan: ${reason}`, payload: { archivedAt: archivedAt.toISOString(), reason }, tx });
+      }
+      return assets.length;
+    });
+    revalidatePath(ASSETS_PATH); revalidatePath(ARCHIVE_PATH);
+    return { ok: true, message: `${count} aset berhasil diarsipkan.` };
+  } catch (error) {
+    if (error instanceof Error && error.message === "INVALID_ACTIVE_SELECTION") return { error: "Sebagian aset tidak ditemukan atau sudah tidak aktif." };
+    return { error: "Aset gagal diarsipkan. Coba lagi." };
+  }
 }
 
 export async function softDeleteAssetAction(_previousState: AssetActionState, formData: FormData): Promise<AssetActionState> {

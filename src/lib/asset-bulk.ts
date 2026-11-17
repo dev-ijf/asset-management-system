@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Prisma, type Asset } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { DISPOSED_STATUS_CODE, statusChangeError } from "@/lib/asset-disposal";
 import { createAssetHistory } from "@/lib/asset-history";
 import { masterTemplateBuffer } from "@/lib/asset-bulk-template";
 import { importColumns, updateColumns, MAX_BULK_ROWS, type BulkMode, type BulkRow, type BulkPreview, workbookBuffer } from "@/lib/asset-bulk-format";
@@ -60,6 +61,7 @@ export function selectedIds(raw: unknown): string[] {
 }
 async function inspect(row: BulkRow, mode: BulkMode, options: Catalog, db: DB, selected?: Set<string>, confirm = false) {
   if (row.result !== "Ready") return;
+  let currentStatusId: string | null = null;
   if (mode === "IMPORT") {
     const existing = await db.asset.findFirst({ where: { OR: [{ code: row.code }, ...(row.values["Serial Number"] ? [{ serialNumber: row.values["Serial Number"] }] : [])] } });
     if (existing) {
@@ -73,6 +75,7 @@ async function inspect(row: BulkRow, mode: BulkMode, options: Catalog, db: DB, s
     if (confirm && (row.assetId !== asset.id || row.version !== asset.updatedAt.toISOString())) throw new Error("Asset berubah setelah preview. Buat preview baru agar tidak menimpa perubahan pengguna lain.");
     row.assetId = asset.id;
     row.version = asset.updatedAt.toISOString();
+    currentStatusId = asset.assetStatusId;
     if (mode === "UPDATE") {
       const before = valuesOf(asset, options);
       row.changes = Object.entries(row.values).filter(([label, value]) => label !== "Asset Code" && humanValue(label, before[label] || "", options) !== humanValue(label, value, options))
@@ -81,6 +84,9 @@ async function inspect(row: BulkRow, mode: BulkMode, options: Catalog, db: DB, s
   }
   if (mode !== "DELETE") {
     const data = assetData(row, options, mode);
+    const disposedStatusId = options.Status.find(o => o.code === DISPOSED_STATUS_CODE)?.id ?? null;
+    const statusError = statusChangeError(currentStatusId, data.assetStatusId, disposedStatusId);
+    if (statusError) throw new Error(statusError);
     const masterIds = Object.fromEntries(Object.values(relations).filter(field => field in data).map(field => [field, data[field] ?? null])) as Record<string, string | null>;
     if (confirm && (!row.masterIds || Object.keys(row.masterIds).length !== Object.keys(masterIds).length || Object.entries(masterIds).some(([field, id]) => row.masterIds![field] !== id))) {
       throw new Error("Master data berubah setelah preview. Download template dan preview ulang.");

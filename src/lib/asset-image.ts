@@ -29,9 +29,13 @@ export function assetPhotoFilename(code: string) {
   return `${code.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 80) || "asset"}-${randomUUID()}.webp`;
 }
 
+export const PHOTO_REQUIRED_MESSAGE = "Foto asset wajib diupload.";
+
 export function optionalPhoto(formData: FormData) {
   const file = formData.get("photo");
-  if (file === null || (file instanceof File && file.size === 0 && !file.name)) return null;
+  // Sebagian browser/runtime memberi nama placeholder pada part file kosong.
+  // Ukuran 0 berarti user tidak memilih foto baru; pemanggil yang memutuskan apakah foto wajib.
+  if (file === null || (file instanceof File && file.size === 0)) return null;
   if (!(file instanceof File)) throw new PhotoError("File foto tidak valid.");
   return file;
 }

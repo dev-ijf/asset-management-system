@@ -182,7 +182,7 @@ function DeleteAssetLocationButton({ location }: { location: AssetLocationRow })
     <>
       <Button variant="danger" size="sm" onClick={() => setOpen(true)}>
         <Trash2 className="h-4 w-4" />
-        Delete
+        Hapus
       </Button>
       {open ? (
         <form action={action}>

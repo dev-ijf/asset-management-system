@@ -1,12 +1,17 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Download, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast-provider";
 import { DataTable } from "@/components/tables/data-table";
 import type { BulkMode, BulkPreview } from "@/lib/asset-bulk-format";
 import { previewAssetBulkAction, previewAssetDeleteAction, confirmAssetBulkAction, downloadAssetBulkTemplateAction, downloadAssetBulkReportAction } from "@/app/(dashboard)/dashboard/assets/bulk-actions";
+import { bulkArchiveAssetsAction } from "@/app/(dashboard)/dashboard/assets/actions";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 type Context = { selected: string[]; setSelected: (ids: string[]) => void; open: (mode: BulkMode) => void; canManage: boolean };
 const BulkContext = createContext<Context | null>(null);
@@ -39,13 +44,20 @@ export function AssetBulkTable({ columns, rows, ids, codes }: { columns: string[
   const visible = selected.filter(id => ids.includes(id));
   const all = ids.length > 0 && ids.slice(0, 200).every(id => visible.includes(id));
   const selectAll = useRef<HTMLInputElement>(null);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [archiveReason, setArchiveReason] = useState("");
+  const [customReason, setCustomReason] = useState("");
+  const [archivePending, startArchive] = useTransition();
+  const router = useRouter();
+  const { showToast } = useToast();
   useEffect(() => { if (selectAll.current) selectAll.current.indeterminate = visible.length > 0 && !all; }, [visible.length, all]);
   if (!canManage) return <DataTable columns={columns} rows={rows} />;
   return <>
     <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
       <span aria-live="polite">{visible.length} Asset Selected</span>
       <Button variant="secondary" disabled={!visible.length} onClick={() => open("UPDATE")}>Bulk Update</Button>
-      <Button variant="danger" disabled={!visible.length} onClick={() => open("DELETE")}>Delete Selected</Button>
+      <Button variant="warning" disabled={!visible.length} onClick={() => setArchiveOpen(true)}>Arsipkan Pilihan</Button>
+      <Button variant="danger" disabled={!visible.length} onClick={() => open("DELETE")}>Hapus Pilihan</Button>
       {ids.length > 200 ? <span className="text-[var(--muted)]">Maksimal 200 pilihan; Select All memilih 200 baris pertama.</span> : null}
     </div>
     <DataTable columns={[<input key="select" ref={selectAll} type="checkbox" aria-label="Select All" checked={all} disabled={!ids.length}
@@ -53,11 +65,17 @@ export function AssetBulkTable({ columns, rows, ids, codes }: { columns: string[
       rows={rows.map((row, index) => [<input key={ids[index]} type="checkbox" aria-label={`Pilih ${codes[index]}`} checked={visible.includes(ids[index])}
         disabled={!visible.includes(ids[index]) && visible.length >= 200}
         onChange={event => setSelected(event.target.checked ? [...visible, ids[index]] : visible.filter(id => id !== ids[index]))} />, ...row])} />
+    {archiveOpen ? <ConfirmDialog title="Arsipkan Aset Terpilih?" description={`${visible.length} aset akan dipindahkan dari daftar aktif ke Archive.`} confirmLabel="Arsipkan" pending={archivePending} onCancel={() => setArchiveOpen(false)} onConfirm={() => startArchive(async () => {
+      const result = await bulkArchiveAssetsAction(visible, archiveReason, customReason);
+      if (result.error) return showToast(result.error, "error");
+      showToast(result.message ?? "Aset berhasil diarsipkan.", "success"); setSelected([]); setArchiveOpen(false); router.refresh();
+    })}><div className="space-y-3 text-left"><Select aria-label="Alasan arsip" value={archiveReason} onChange={(event) => setArchiveReason(event.target.value)}><option value="">Pilih alasan</option><option>Tidak digunakan lagi</option><option>Rusak</option><option>Diganti aset baru</option><option>Tidak lagi dimiliki</option><option>Relokasi</option><option>Lainnya</option></Select>{archiveReason === "Lainnya" ? <Textarea aria-label="Keterangan alasan arsip" value={customReason} maxLength={500} onChange={(event) => setCustomReason(event.target.value)} /> : null}</div></ConfirmDialog> : null}
   </>;
 }
 function BulkModal({ mode, ids, onClose, onComplete }: { mode: BulkMode; ids: string[]; onClose: () => void; onComplete: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const router = useRouter();
+  const { showToast } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<BulkPreview | null>(null);
   const [error, setError] = useState("");
@@ -66,7 +84,7 @@ function BulkModal({ mode, ids, onClose, onComplete }: { mode: BulkMode; ids: st
   useEffect(() => { dialog.current?.showModal(); }, []);
   async function run(action: () => Promise<void>) {
     setBusy(true); setError("");
-    try { await action(); } catch (e) { setError(e instanceof Error ? e.message : "Proses gagal. Coba kembali."); }
+    try { await action(); } catch (e) { const message = e instanceof Error ? e.message : "Proses gagal. Silakan coba lagi."; setError(message); showToast(message, "error"); }
     finally { setBusy(false); }
   }
   function choose(next: File | undefined) {
@@ -91,15 +109,24 @@ function BulkModal({ mode, ids, onClose, onComplete }: { mode: BulkMode; ids: st
     await run(async () => {
       const result = await confirmAssetBulkAction(preview.id);
       if (result.error) throw new Error(result.error);
-      setPreview(result.data!); onComplete(); router.refresh();
+      const completed = result.data!;
+      setPreview(completed); onComplete(); router.refresh();
+      const success = completed.rows.filter((row) => row.result === "Success").length;
+      const failed = completed.rows.length - success;
+      const message = success === 0
+        ? "Proses gagal. Tidak ada data yang berhasil diproses."
+        : failed > 0
+          ? `${success} aset berhasil diproses. ${failed} aset gagal atau dilewati.`
+          : `${success} aset berhasil diproses.`;
+      showToast(message, success > 0 ? "success" : "error");
     });
   }
-  const title = mode === "IMPORT" ? "Import Asset" : mode === "UPDATE" ? "Bulk Update Asset" : "Delete Selected Assets";
+  const title = mode === "IMPORT" ? "Impor Aset" : mode === "UPDATE" ? "Perbarui Aset Massal" : `Hapus ${ids.length} Aset?`;
   return <dialog ref={dialog} aria-labelledby="bulk-title" onCancel={event => { event.preventDefault(); if (!busy) onClose(); }}
     className="m-auto max-h-[90vh] w-[calc(100%-32px)] max-w-5xl overflow-y-auto rounded-lg border border-[var(--border)] bg-white p-6 text-[var(--text)] shadow-xl backdrop:bg-black/30">
     <div className="mb-5 flex items-center justify-between"><h2 id="bulk-title" className="text-lg font-semibold">{title}</h2><Button variant="ghost" aria-label="Tutup" disabled={busy} onClick={onClose}><X className="h-5 w-5" /></Button></div>
     {error ? <p role="alert" className="mb-4 rounded-md bg-red-50 p-3 text-sm text-[var(--danger)]">{error}</p> : null}
-    {mode === "DELETE" ? <p className="mb-4 text-sm">Are you sure you want to delete selected assets? You are deleting {preview?.rows.length ?? ids.length} assets. Penghapusan menggunakan soft delete; foto dan riwayat tetap tersimpan.</p> : !preview?.completed ? <>
+    {mode === "DELETE" ? <p className="mb-4 text-sm">Apakah Anda yakin ingin menghapus {preview?.rows.length ?? ids.length} aset yang dipilih? Aset akan dihapus secara soft delete; foto dan riwayat tetap tersimpan.</p> : !preview?.completed ? <>
       <Button variant="secondary" disabled={busy} onClick={() => run(async () => {
         const result = await downloadAssetBulkTemplateAction(mode, ids);
         if (result.error) throw new Error(result.error);
@@ -115,7 +142,7 @@ function BulkModal({ mode, ids, onClose, onComplete }: { mode: BulkMode; ids: st
       </label>
     </> : null}
     {preview ? <>
-      <h3 className="mb-3 font-semibold">{preview.completed ? `${mode === "IMPORT" ? "Import" : mode === "UPDATE" ? "Update" : "Delete"} Completed` : "Preview — belum ada data yang diubah"}</h3>
+      <h3 className="mb-3 font-semibold">{preview.completed ? `${mode === "IMPORT" ? "Impor" : mode === "UPDATE" ? "Pembaruan" : "Penghapusan"} selesai` : "Pratinjau — belum ada data yang diubah"}</h3>
       <div aria-live="polite" className="mb-4 flex flex-wrap gap-4 rounded-md bg-[var(--primary-soft)] p-3 text-sm">
         <span>Total Rows: {preview.rows.length}</span>
         <span>{preview.completed ? "Successfully Processed" : "Ready to Import / Process"}: {preview.completed ? preview.rows.filter(r => r.result === "Success").length : ready}</span>
@@ -132,8 +159,8 @@ function BulkModal({ mode, ids, onClose, onComplete }: { mode: BulkMode; ids: st
       })}><Download className="h-4 w-4" />Download Error Report</Button>
     </> : null}
     <div className="mt-5 flex justify-end gap-2">
-      <Button variant="secondary" disabled={busy} onClick={onClose}>{preview?.completed ? "Tutup" : "Cancel"}</Button>
-      {!preview ? <Button disabled={busy || (mode !== "DELETE" && !file)} onClick={makePreview}>{busy ? "Memvalidasi..." : "Preview & Validasi"}</Button> : !preview.completed ? <Button variant={mode === "DELETE" ? "danger" : "primary"} disabled={busy || !ready} onClick={confirm}>{busy ? "Memproses..." : mode === "DELETE" ? `Delete ${ready} Assets` : mode === "UPDATE" ? `Confirm Update (${ready})` : `Import (${ready})`}</Button> : null}
+      <Button variant="secondary" disabled={busy} onClick={onClose}>{preview?.completed ? "Tutup" : "Batal"}</Button>
+      {!preview ? <Button disabled={busy || (mode !== "DELETE" && !file)} onClick={makePreview}>{busy ? "Memvalidasi..." : "Pratinjau & Validasi"}</Button> : !preview.completed ? <Button variant={mode === "DELETE" ? "danger" : "primary"} disabled={busy || !ready} onClick={confirm}>{busy ? (mode === "IMPORT" ? "Mengimpor data..." : mode === "UPDATE" ? "Memperbarui data..." : "Menghapus...") : mode === "DELETE" ? `Hapus ${ready} Aset` : mode === "UPDATE" ? `Perbarui (${ready})` : `Impor (${ready})`}</Button> : null}
     </div>
   </dialog>;
 }

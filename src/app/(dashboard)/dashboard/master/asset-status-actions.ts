@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/auth";
+import { SYSTEM_STATUS_CODES } from "@/lib/asset-disposal";
 import { prisma } from "@/lib/prisma";
 
 export type AssetStatusActionState = {
@@ -90,6 +91,10 @@ export async function createAssetStatusAction(
   return { ok: true, message: "Asset status berhasil ditambahkan." };
 }
 
+function isSystemStatus(code: string) {
+  return (SYSTEM_STATUS_CODES as readonly string[]).includes(code);
+}
+
 export async function updateAssetStatusAction(
   _previousState: AssetStatusActionState,
   formData: FormData,
@@ -103,6 +108,11 @@ export async function updateAssetStatusAction(
   }
 
   const errors = await validateAssetStatusInput(input, input.id);
+
+  const current = await prisma.assetStatus.findUnique({ where: { id: input.id }, select: { code: true } });
+  if (current && isSystemStatus(current.code) && input.code !== current.code) {
+    errors.code = `Code ${current.code} dipakai sistem (alur disposal) dan tidak bisa diubah.`;
+  }
 
   if (hasErrors(errors)) {
     return { errors };
@@ -144,6 +154,11 @@ export async function deleteAssetStatusAction(
 
   if (!id) {
     return { errors: { form: "Asset status tidak valid." } };
+  }
+
+  const status = await prisma.assetStatus.findUnique({ where: { id }, select: { code: true } });
+  if (status && isSystemStatus(status.code)) {
+    return { errors: { form: `Status ${status.code} dipakai sistem (alur disposal) dan tidak bisa dihapus.` } };
   }
 
   const usedByAssets = await prisma.asset.count({

@@ -15,9 +15,11 @@ import {
 } from "@/app/(dashboard)/dashboard/transactions/transaction-actions";
 import { FieldError } from "@/components/master/master-form-feedback";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useActionFeedback } from "@/components/ui/toast-provider";
 
 export type SelectOption = {
   id: string;
@@ -27,13 +29,8 @@ export type SelectOption = {
 const initialState: TransactionActionState = {};
 
 function Feedback({ state }: { state: TransactionActionState }) {
-  if (!state.message) return null;
-
-  const className = state.ok
-    ? "border border-[rgba(34,197,94,0.35)] bg-[#e7f9ef] text-[#13a251]"
-    : "border border-[rgba(255,91,82,0.35)] bg-[#ffecea] text-[var(--danger)]";
-
-  return <div className={`rounded-md px-4 py-3 text-sm font-medium ${className}`}>{state.message}</div>;
+  useActionFeedback(state);
+  return null;
 }
 
 function AssetSelect({ assets, error }: { assets: SelectOption[]; error?: string }) {
@@ -122,23 +119,27 @@ export function DisposalForm({ assets }: { assets: SelectOption[] }) {
 
   return (
     <form action={formAction} className="space-y-4 rounded-lg border border-[var(--border)] bg-white p-5">
+      <div>
+        <h2 className="font-semibold text-[var(--text)]">Ajukan Disposal Aset</h2>
+        <p className="mt-1 text-sm text-[var(--muted)]">Pilih aset dan jelaskan alasan aset dikeluarkan. Status aset baru berubah menjadi Disposed setelah request disetujui.</p>
+      </div>
       <div className="grid gap-4 md:grid-cols-2">
         <AssetSelect assets={assets} error={state.errors?.assetId} />
         <label className="block">
-          <span className="text-sm font-medium text-[var(--text)]">Disposed At</span>
+          <span className="text-sm font-medium text-[var(--text)]">Tanggal Disposal</span>
           <Input name="disposedAt" type="date" className="mt-2" />
           <FieldError message={state.errors?.disposedAt} />
         </label>
         <label className="block md:col-span-2">
-          <span className="text-sm font-medium text-[var(--text)]">Reason</span>
-          <Textarea name="reason" className="mt-2" rows={3} required />
+          <span className="text-sm font-medium text-[var(--text)]">Alasan Disposal</span>
+          <Textarea name="reason" className="mt-2" rows={3} placeholder="Contoh: rusak permanen dan tidak layak diperbaiki" required />
           <FieldError message={state.errors?.reason} />
         </label>
       </div>
       <FieldError message={state.errors?.status} />
       <Button type="submit" disabled={pending} variant="warning">
         <Plus className="h-4 w-4" />
-        {pending ? "Menyimpan..." : "Tambah Disposal"}
+        {pending ? "Mengirim..." : "Ajukan Disposal"}
       </Button>
       <Feedback state={state} />
     </form>
@@ -147,22 +148,15 @@ export function DisposalForm({ assets }: { assets: SelectOption[] }) {
 
 export function ReverseDisposalButton({ disposalId, disabled }: { disposalId: string; disabled: boolean }) {
   const [state, formAction, pending] = useActionState(reverseDisposalAction, initialState);
+  const [open, setOpen] = useState(false);
+  useEffect(() => { if (state.ok) setOpen(false); }, [state.ok]);
 
   return (
-    <form
-      action={formAction}
-      onSubmit={(event) => {
-        if (!window.confirm("Reverse disposal ini?")) event.preventDefault();
-      }}
-      className="space-y-2"
-    >
-      <input name="disposalId" type="hidden" value={disposalId} />
-      <Button type="submit" size="sm" variant="warning" disabled={disabled || pending}>
+    <><Button type="button" size="sm" variant="warning" disabled={disabled || pending} onClick={() => setOpen(true)}>
         <RotateCcw className="h-4 w-4" />
-        Reverse
+        Batalkan Disposal
       </Button>
-      <Feedback state={state} />
-    </form>
+      {open ? <form action={formAction}><ConfirmDialog title="Batalkan disposal?" description="Apakah Anda yakin ingin membatalkan disposal aset ini?" confirmLabel="Ya, batalkan" pending={pending} onCancel={() => setOpen(false)}><input name="disposalId" type="hidden" value={disposalId} /><Feedback state={state} /></ConfirmDialog></form> : null}</>
   );
 }
 
@@ -337,21 +331,14 @@ export function MaintenanceCompleteButton({ maintenance }: { maintenance: Record
 
 export function MaintenanceDeleteButton({ id }: { id: string }) {
   const [state, formAction, pending] = useActionState(deleteMaintenanceAction, initialState);
+  const [open, setOpen] = useState(false);
+  useEffect(() => { if (state.ok) setOpen(false); }, [state.ok]);
 
   return (
-    <form
-      action={formAction}
-      onSubmit={(event) => {
-        if (!window.confirm("Hapus maintenance ini?")) event.preventDefault();
-      }}
-      className="space-y-2"
-    >
-      <input name="id" type="hidden" value={id} />
-      <Button type="submit" size="sm" variant="danger" disabled={pending}>
+    <><Button type="button" size="sm" variant="danger" disabled={pending} onClick={() => setOpen(true)}>
         <Trash2 className="h-4 w-4" />
-        Delete
+        Hapus
       </Button>
-      <Feedback state={state} />
-    </form>
+      {open ? <form action={formAction}><ConfirmDialog title="Hapus maintenance?" description="Apakah Anda yakin ingin menghapus data maintenance ini? Tindakan ini tidak dapat dibatalkan." confirmLabel="Hapus" pending={pending} onCancel={() => setOpen(false)}><input name="id" type="hidden" value={id} /><Feedback state={state} /></ConfirmDialog></form> : null}</>
   );
 }

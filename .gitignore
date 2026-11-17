@@ -46,3 +46,8 @@ js.js
 js2.js
 public/asset_management_system
 reference screenshots/
+
+*.zip
+~$*
+
+*.docx

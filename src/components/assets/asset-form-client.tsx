@@ -175,7 +175,7 @@ function AssetFields({
         </label>
       </Section>
 
-      <AssetPhotoField existing={asset?.photo} error={state.errors?.photo} />
+      <AssetPhotoField existing={asset?.photo} error={state.errors?.photo} required />
 
       <Section title="Classification">
         <SelectField name="assetStatusId" label="Status" options={options.statuses} defaultValue={asset?.assetStatusId} error={state.errors?.assetStatusId} />
@@ -395,6 +395,7 @@ function AssetConfirmButton({
   variant: "warning" | "danger";
 }) {
   const [open, setOpen] = useState(false);
+  const [archiveReason, setArchiveReason] = useState("");
   const [state, formAction, pending] = useActionState(action, initialState);
 
   useEffect(() => {
@@ -407,12 +408,35 @@ function AssetConfirmButton({
     <>
       <Button variant={variant} size="sm" onClick={() => setOpen(true)}>
         {icon}
-        {variant === "warning" ? "Archive" : "Delete"}
+        {variant === "warning" ? "Arsipkan" : "Hapus"}
       </Button>
       {open ? (
         <form action={formAction}>
-          <ConfirmDialog title={title} description={description} confirmLabel={variant === "warning" ? "Archive" : "Hapus"} pending={pending} onCancel={() => setOpen(false)}>
+          <ConfirmDialog title={title} description={description} confirmLabel={variant === "warning" ? "Arsipkan" : "Hapus"} pending={pending} onCancel={() => setOpen(false)}>
             <input name="id" type="hidden" value={asset.id} />
+            {variant === "warning" ? (
+              <div className="space-y-3 text-left">
+                <label className="block text-sm font-medium text-[var(--text)]">
+                  Alasan arsip
+                  <Select name="archiveReason" value={archiveReason} onChange={(event) => setArchiveReason(event.target.value)} className="mt-2" required>
+                    <option value="">Pilih alasan</option>
+                    <option value="Tidak digunakan lagi">Tidak digunakan lagi</option>
+                    <option value="Rusak">Rusak</option>
+                    <option value="Diganti aset baru">Diganti aset baru</option>
+                    <option value="Tidak lagi dimiliki">Tidak lagi dimiliki</option>
+                    <option value="Relokasi">Relokasi</option>
+                    <option value="Lainnya">Lainnya</option>
+                  </Select>
+                </label>
+                {archiveReason === "Lainnya" ? (
+                  <label className="block text-sm font-medium text-[var(--text)]">
+                    Keterangan alasan
+                    <Textarea name="customArchiveReason" className="mt-2" maxLength={500} required />
+                  </label>
+                ) : null}
+                <FieldError message={state.errors?.archiveReason} />
+              </div>
+            ) : null}
             <FormFeedback state={state} />
           </ConfirmDialog>
         </form>
@@ -447,7 +471,7 @@ export function AssetRowActions({
             asset={asset}
             description={`Asset "${asset.name}" akan ditandai sebagai arsip.`}
             icon={<Archive className="h-4 w-4" />}
-            title="Archive Asset"
+            title="Arsipkan Aset?"
             variant="warning"
           />
           <AssetConfirmButton
@@ -455,7 +479,7 @@ export function AssetRowActions({
             asset={asset}
             description={`Asset "${asset.name}" akan dihapus secara soft delete.`}
             icon={<Trash2 className="h-4 w-4" />}
-            title="Soft Delete Asset"
+            title="Hapus Aset?"
             variant="danger"
           />
         </>

@@ -4,6 +4,15 @@ import { revalidatePath } from "next/cache";
 import { ApprovalTransactionType, AuditStatus } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/auth";
 import { createAssetHistory } from "@/lib/asset-history";
+import {
+  ACTIVE_STATUS_CODE,
+  DISPOSED_STATUS_CODE,
+  DisposalRuleError,
+  findActiveDisposal,
+  findPendingDisposalRequest,
+  findStatusIdByCode,
+  lockAsset,
+} from "@/lib/asset-disposal";
 import { prisma } from "@/lib/prisma";
 
 export type TransactionActionState = {
@@ -162,56 +171,39 @@ export async function createDisposalAction(
   if (!reason) errors.reason = "Reason wajib diisi.";
   if (!disposedAt) errors.disposedAt = "Tanggal disposal tidak valid.";
 
-  const asset = assetId
-    ? await prisma.asset.findUnique({
-        where: { id: assetId },
-        select: {
-          id: true,
-          code: true,
-          assetStatusId: true,
-          assetLocationId: true,
-          departmentId: true,
-          deletedAt: true,
-        },
-      })
-    : null;
+  const disposedStatusId = await findStatusIdByCode(prisma, DISPOSED_STATUS_CODE);
+  if (!disposedStatusId) errors.status = "Status DISPOSED belum tersedia di master Asset Status. Hubungi administrator.";
 
-  const disposedStatus = await prisma.assetStatus.findUnique({
-    where: { code: "DISPOSED" },
-    select: { id: true },
-  });
-
-  const activeDisposal = assetId
-    ? await prisma.assetDisposal.findFirst({
-        where: { assetId, reversedAt: null },
-        select: { id: true },
-      })
-    : null;
-
-  if (!asset) errors.assetId = "Asset tidak ditemukan.";
-  if (asset?.deletedAt) errors.assetId = "Asset yang sudah dihapus tidak bisa disposal.";
-  if (!disposedStatus) errors.status = "Status DISPOSED belum tersedia di master Asset Status.";
-  if (activeDisposal) errors.assetId = "Asset sudah memiliki disposal aktif.";
-
-  if (Object.keys(errors).length > 0 || !asset || !disposedStatus || !disposedAt) {
+  if (Object.keys(errors).length > 0 || !disposedAt) {
     return { errors, message: "Disposal gagal dibuat. Periksa kembali input." };
   }
 
   try {
-    await prisma.assetApprovalRequest.create({
-      data: {
-        transactionType: ApprovalTransactionType.DISPOSAL,
-        assetId,
-        requesterId: user.id,
-        payload: {
-          previousStatusId: asset.assetStatusId,
-          previousLocationId: asset.assetLocationId,
-          previousDepartmentId: asset.departmentId,
-          disposedStatusId: disposedStatus.id,
-          disposedAt: disposedAt.toISOString(),
-          reason,
+    await prisma.$transaction(async (tx) => {
+      // Lock first so two simultaneous requests for the same asset are checked one after the other.
+      await lockAsset(tx, assetId);
+
+      const asset = await tx.asset.findUnique({
+        where: { id: assetId },
+        select: { assetStatusId: true, deletedAt: true },
+      });
+
+      if (!asset) throw new DisposalRuleError("Asset tidak ditemukan.");
+      if (asset.deletedAt) throw new DisposalRuleError("Asset yang sudah dihapus tidak bisa disposal.");
+      if (await findActiveDisposal(tx, assetId)) throw new DisposalRuleError("Asset sudah didisposal. Reverse disposal lama terlebih dahulu.");
+      if (asset.assetStatusId === disposedStatusId) throw new DisposalRuleError("Status asset sudah DISPOSED.");
+      if (await findPendingDisposalRequest(tx, assetId)) throw new DisposalRuleError("Asset sudah memiliki request disposal yang menunggu approval.");
+
+      // The asset state to restore on reverse is captured at approval time, not here,
+      // because the asset can still change while the request waits for approval.
+      await tx.assetApprovalRequest.create({
+        data: {
+          transactionType: ApprovalTransactionType.DISPOSAL,
+          assetId,
+          requesterId: user.id,
+          payload: { disposedAt: disposedAt.toISOString(), reason },
         },
-      },
+      });
     });
 
     revalidatePath(DISPOSALS_PATH);
@@ -219,7 +211,11 @@ export async function createDisposalAction(
     revalidateAsset(assetId);
 
     return { ok: true, message: "Request disposal berhasil dibuat dan menunggu approval." };
-  } catch {
+  } catch (error) {
+    if (error instanceof DisposalRuleError) {
+      return { errors: { assetId: error.message }, message: error.message };
+    }
+
     return { message: "Request disposal gagal dibuat. Silakan coba lagi." };
   }
 }
@@ -235,29 +231,43 @@ export async function reverseDisposalAction(
     return { errors: { disposalId: "Disposal tidak valid." }, message: "Disposal tidak valid." };
   }
 
-  const disposal = await prisma.assetDisposal.findUnique({
-    where: { id: disposalId },
-    include: { asset: { select: { code: true, deletedAt: true } } },
-  });
+  const target = await prisma.assetDisposal.findUnique({ where: { id: disposalId }, select: { assetId: true } });
 
-  if (!disposal) return { message: "Disposal tidak ditemukan." };
-  if (disposal.reversedAt) return { message: "Disposal sudah direverse." };
-  if (disposal.asset.deletedAt) return { message: "Asset yang sudah dihapus tidak bisa direverse." };
+  if (!target) return { message: "Disposal tidak ditemukan." };
 
   try {
     await prisma.$transaction(async (tx) => {
-      await tx.assetDisposal.update({
-        where: { id: disposal.id },
-        data: { reversedAt: new Date(), reversedById: user.id },
+      await lockAsset(tx, target.assetId);
+
+      const disposal = await tx.assetDisposal.findUnique({
+        where: { id: disposalId },
+        include: { asset: { select: { code: true, deletedAt: true, assetStatusId: true } } },
       });
+
+      if (!disposal) throw new DisposalRuleError("Disposal tidak ditemukan.");
+      if (disposal.reversedAt) throw new DisposalRuleError("Disposal sudah direverse.");
+      if (disposal.asset.deletedAt) throw new DisposalRuleError("Asset yang sudah dihapus tidak bisa direverse.");
+
+      const now = new Date();
+      // Claim the reverse atomically; a second click or concurrent request finds nothing left to update.
+      const claimed = await tx.assetDisposal.updateMany({
+        where: { id: disposal.id, reversedAt: null },
+        data: { reversedAt: now, reversedById: user.id },
+      });
+
+      if (claimed.count !== 1) throw new DisposalRuleError("Disposal sudah direverse.");
+
+      // Disposal only changes the status, so reverse only restores the status.
+      // Location and department are left as they are now.
+      const disposedStatusId = disposal.disposedStatusId ?? (await findStatusIdByCode(tx, DISPOSED_STATUS_CODE));
+      const restorable = disposal.previousStatusId && disposal.previousStatusId !== disposedStatusId
+        ? await tx.assetStatus.findUnique({ where: { id: disposal.previousStatusId }, select: { id: true } })
+        : null;
+      const restoredStatusId = restorable?.id ?? (await findStatusIdByCode(tx, ACTIVE_STATUS_CODE));
 
       await tx.asset.update({
         where: { id: disposal.assetId },
-        data: {
-          assetStatusId: disposal.previousStatusId,
-          assetLocationId: disposal.previousLocationId,
-          departmentId: disposal.previousDepartmentId,
-        },
+        data: { assetStatusId: restoredStatusId },
       });
 
       await createAssetHistory({
@@ -265,16 +275,22 @@ export async function reverseDisposalAction(
         assetId: disposal.assetId,
         changedById: user.id,
         description: `Disposal asset ${disposal.asset.code} direverse.`,
-        payload: { disposalId: disposal.id },
+        payload: {
+          disposalId: disposal.id,
+          fromStatusId: disposal.asset.assetStatusId,
+          toStatusId: restoredStatusId,
+        },
         tx,
       });
     });
 
     revalidatePath(DISPOSALS_PATH);
-    revalidateAsset(disposal.assetId);
+    revalidateAsset(target.assetId);
 
     return { ok: true, message: "Disposal berhasil direverse." };
-  } catch {
+  } catch (error) {
+    if (error instanceof DisposalRuleError) return { message: error.message };
+
     return { message: "Reverse disposal gagal. Silakan coba lagi." };
   }
 }
