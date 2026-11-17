@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/auth";
+import { masterInUseMessage } from "@/lib/master-usage";
 import { prisma } from "@/lib/prisma";
 
 type ActionState = {
@@ -116,10 +117,10 @@ export async function deletePersonInChargeAction(_previousState: ActionState, fo
     return { errors: { form: "Person in charge tidak valid." } };
   }
 
-  const usedByAssets = await prisma.asset.count({ where: { personInChargeId: id } });
+  const inUse = await masterInUseMessage("Person in charge", { personInChargeId: id });
 
-  if (usedByAssets > 0) {
-    return { errors: { form: `Person in charge tidak bisa dihapus karena masih dipakai oleh ${usedByAssets} aset.` } };
+  if (inUse) {
+    return { errors: { form: inUse } };
   }
 
   try {

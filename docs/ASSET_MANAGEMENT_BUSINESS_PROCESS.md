@@ -84,7 +84,7 @@ flowchart TD
     F --> G[Aset hilang dari daftar aktif]
 ```
 
-Delete menggunakan **soft delete**. Data aset, foto, dan riwayat tidak langsung dihapus permanen. Fitur khusus untuk memulihkan aset yang sudah soft-delete tidak ditemukan pada implementasi saat ini.
+Delete menggunakan **soft delete**. Data aset, foto, dan riwayat tidak langsung dihapus permanen. Aset yang dihapus tampil di tab **Dihapus** pada menu Archive dan bisa dipulihkan atau dihapus permanen dari sana.
 
 ## E. Archive Asset
 
@@ -103,15 +103,31 @@ Archive dipakai untuk aset yang tidak lagi aktif secara operasional tetapi masih
 
 ```mermaid
 flowchart TD
-    A[Buka Archive] --> B[Pilih aset]
+    A[Buka Archive tab Diarsipkan atau Dihapus] --> B[Pilih aset]
     B --> C[Klik Pulihkan]
     C --> D[Konfirmasi]
-    D -->|Setuju| E[Hapus status archive]
+    D -->|Setuju| E[Hapus status archive dan soft delete]
     E --> F[Simpan waktu dan pelaku restore]
     F --> G[Aset kembali ke daftar aktif]
 ```
 
-Restore hanya berlaku untuk aset arsip yang belum soft-delete.
+Restore berlaku untuk aset yang diarsipkan maupun yang dihapus (soft delete).
+
+### Hapus Permanen
+
+```mermaid
+flowchart TD
+    A[Buka Archive] --> B[Pilih aset diarsipkan/dihapus]
+    B --> C[Klik Hapus Permanen]
+    C --> D[Ketik HAPUS untuk konfirmasi]
+    D -->|Benar| E{Semua aset masih nonaktif?}
+    E -->|Tidak| X[Ditolak, muat ulang halaman]
+    E -->|Ya| F[Hapus aset beserta foto, riwayat, dan transaksi]
+    F --> G[File foto di Google Drive dihapus]
+    G --> H[Master data yang tidak dipakai lagi bisa dihapus]
+```
+
+Hapus permanen tidak bisa dibatalkan dan hanya untuk aset di Archive. Aset aktif harus diarsipkan atau dihapus dulu. Master data (status, kategori, lokasi, departemen, dan lainnya) tidak bisa dihapus selama masih dipakai aset mana pun, termasuk aset di Archive; pesan error menyebut jumlah aset di Archive yang perlu dihapus permanen.
 
 ## G. Import Asset
 
@@ -172,6 +188,9 @@ stateDiagram-v2
     Diarsipkan --> Aktif: Restore
     Aktif --> Terhapus: Soft delete
     Diarsipkan --> Terhapus: Soft delete
+    Terhapus --> Aktif: Restore
+    Diarsipkan --> [*]: Hapus permanen
+    Terhapus --> [*]: Hapus permanen
 ```
 
 Status master seperti Aktif, Maintenance, atau Rusak menggambarkan kondisi operasional. `archived_at` mengatur lifecycle arsip, sedangkan `deleted_at` mengatur soft delete; ketiganya merupakan konsep yang berbeda.

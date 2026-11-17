@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/auth";
 import { SYSTEM_STATUS_CODES } from "@/lib/asset-disposal";
+import { masterInUseMessage } from "@/lib/master-usage";
 import { prisma } from "@/lib/prisma";
 
 export type AssetStatusActionState = {
@@ -161,16 +162,10 @@ export async function deleteAssetStatusAction(
     return { errors: { form: `Status ${status.code} dipakai sistem (alur disposal) dan tidak bisa dihapus.` } };
   }
 
-  const usedByAssets = await prisma.asset.count({
-    where: { assetStatusId: id },
-  });
+  const inUse = await masterInUseMessage("Asset status", { assetStatusId: id });
 
-  if (usedByAssets > 0) {
-    return {
-      errors: {
-        form: `Asset status tidak bisa dihapus karena masih dipakai oleh ${usedByAssets} aset.`,
-      },
-    };
+  if (inUse) {
+    return { errors: { form: inUse } };
   }
 
   try {

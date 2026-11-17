@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/auth";
+import { masterInUseMessage } from "@/lib/master-usage";
 import { prisma } from "@/lib/prisma";
 
 type ActionState = {
@@ -114,10 +115,10 @@ export async function deleteWarrantyAction(_previousState: ActionState, formData
     return { errors: { form: "Warranty tidak valid." } };
   }
 
-  const usedByAssets = await prisma.asset.count({ where: { warrantyId: id } });
+  const inUse = await masterInUseMessage("Warranty", { warrantyId: id });
 
-  if (usedByAssets > 0) {
-    return { errors: { form: `Warranty tidak bisa dihapus karena masih dipakai oleh ${usedByAssets} aset.` } };
+  if (inUse) {
+    return { errors: { form: inUse } };
   }
 
   try {

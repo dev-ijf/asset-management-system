@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/auth";
+import { masterInUseMessage } from "@/lib/master-usage";
 import { prisma } from "@/lib/prisma";
 
 export type AssetLocationActionState = {
@@ -190,16 +191,10 @@ export async function deleteAssetLocationAction(
     return { errors: { form: "Asset location tidak valid." } };
   }
 
-  const usedByAssets = await prisma.asset.count({
-    where: { assetLocationId: id },
-  });
+  const inUse = await masterInUseMessage("Asset location", { assetLocationId: id });
 
-  if (usedByAssets > 0) {
-    return {
-      errors: {
-        form: `Asset location tidak bisa dihapus karena masih dipakai oleh ${usedByAssets} aset.`,
-      },
-    };
+  if (inUse) {
+    return { errors: { form: inUse } };
   }
 
   const usedByChildren = await prisma.assetLocation.count({

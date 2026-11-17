@@ -132,7 +132,7 @@ export default async function AssetDetailPage({ params }: AssetDetailPageProps) 
         subtitle={`${asset.code} • ${asset.serialNumber ?? "No serial number"}`}
         actions={
           <Link
-            href={asset.archivedAt ? "/dashboard/archive" : "/dashboard/assets"}
+            href={asset.deletedAt ? "/dashboard/archive?view=deleted" : asset.archivedAt ? "/dashboard/archive" : "/dashboard/assets"}
             className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-white px-5 text-sm font-medium text-[var(--text)] transition hover:bg-slate-50"
           >
             <ArrowLeft className="h-4 w-4" />

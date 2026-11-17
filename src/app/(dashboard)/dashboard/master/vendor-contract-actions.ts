@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/auth";
+import { masterInUseMessage } from "@/lib/master-usage";
 import { prisma } from "@/lib/prisma";
 
 type ActionState = {
@@ -156,10 +157,10 @@ export async function deleteVendorContractAction(_previousState: ActionState, fo
     return { errors: { form: "Vendor contract tidak valid." } };
   }
 
-  const usedByAssets = await prisma.asset.count({ where: { vendorContractId: id } });
+  const inUse = await masterInUseMessage("Vendor contract", { vendorContractId: id });
 
-  if (usedByAssets > 0) {
-    return { errors: { form: `Vendor contract tidak bisa dihapus karena masih dipakai oleh ${usedByAssets} aset.` } };
+  if (inUse) {
+    return { errors: { form: inUse } };
   }
 
   try {

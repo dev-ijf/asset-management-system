@@ -123,7 +123,7 @@ Dokumen ini mencatat fitur yang ditemukan pada implementasi saat ini. Status **P
 **Input:** Aset dan konfirmasi.  
 **Proses:** Sistem mengisi `deleted_at` dan mencatat riwayat.  
 **Output:** Aset tidak tampil pada daftar aktif.  
-**Business Rule:** Menggunakan soft delete; foto dan riwayat tetap tersimpan. Pemulihan khusus aset yang sudah dihapus tidak ditemukan.  
+**Business Rule:** Menggunakan soft delete; foto dan riwayat tetap tersimpan. Aset yang dihapus bisa dipulihkan atau dihapus permanen dari tab Dihapus di menu Archive.  
 **Status:** Implemented; restore soft-delete Not Found.
 
 ### Arsipkan dan pulihkan aset
@@ -133,7 +133,7 @@ Dokumen ini mencatat fitur yang ditemukan pada implementasi saat ini. Status **P
 **Input:** Aset, alasan arsip, tanggal retensi opsional, dan konfirmasi.  
 **Proses:** Sistem mencatat waktu/pelaku/alasan arsip atau waktu/pelaku pemulihan.  
 **Output:** Aset masuk ke daftar arsip atau kembali ke daftar aktif.  
-**Business Rule:** Arsip berbeda dari soft delete. Aset terhapus tidak dipulihkan melalui menu arsip.  
+**Business Rule:** Arsip berbeda dari soft delete. Aset terhapus tampil di tab Dihapus pada menu Archive dan bisa dipulihkan dari sana.  
 **Status:** Implemented.
 
 ## D. Master Data
@@ -205,9 +205,9 @@ Dokumen ini mencatat fitur yang ditemukan pada implementasi saat ini. Status **P
 **Tujuan:** Meninjau aset nonaktif yang sengaja diarsipkan dan mengaktifkannya kembali.  
 **Pengguna:** Pengguna dengan akses aset; perubahan memerlukan `assets.manage`.  
 **Input:** Pencarian/filter arsip, aset, alasan, retensi, dan konfirmasi.  
-**Proses:** Daftar hanya memuat `archived_at` yang terisi dan `deleted_at` kosong; restore menghapus status arsip serta mencatat pelaku/waktu pemulihan.  
+**Proses:** Tab Diarsipkan memuat `archived_at` terisi dan `deleted_at` kosong; tab Dihapus memuat `deleted_at` terisi. Restore mengosongkan status arsip dan soft delete serta mencatat pelaku/waktu pemulihan. Hapus permanen (konfirmasi ketik HAPUS) menghapus aset beserta foto, riwayat, dan transaksinya; aset aktif tidak bisa dihapus permanen.  
 **Output:** Daftar arsip atau aset aktif kembali.  
-**Business Rule:** Alasan, tanggal, dan pelaku arsip disimpan; tersedia export arsip.  
+**Business Rule:** Alasan, tanggal, dan pelaku arsip disimpan; tersedia export per tab. Master data yang masih dipakai aset di Archive baru bisa dihapus setelah aset tersebut dihapus permanen.  
 **Status:** Implemented.
 
 ## H. Approval

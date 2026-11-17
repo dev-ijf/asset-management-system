@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/auth";
+import { masterInUseMessage } from "@/lib/master-usage";
 import { prisma } from "@/lib/prisma";
 
 export type AssetCategoryActionState = {
@@ -181,16 +182,10 @@ export async function deleteAssetCategoryAction(
     return { errors: { form: "Asset category tidak valid." } };
   }
 
-  const usedByAssets = await prisma.asset.count({
-    where: { assetCategoryId: id },
-  });
+  const inUse = await masterInUseMessage("Asset category", { assetCategoryId: id });
 
-  if (usedByAssets > 0) {
-    return {
-      errors: {
-        form: `Asset category tidak bisa dihapus karena masih dipakai oleh ${usedByAssets} aset.`,
-      },
-    };
+  if (inUse) {
+    return { errors: { form: inUse } };
   }
 
   const usedByChildren = await prisma.assetCategory.count({

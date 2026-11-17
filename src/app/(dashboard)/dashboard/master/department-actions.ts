@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/auth";
+import { masterInUseMessage } from "@/lib/master-usage";
 import { prisma } from "@/lib/prisma";
 import { getNextSequentialCode } from "@/lib/sequential-code";
 
@@ -121,10 +122,10 @@ export async function deleteDepartmentAction(_previousState: ActionState, formDa
     return { errors: { form: "Department tidak valid." } };
   }
 
-  const usedByAssets = await prisma.asset.count({ where: { departmentId: id } });
+  const inUse = await masterInUseMessage("Department", { departmentId: id });
 
-  if (usedByAssets > 0) {
-    return { errors: { form: `Department tidak bisa dihapus karena masih dipakai oleh ${usedByAssets} aset.` } };
+  if (inUse) {
+    return { errors: { form: inUse } };
   }
 
   try {

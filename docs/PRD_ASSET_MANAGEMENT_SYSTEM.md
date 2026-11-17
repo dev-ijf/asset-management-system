@@ -121,9 +121,11 @@ Prioritas: **P0** = wajib untuk operasional, **P1** = penting, **P2** = peningka
 | ID | Kebutuhan | Prioritas | Status |
 | --- | --- | --- | --- |
 | FR-ARC-01 | Arsipkan aset (tunggal/massal) dengan alasan wajib dan tanggal retensi opsional; catat pelaku dan waktu | P1 | Selesai |
-| FR-ARC-02 | Aset terarsip keluar dari daftar aktif dan tampil di menu Archive | P1 | Selesai |
-| FR-ARC-03 | Restore aset terarsip; catat pelaku dan waktu | P1 | Selesai |
-| FR-ARC-04 | Ekspor daftar arsip | P2 | Dalam pengembangan |
+| FR-ARC-02 | Menu Archive punya dua tab: Diarsipkan dan Dihapus (soft delete); aset di keduanya keluar dari daftar aktif | P1 | Selesai |
+| FR-ARC-03 | Pulihkan aset terarsip maupun terhapus ke daftar aktif (tunggal/massal); catat pelaku dan waktu | P1 | Selesai |
+| FR-ARC-04 | Ekspor daftar arsip/terhapus sesuai filter | P2 | Selesai |
+| FR-ARC-05 | Hapus permanen aset terarsip/terhapus (tunggal/massal, konfirmasi ketik HAPUS); foto, riwayat, dan transaksinya ikut terhapus; aset aktif tidak bisa dihapus permanen | P1 | Selesai |
+| FR-ARC-06 | Master data yang masih dipakai aset tidak bisa dihapus; pesan menyebut berapa aset yang ada di Archive agar bisa dihapus permanen dulu | P1 | Selesai |
 
 ### 6.5 Operasi massal
 
@@ -176,6 +178,10 @@ flowchart TD
     AKTIF -->|arsipkan| ARSIP[Arsip]
     ARSIP -->|restore| AKTIF
     AKTIF -->|hapus| DEL[Soft delete]
+    ARSIP -->|hapus| DEL
+    DEL -->|pulihkan| AKTIF
+    ARSIP -->|hapus permanen| GONE[Terhapus permanen]
+    DEL -->|hapus permanen| GONE
     AKTIF -->|lakukan audit| AUDIT[Audit fisik<br/>langsung tercatat tanpa approval]
     AKTIF -->|ajukan transaksi| REQ[Pengajuan<br/>movement, disposal, maintenance]
     REQ --> DEC{Disetujui?}
@@ -183,7 +189,7 @@ flowchart TD
     DEC -->|tidak| REJ[Ditolak, aset tetap]
 ```
 
-Disposal yang disetujui mengubah status menjadi DISPOSED dan bisa di-reverse ke kondisi sebelumnya. Aset terarsip dapat di-restore kapan saja; aset soft delete belum memiliki fitur pemulihan.
+Disposal yang disetujui mengubah status menjadi DISPOSED dan bisa di-reverse ke kondisi sebelumnya. Aset terarsip dan aset soft delete dapat dipulihkan atau dihapus permanen dari menu Archive.
 
 ## 8. Model data utama
 
