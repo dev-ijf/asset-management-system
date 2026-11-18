@@ -4,11 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { PageHeader } from "@/components/layout/page-header";
-import { formatReportDate, getReportOptions, parseReportDate, requireReportsView } from "@/lib/basic-reports";
+import { formatReportDate, getReportOptions, requireReportsView } from "@/lib/basic-reports";
 import { prisma } from "@/lib/prisma";
+import { parseDateRange } from "@/lib/date-range";
+import { DateRangeAlert, DateRangeInputs } from "@/components/ui/date-range-inputs";
 
 export const dynamic = "force-dynamic";
 
@@ -24,13 +25,12 @@ export default async function DisposalReportPage({ searchParams }: PageProps) {
   const reportOptions = await getReportOptions();
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(filters)) if (value) query.set(key, value);
-  const from = parseReportDate(filters.from ?? null);
-  const to = parseReportDate(filters.to ?? null);
+  const range = parseDateRange(filters.from, filters.to);
 
-  const disposals = await prisma.assetDisposal.findMany({
+  const disposals = range.error ? [] : await prisma.assetDisposal.findMany({
     where: {
       assetId: filters.asset || undefined,
-      disposedAt: from || to ? { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } : undefined,
+      disposedAt: range.filter,
       reversedAt: filters.status === "reversed" ? { not: null } : filters.status === "disposed" ? null : undefined,
     },
     include: { asset: true, previousStatus: true, disposedStatus: true, performedBy: { select: { name: true } }, reversedBy: { select: { name: true } } },
@@ -46,11 +46,10 @@ export default async function DisposalReportPage({ searchParams }: PageProps) {
           <form className="grid gap-4 md:grid-cols-3">
             <Select name="asset" defaultValue={filters.asset ?? ""}><option value="">Semua Asset</option>{options(reportOptions.assets)}</Select>
             <Select name="status" defaultValue={filters.status ?? ""}><option value="">Semua Status</option><option value="disposed">Disposed</option><option value="reversed">Reversed</option></Select>
-            <Input name="from" type="date" defaultValue={filters.from ?? ""} />
-            <Input name="to" type="date" defaultValue={filters.to ?? ""} />
+            <DateRangeInputs from={filters.from} to={filters.to} />
             <div className="md:col-span-3 flex gap-2"><Button type="submit">Filter</Button><Link href="/dashboard/reports/disposals"><Button type="button" variant="secondary">Reset</Button></Link></div>
           </form>
-          {disposals.length === 0 ? <EmptyState title="Tidak ada data disposal." description="Ubah filter untuk melihat report." /> : (
+          {range.error ? <DateRangeAlert message={range.error} /> : disposals.length === 0 ? <EmptyState title="Tidak ada data disposal." description="Ubah filter untuk melihat report." /> : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] text-left text-sm">
                 <thead className="bg-[var(--table-head)] text-xs uppercase text-[var(--muted)]"><tr><th className="px-4 py-3">No</th><th className="px-4 py-3">Asset</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Disposed At</th><th className="px-4 py-3">Reason</th><th className="px-4 py-3">Performed By</th><th className="px-4 py-3">Reversed By</th></tr></thead>

@@ -4,13 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { PageHeader } from "@/components/layout/page-header";
 import { Pagination } from "@/components/tables/pagination";
 import type { Prisma } from "@/generated/prisma/client";
-import { formatReportDate, formatReportMoney, getReportOptions, parseReportDate, requireReportsView } from "@/lib/basic-reports";
+import { formatReportDate, formatReportMoney, getReportOptions, requireReportsView } from "@/lib/basic-reports";
 import { prisma } from "@/lib/prisma";
+import { parseDateRange } from "@/lib/date-range";
+import { DateRangeAlert, DateRangeInputs } from "@/components/ui/date-range-inputs";
 import { paginate } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
@@ -32,8 +33,7 @@ export default async function AssetReportPage({ searchParams }: PageProps) {
   const filters = await searchParams;
   const options = await getReportOptions();
   const query = new URLSearchParams();
-  const from = parseReportDate(filters.from ?? null);
-  const to = parseReportDate(filters.to ?? null);
+  const range = parseDateRange(filters.from, filters.to);
 
   for (const [key, value] of Object.entries(filters)) {
     if (value && key !== "page" && key !== "limit") query.set(key, value);
@@ -41,12 +41,14 @@ export default async function AssetReportPage({ searchParams }: PageProps) {
 
   const where: Prisma.AssetWhereInput = {
       deletedAt: null,
+      // A reversed range matches nothing; the alert below explains why.
+      ...(range.error ? { id: { in: [] } } : {}),
       assetStatusId: filters.status || undefined,
       assetClassId: filters.class || undefined,
       assetCategoryId: filters.category || undefined,
       assetLocationId: filters.location || undefined,
       departmentId: filters.department || undefined,
-      createdAt: from || to ? { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } : undefined,
+      createdAt: range.filter,
     };
   const { items: assets, pagination } = await paginate(filters,
     () => prisma.asset.count({ where }),
@@ -101,8 +103,7 @@ export default async function AssetReportPage({ searchParams }: PageProps) {
               <option value="">Semua Department</option>
               {optionList(options.departments)}
             </Select>
-            <Input name="from" type="date" defaultValue={filters.from ?? ""} />
-            <Input name="to" type="date" defaultValue={filters.to ?? ""} />
+            <DateRangeInputs from={filters.from} to={filters.to} />
             <div className="md:col-span-5 flex gap-2">
               <Button type="submit">Filter</Button>
               <Link href="/dashboard/reports/assets">
@@ -111,7 +112,9 @@ export default async function AssetReportPage({ searchParams }: PageProps) {
             </div>
           </form>
 
-          {assets.length === 0 ? (
+          {range.error ? (
+            <DateRangeAlert message={range.error} />
+          ) : assets.length === 0 ? (
             <EmptyState title="Tidak ada data asset." description="Ubah filter untuk melihat data report." />
           ) : (
             <div className="overflow-x-auto">

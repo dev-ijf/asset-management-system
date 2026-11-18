@@ -9,10 +9,12 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { buildArchiveQuery, type ArchiveView } from "@/lib/archive-query";
+import { DateRangeAlert, DateRangeInputs } from "@/components/ui/date-range-inputs";
 import { hasPermission, requirePermission } from "@/lib/auth";
 import { cn } from "@/lib/cn";
 import { createPagination, paginationQuery, parsePagination } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
+import { wibFormat } from "@/lib/datetime";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +22,7 @@ type Props = { searchParams: Promise<Record<string, string | string[] | undefine
 
 const first = (input: string | string[] | undefined) => String(Array.isArray(input) ? input[0] ?? "" : input ?? "").trim();
 const dateTime = (date: Date | null) =>
-  date ? new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(date) : "-";
+  date ? wibFormat({ day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(date) : "-";
 
 const VIEWS: Record<ArchiveView, { label: string; dateLabel: string; byLabel: string; empty: string; emptyDescription: string }> = {
   archived: {
@@ -46,7 +48,7 @@ export default async function ArchivePage({ searchParams }: Props) {
   const flat = new URLSearchParams();
   for (const [key, item] of Object.entries(params)) if (item) flat.set(key, first(item));
 
-  const { view, where, orderBy, values } = buildArchiveQuery(flat);
+  const { view, where, orderBy, values, dateError } = buildArchiveQuery(flat);
   const config = VIEWS[view];
   const { page: requestedPage, pageSize } = parsePagination(params);
 
@@ -145,8 +147,7 @@ export default async function ArchivePage({ searchParams }: Props) {
               <option value="365">181–365 hari</option>
               <option value="older">Lebih dari 1 tahun</option>
             </Select>
-            <Input type="date" name="from" defaultValue={values.from} aria-label="Tanggal mulai" />
-            <Input type="date" name="to" defaultValue={values.to} aria-label="Tanggal akhir" />
+            <DateRangeInputs from={values.from} to={values.to} />
             <div className="flex gap-2">
               <Select name="sort" defaultValue={values.sort}>
                 <option value="date">{view === "deleted" ? "Tanggal hapus" : "Tanggal arsip"}</option>
@@ -162,7 +163,9 @@ export default async function ArchivePage({ searchParams }: Props) {
           </form>
         </CardHeader>
         <CardContent>
-          {assets.length ? (
+          {dateError ? (
+            <DateRangeAlert message={dateError} />
+          ) : assets.length ? (
             <ArchiveTable
               key={view}
               canManage={canManage}

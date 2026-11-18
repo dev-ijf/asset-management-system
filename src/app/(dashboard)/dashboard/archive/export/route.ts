@@ -3,13 +3,15 @@ import { buildArchiveQuery } from "@/lib/archive-query";
 import { getCurrentUser, hasPermission } from "@/lib/auth";
 import { createCsv, csvResponse, formatReportDate } from "@/lib/basic-reports";
 import { prisma } from "@/lib/prisma";
+import { dateRangeErrorResponse } from "@/lib/date-range";
 
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
   if (!hasPermission(user, "assets.view")) return NextResponse.json({ message: "Forbidden" }, { status: 403 });
 
   // Same filter as the Archive page, so the export matches what the user sees.
-  const { view, where, orderBy } = buildArchiveQuery(request.nextUrl.searchParams);
+  const { view, where, orderBy, dateError } = buildArchiveQuery(request.nextUrl.searchParams);
+  if (dateError) return dateRangeErrorResponse();
   const assets = await prisma.asset.findMany({
     where,
     orderBy,

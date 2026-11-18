@@ -3,17 +3,24 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { requireAnyPermission } from "@/lib/asset-transaction-view";
 import { prisma } from "@/lib/prisma";
+import { wibDayKey, wibFormat, wibMidnight } from "@/lib/datetime";
 
 export const dynamic = "force-dynamic";
 
 function monthKey(date: Date) {
-  return new Intl.DateTimeFormat("id-ID", { month: "short", year: "2-digit" }).format(date);
+  return wibFormat({ month: "short", year: "2-digit" }).format(date);
+}
+
+/** First day of the WIB month `offset` months from the current one, as 00:00 WIB. */
+function wibMonthStart(offset: number) {
+  const [year, month] = wibDayKey(new Date()).split("-").map(Number);
+  const first = new Date(Date.UTC(year, month - 1 + offset, 1));
+  return wibMidnight(first.toISOString().slice(0, 10));
 }
 
 function lastSixMonths() {
-  const now = new Date();
   return Array.from({ length: 6 }, (_, index) => {
-    const date = new Date(now.getFullYear(), now.getMonth() - (5 - index), 1);
+    const date = wibMonthStart(index - 5);
     return { date, label: monthKey(date), value: 0 };
   });
 }
@@ -33,9 +40,7 @@ function buildTrend<T extends { date: Date }>(rows: T[]) {
 export default async function ChartsPage() {
   await requireAnyPermission(["assets.view", "reports.view"]);
 
-  const sixMonthsAgo = new Date();
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
-  sixMonthsAgo.setDate(1);
+  const sixMonthsAgo = wibMonthStart(-5);
 
   const [statusGroups, categoryGroups, locationGroups, movements, disposals] = await Promise.all([
     prisma.asset.groupBy({

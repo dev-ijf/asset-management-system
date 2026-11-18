@@ -14,6 +14,7 @@ import {
   type TransactionActionState,
 } from "@/app/(dashboard)/dashboard/transactions/transaction-actions";
 import { FieldError } from "@/components/master/master-form-feedback";
+import { todayInputValue } from "@/lib/datetime";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -94,7 +95,7 @@ export function MovementForm({
         <AssetSelect assets={assets} error={state.errors?.assetId} />
         <label className="block">
           <span className="text-sm font-medium text-[var(--text)]">Performed At</span>
-          <Input name="performedAt" type="date" className="mt-2" />
+          <Input name="performedAt" type="date" max={todayInputValue()} className="mt-2" />
           <FieldError message={state.errors?.performedAt} />
         </label>
         <OptionSelect label="To Location" name="toLocationId" options={locations} />
@@ -128,7 +129,7 @@ export function DisposalForm({ assets }: { assets: SelectOption[] }) {
         <AssetSelect assets={assets} error={state.errors?.assetId} />
         <label className="block">
           <span className="text-sm font-medium text-[var(--text)]">Tanggal Disposal</span>
-          <Input name="disposedAt" type="date" className="mt-2" />
+          <Input name="disposedAt" type="date" max={todayInputValue()} className="mt-2" />
           <FieldError message={state.errors?.disposedAt} />
         </label>
         <label className="block md:col-span-2">
@@ -208,7 +209,7 @@ export function AuditForm({ assets, locations }: { assets: SelectOption[]; locat
         </label>
         <label className="block">
           <span className="text-sm font-medium text-[var(--text)]">Audited At</span>
-          <Input name="auditedAt" type="date" className="mt-2" />
+          <Input name="auditedAt" type="date" max={todayInputValue()} className="mt-2" />
           <FieldError message={state.errors?.auditedAt} />
         </label>
         <OptionSelect label="Audit Location" name="locationId" options={locations} />

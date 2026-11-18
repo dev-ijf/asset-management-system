@@ -3,11 +3,13 @@ import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { PageHeader } from "@/components/layout/page-header";
-import { formatReportDate, getReportOptions, parseReportDate, requireReportsView } from "@/lib/basic-reports";
+import { formatReportDate, getReportOptions, requireReportsView } from "@/lib/basic-reports";
 import { prisma } from "@/lib/prisma";
+import { movementChangeText } from "@/lib/movement-display";
+import { parseDateRange } from "@/lib/date-range";
+import { DateRangeAlert, DateRangeInputs } from "@/components/ui/date-range-inputs";
 
 export const dynamic = "force-dynamic";
 
@@ -23,15 +25,14 @@ export default async function MovementReportPage({ searchParams }: PageProps) {
   const reportOptions = await getReportOptions();
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(filters)) if (value) query.set(key, value);
-  const from = parseReportDate(filters.from ?? null);
-  const to = parseReportDate(filters.to ?? null);
+  const range = parseDateRange(filters.from, filters.to);
 
-  const movements = await prisma.assetMovement.findMany({
+  const movements = range.error ? [] : await prisma.assetMovement.findMany({
     where: {
       assetId: filters.asset || undefined,
       fromLocationId: filters.fromLocation || undefined,
       toLocationId: filters.toLocation || undefined,
-      performedAt: from || to ? { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } : undefined,
+      performedAt: range.filter,
     },
     include: { asset: true, fromLocation: true, toLocation: true, fromDepartment: true, toDepartment: true, fromAssetUser: true, toAssetUser: true },
     orderBy: { performedAt: "desc" },
@@ -47,15 +48,14 @@ export default async function MovementReportPage({ searchParams }: PageProps) {
             <Select name="asset" defaultValue={filters.asset ?? ""}><option value="">Semua Asset</option>{options(reportOptions.assets)}</Select>
             <Select name="fromLocation" defaultValue={filters.fromLocation ?? ""}><option value="">Semua From Location</option>{options(reportOptions.locations)}</Select>
             <Select name="toLocation" defaultValue={filters.toLocation ?? ""}><option value="">Semua To Location</option>{options(reportOptions.locations)}</Select>
-            <Input name="from" type="date" defaultValue={filters.from ?? ""} />
-            <Input name="to" type="date" defaultValue={filters.to ?? ""} />
+            <DateRangeInputs from={filters.from} to={filters.to} />
             <div className="md:col-span-4 flex gap-2"><Button type="submit">Filter</Button><Link href="/dashboard/reports/movements"><Button type="button" variant="secondary">Reset</Button></Link></div>
           </form>
-          {movements.length === 0 ? <EmptyState title="Tidak ada data movement." description="Ubah filter untuk melihat report." /> : (
+          {range.error ? <DateRangeAlert message={range.error} /> : movements.length === 0 ? <EmptyState title="Tidak ada data movement." description="Ubah filter untuk melihat report." /> : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1000px] text-left text-sm">
                 <thead className="bg-[var(--table-head)] text-xs uppercase text-[var(--muted)]"><tr><th className="px-4 py-3">No</th><th className="px-4 py-3">Asset</th><th className="px-4 py-3">Location</th><th className="px-4 py-3">Department</th><th className="px-4 py-3">Asset User</th><th className="px-4 py-3">Performed At</th><th className="px-4 py-3">Notes</th></tr></thead>
-                <tbody className="divide-y divide-[var(--border)]">{movements.map((movement, index) => <tr key={movement.id}><td className="px-4 py-3">{index + 1}</td><td className="px-4 py-3 font-medium">{movement.asset.code} - {movement.asset.name}</td><td className="px-4 py-3">{movement.fromLocation?.name ?? "-"} {"->"} {movement.toLocation?.name ?? "-"}</td><td className="px-4 py-3">{movement.fromDepartment?.name ?? "-"} {"->"} {movement.toDepartment?.name ?? "-"}</td><td className="px-4 py-3">{movement.fromAssetUser?.name ?? "-"} {"->"} {movement.toAssetUser?.name ?? "-"}</td><td className="px-4 py-3">{formatReportDate(movement.performedAt)}</td><td className="px-4 py-3">{movement.notes ?? "-"}</td></tr>)}</tbody>
+                <tbody className="divide-y divide-[var(--border)]">{movements.map((movement, index) => <tr key={movement.id}><td className="px-4 py-3">{index + 1}</td><td className="px-4 py-3 font-medium">{movement.asset.code} - {movement.asset.name}</td><td className="px-4 py-3">{movementChangeText(movement.fromLocation, movement.toLocationId, movement.toLocation)}</td><td className="px-4 py-3">{movementChangeText(movement.fromDepartment, movement.toDepartmentId, movement.toDepartment)}</td><td className="px-4 py-3">{movementChangeText(movement.fromAssetUser, movement.toAssetUserId, movement.toAssetUser)}</td><td className="px-4 py-3">{formatReportDate(movement.performedAt)}</td><td className="px-4 py-3">{movement.notes ?? "-"}</td></tr>)}</tbody>
               </table>
             </div>
           )}

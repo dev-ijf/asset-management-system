@@ -1,4 +1,5 @@
 import type { Prisma } from "@/generated/prisma/client";
+import { parseDateRange } from "@/lib/date-range";
 
 export type ArchiveView = "archived" | "deleted";
 
@@ -24,10 +25,10 @@ export function buildArchiveQuery(params: Params, now = new Date()) {
   const sort = read("sort");
   const direction: Prisma.SortOrder = read("direction") === "asc" ? "asc" : "desc";
 
+  // From/to and the age preset are separate conditions, so using both narrows the result to their overlap.
+  const dates = parseDateRange(from, to);
   const range: Prisma.DateTimeFilter = {};
   const ago = (days: number) => new Date(now.getTime() - days * DAY_MS);
-  if (from && !Number.isNaN(Date.parse(from))) range.gte = new Date(`${from}T00:00:00`);
-  if (to && !Number.isNaN(Date.parse(to))) range.lte = new Date(`${to}T23:59:59.999`);
   if (age === "30") range.gte = ago(30);
   if (age === "90") Object.assign(range, { gte: ago(90), lt: ago(30) });
   if (age === "180") Object.assign(range, { gte: ago(180), lt: ago(90) });
@@ -39,6 +40,9 @@ export function buildArchiveQuery(params: Params, now = new Date()) {
     ...(view === "deleted"
       ? { deletedAt: { not: null, ...range } }
       : { deletedAt: null, archivedAt: { not: null, ...range } }),
+    ...(dates.filter ? { AND: [view === "deleted" ? { deletedAt: dates.filter } : { archivedAt: dates.filter }] } : {}),
+    // A reversed range matches nothing; the page shows dateError instead.
+    ...(dates.error ? { id: { in: [] } } : {}),
     assetCategoryId: read("category") || undefined,
     assetLocationId: read("location") || undefined,
     departmentId: read("department") || undefined,
@@ -57,5 +61,5 @@ export function buildArchiveQuery(params: Params, now = new Date()) {
   const orderBy: Prisma.AssetOrderByWithRelationInput =
     sort === "code" ? { code: direction } : sort === "name" ? { name: direction } : { [dateField]: direction };
 
-  return { view, where, orderBy, values: { q, age, from, to, sort: sort || "date", direction } };
+  return { view, where, orderBy, dateError: dates.error, values: { q, age, from, to, sort: sort || "date", direction } };
 }

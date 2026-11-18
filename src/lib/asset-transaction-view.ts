@@ -2,15 +2,16 @@ import { redirect } from "next/navigation";
 import { selectableAssets, type TransactionPurpose } from "@/lib/asset-disposal";
 import { hasPermission, requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { wibFormat } from "@/lib/datetime";
 
 export function formatDate(date: Date | null) {
   if (!date) return "-";
-  return new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric" }).format(date);
+  return wibFormat({ day: "2-digit", month: "short", year: "numeric" }).format(date);
 }
 
 export function formatDateTime(date: Date | null) {
   if (!date) return "-";
-  return new Intl.DateTimeFormat("id-ID", {
+  return wibFormat({
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",

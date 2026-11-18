@@ -1,6 +1,7 @@
 "use client";
 
 import { startTransition, useActionState, useCallback, useEffect, useRef, type FormEvent } from "react";
+import { refreshNotifications } from "@/lib/notification-events";
 
 /**
  * useActionState for forms that keeps what the user typed when the server rejects the submit.
@@ -22,6 +23,8 @@ export function useFormAction<S>(
   useEffect(() => {
     if (state !== initialState && (state as { ok?: unknown } | null)?.ok === true) {
       ref.current?.reset();
+      // Approvals, maintenance and new requests change the topbar counts.
+      refreshNotifications();
     }
   }, [state, initialState]);
 

@@ -12,6 +12,7 @@ import { hasPermission, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { paginate, type PaginationQuery } from "@/lib/pagination";
 import type { Prisma } from "@/generated/prisma/client";
+import { wibFormat } from "@/lib/datetime";
 
 type AssetStatusesPageProps = {
   search?: string;
@@ -19,7 +20,7 @@ type AssetStatusesPageProps = {
 };
 
 function formatDate(date: Date) {
-  return new Intl.DateTimeFormat("id-ID", {
+  return wibFormat({
     day: "2-digit",
     month: "short",
     year: "numeric",

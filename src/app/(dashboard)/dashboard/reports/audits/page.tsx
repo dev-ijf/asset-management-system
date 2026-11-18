@@ -4,11 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { PageHeader } from "@/components/layout/page-header";
-import { formatReportDate, getReportOptions, parseReportDate, requireReportsView } from "@/lib/basic-reports";
+import { formatReportDate, getReportOptions, requireReportsView } from "@/lib/basic-reports";
 import { prisma } from "@/lib/prisma";
+import { parseDateRange } from "@/lib/date-range";
+import { DateRangeAlert, DateRangeInputs } from "@/components/ui/date-range-inputs";
 
 export const dynamic = "force-dynamic";
 
@@ -24,14 +25,13 @@ export default async function AuditReportPage({ searchParams }: PageProps) {
   const reportOptions = await getReportOptions();
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(filters)) if (value) query.set(key, value);
-  const from = parseReportDate(filters.from ?? null);
-  const to = parseReportDate(filters.to ?? null);
+  const range = parseDateRange(filters.from, filters.to);
 
-  const audits = await prisma.assetAudit.findMany({
+  const audits = range.error ? [] : await prisma.assetAudit.findMany({
     where: {
       assetId: filters.asset || undefined,
       status: filters.status ? (filters.status as "MATCHED" | "MISSING" | "DAMAGED" | "MATCH" | "MISMATCH") : undefined,
-      auditedAt: from || to ? { ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } : undefined,
+      auditedAt: range.filter,
     },
     include: { asset: true, location: true, auditedBy: { select: { name: true } } },
     orderBy: { auditedAt: "desc" },
@@ -46,11 +46,10 @@ export default async function AuditReportPage({ searchParams }: PageProps) {
           <form className="grid gap-4 md:grid-cols-3">
             <Select name="asset" defaultValue={filters.asset ?? ""}><option value="">Semua Asset</option>{options(reportOptions.assets)}</Select>
             <Select name="status" defaultValue={filters.status ?? ""}><option value="">Semua Status</option><option value="MATCHED">MATCHED</option><option value="MISSING">MISSING</option><option value="DAMAGED">DAMAGED</option></Select>
-            <Input name="from" type="date" defaultValue={filters.from ?? ""} />
-            <Input name="to" type="date" defaultValue={filters.to ?? ""} />
+            <DateRangeInputs from={filters.from} to={filters.to} />
             <div className="md:col-span-3 flex gap-2"><Button type="submit">Filter</Button><Link href="/dashboard/reports/audits"><Button type="button" variant="secondary">Reset</Button></Link></div>
           </form>
-          {audits.length === 0 ? <EmptyState title="Tidak ada data audit." description="Ubah filter untuk melihat report." /> : (
+          {range.error ? <DateRangeAlert message={range.error} /> : audits.length === 0 ? <EmptyState title="Tidak ada data audit." description="Ubah filter untuk melihat report." /> : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] text-left text-sm">
                 <thead className="bg-[var(--table-head)] text-xs uppercase text-[var(--muted)]"><tr><th className="px-4 py-3">No</th><th className="px-4 py-3">Asset</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Location</th><th className="px-4 py-3">Audited At</th><th className="px-4 py-3">Auditor</th><th className="px-4 py-3">Notes</th></tr></thead>

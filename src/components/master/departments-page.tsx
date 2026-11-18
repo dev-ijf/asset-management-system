@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { hasPermission, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { paginate, type PaginationQuery } from "@/lib/pagination";
+import { wibFormat } from "@/lib/datetime";
 
 type Props = {
   search?: string;
@@ -29,7 +30,7 @@ const fields: MasterField[] = [
 ];
 
 function formatDate(date: Date) {
-  return new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric" }).format(date);
+  return wibFormat({ day: "2-digit", month: "short", year: "numeric" }).format(date);
 }
 
 export async function DepartmentsPage({ search = "", paginationQuery }: Props) {

@@ -2,16 +2,18 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell, Expand, LogOut, Menu, Search, UserCircle, Wrench } from "lucide-react";
+import { Expand, LogOut, Menu, Search, UserCircle } from "lucide-react";
 import { logoutAction } from "@/app/logout/actions";
+import { TopbarNotifications } from "@/components/layout/topbar-notifications";
 import { Input } from "@/components/ui/input";
 import type { CurrentUser } from "@/lib/auth";
 
-const shortcuts = [
-  { href: "/dashboard/reports", label: "Reports", text: "ID" },
-  { href: "/dashboard/maintenance", label: "Maintenance due", icon: Wrench, badge: "!" },
-  { href: "/dashboard/approvals", label: "Approvals", icon: Bell, dot: true },
-];
+const shortcuts = [{ href: "/dashboard/reports", label: "Reports", text: "ID" }];
+
+/** Client-side mirror of hasPermission (lib/auth is server-only); only decides what to render. */
+function can(user: CurrentUser, permission: string) {
+  return user.roles.includes("super-admin") || user.permissions.includes(permission);
+}
 
 export function AppHeader({ user }: { user: CurrentUser }) {
   const router = useRouter();
@@ -59,27 +61,18 @@ export function AppHeader({ user }: { user: CurrentUser }) {
       </div>
 
       <div className="flex items-center gap-3">
-        {shortcuts.map((action) => {
-          const Icon = action.icon;
-
-          return (
-            <Link
-              key={action.label}
-              href={action.href}
-              className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-white text-[#6b7895] transition hover:text-[var(--primary)]"
-              aria-label={action.label}
-              title={action.label}
-            >
-              {Icon ? <Icon className="h-5 w-5" /> : <span className="text-xs font-semibold">{action.text}</span>}
-              {action.badge ? (
-                <span className="absolute -right-1 -top-1 rounded-full bg-[var(--primary)] px-1.5 py-0.5 text-[10px] font-bold text-white">
-                  {action.badge}
-                </span>
-              ) : null}
-              {action.dot ? <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[var(--pink)]" /> : null}
-            </Link>
-          );
-        })}
+        {shortcuts.map((action) => (
+          <Link
+            key={action.label}
+            href={action.href}
+            className="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-white text-[#6b7895] transition hover:text-[var(--primary)]"
+            aria-label={action.label}
+            title={action.label}
+          >
+            <span className="text-xs font-semibold">{action.text}</span>
+          </Link>
+        ))}
+        <TopbarNotifications canSeeMaintenance={can(user, "assets.view") || can(user, "maintenance.manage")} />
         <button
           className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-white text-[#6b7895] transition hover:text-[var(--primary)]"
           aria-label="Fullscreen"

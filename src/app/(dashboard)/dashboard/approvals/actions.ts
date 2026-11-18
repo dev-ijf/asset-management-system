@@ -14,6 +14,7 @@ import {
 } from "@/lib/asset-disposal";
 import { approvalTypeLabel } from "@/lib/approval-types";
 import { prisma } from "@/lib/prisma";
+import { isFutureDate } from "@/lib/datetime";
 
 export type ApprovalActionState = {
   ok?: boolean;
@@ -82,6 +83,9 @@ async function applyMovement(
   const toDepartmentId = optionalString(payload.toDepartmentId);
   const toAssetUserId = optionalString(payload.toAssetUserId);
   const performedAt = payloadDate(payload.performedAt);
+  if (isFutureDate(performedAt)) {
+    throw new ApprovalRuleError("Tanggal movement melebihi hari ini sehingga tidak bisa diterapkan. Tolak request ini.");
+  }
 
   const movement = await tx.assetMovement.create({
     data: {
@@ -153,6 +157,11 @@ async function applyDisposal(
     throw new ApprovalRuleError("Asset sudah didisposal. Request disposal ini tidak bisa disetujui lagi; tolak request ini.");
   }
 
+  const disposedAt = payloadDate(payload.disposedAt);
+  if (isFutureDate(disposedAt)) {
+    throw new ApprovalRuleError("Tanggal disposal melebihi hari ini sehingga tidak bisa diterapkan. Tolak request ini.");
+  }
+
   // Snapshot the asset as it is now (row is locked), not as it was when the request was made,
   // so reverse restores the state that disposal actually replaced.
   const disposal = await tx.assetDisposal.create({
@@ -162,7 +171,7 @@ async function applyDisposal(
       previousLocationId: request.asset.assetLocationId,
       previousDepartmentId: request.asset.departmentId,
       disposedStatusId,
-      disposedAt: payloadDate(payload.disposedAt),
+      disposedAt,
       reason: optionalString(payload.reason) ?? "Disposal approved",
       performedById: request.requesterId,
     },

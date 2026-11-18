@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AssetPhotoField } from "@/components/assets/asset-photo-field";
+import { todayInputValue } from "@/lib/datetime";
 import { useFormAction } from "@/components/ui/use-form-action";
 
 export type AssetSelectOption = {
@@ -197,7 +198,7 @@ function AssetFields({
       <Section title="Finance & Warranty">
         <label className="block">
           <span className="text-sm font-medium text-[var(--text)]">Purchase Date</span>
-          <Input name="purchaseDate" type="date" defaultValue={asset?.purchaseDate ?? ""} className="mt-2" />
+          <Input name="purchaseDate" type="date" max={todayInputValue()} defaultValue={asset?.purchaseDate ?? ""} className="mt-2" />
           <FieldError message={state.errors?.purchaseDate} />
         </label>
         <label className="block">

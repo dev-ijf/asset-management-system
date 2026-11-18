@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/tables/data-table";
 import { approvalTypeLabel } from "@/lib/approval-types";
 import { prisma } from "@/lib/prisma";
+import { addDays, startOfWibDay as startOfDay, wibDayKey, wibFormat } from "@/lib/datetime";
 
 export const dynamic = "force-dynamic";
 
@@ -16,19 +17,9 @@ type DistributionItem = {
   value: number;
 };
 
-function startOfDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function addDays(date: Date, days: number) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-}
-
 function formatDate(date: Date | null | undefined) {
   if (!date) return "-";
-  return new Intl.DateTimeFormat("id-ID", {
+  return wibFormat({
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -36,7 +27,7 @@ function formatDate(date: Date | null | undefined) {
 }
 
 function compactDate(date: Date) {
-  return new Intl.DateTimeFormat("id-ID", {
+  return wibFormat({
     day: "2-digit",
     month: "short",
   }).format(date);
@@ -112,9 +103,9 @@ function buildTrendRows({
     auditIssue: 0,
   }));
 
-  const indexByKey = new Map(rows.map((row, index) => [row.date.toISOString().slice(0, 10), index]));
+  const indexByKey = new Map(rows.map((row, index) => [wibDayKey(row.date), index]));
   const increment = (date: Date, key: "movement" | "disposal" | "auditIssue") => {
-    const index = indexByKey.get(startOfDay(date).toISOString().slice(0, 10));
+    const index = indexByKey.get(wibDayKey(date));
     if (index !== undefined) rows[index][key] += 1;
   };
 
@@ -165,6 +156,8 @@ export default async function DashboardPage() {
   const thirtyDaysAgo = startOfDay(addDays(today, -30));
   const thirtyDaysAhead = startOfDay(addDays(today, 30));
   const trendStart = startOfDay(addDays(today, -13));
+  // Excludes rows dated after today, so a mistyped future date cannot inflate the numbers.
+  const tomorrow = addDays(today, 1);
   const issueStatuses = ["MISMATCH", "MISSING", "DAMAGED"] as const;
 
   const [
@@ -195,7 +188,7 @@ export default async function DashboardPage() {
     prisma.asset.count({ where: { deletedAt: null } }),
     prisma.asset.count({ where: { deletedAt: null, archivedAt: { not: null } } }),
     prisma.asset.count({ where: { deletedAt: { not: null } } }),
-    prisma.assetMovement.count({ where: { performedAt: { gte: thirtyDaysAgo } } }),
+    prisma.assetMovement.count({ where: { performedAt: { gte: thirtyDaysAgo, lt: tomorrow } } }),
     prisma.assetDisposal.count({ where: { reversedAt: null } }),
     prisma.assetAudit.count({ where: { status: { in: [...issueStatuses] } } }),
     prisma.assetMaintenance.count({ where: { status: { notIn: ["COMPLETED", "CANCELLED"] } } }),
@@ -228,10 +221,10 @@ export default async function DashboardPage() {
     prisma.assetStatus.findMany({ select: { id: true, name: true } }),
     prisma.assetLocation.findMany({ select: { id: true, name: true } }),
     prisma.assetCategory.findMany({ select: { id: true, name: true } }),
-    prisma.assetMovement.findMany({ where: { performedAt: { gte: trendStart } }, select: { performedAt: true } }),
-    prisma.assetDisposal.findMany({ where: { disposedAt: { gte: trendStart } }, select: { disposedAt: true } }),
+    prisma.assetMovement.findMany({ where: { performedAt: { gte: trendStart, lt: tomorrow } }, select: { performedAt: true } }),
+    prisma.assetDisposal.findMany({ where: { disposedAt: { gte: trendStart, lt: tomorrow } }, select: { disposedAt: true } }),
     prisma.assetAudit.findMany({
-      where: { auditedAt: { gte: trendStart }, status: { in: [...issueStatuses] } },
+      where: { auditedAt: { gte: trendStart, lt: tomorrow }, status: { in: [...issueStatuses] } },
       select: { auditedAt: true },
     }),
     prisma.assetAudit.findMany({

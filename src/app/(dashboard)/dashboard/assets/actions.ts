@@ -6,6 +6,7 @@ import { CapexOpex, DepreciationMethod, Prisma } from "@/generated/prisma/client
 import { requirePermission } from "@/lib/auth";
 import { createAssetHistory } from "@/lib/asset-history";
 import { prisma } from "@/lib/prisma";
+import { FUTURE_DATE_MESSAGE, isFutureDate } from "@/lib/datetime";
 import { getNextSequentialCode } from "@/lib/sequential-code";
 
 export type AssetActionState = {
@@ -135,8 +136,15 @@ async function validateAssetInput(input: ReturnType<typeof readAssetForm>, ignor
     errors.availableQuantity = "Available quantity tidak boleh lebih besar dari quantity.";
   }
 
-  if (input.purchaseDate && !parseOptionalDate(input.purchaseDate)) {
+  const purchaseDate = parseOptionalDate(input.purchaseDate);
+  if (input.purchaseDate && !purchaseDate) {
     errors.purchaseDate = "Purchase date tidak valid.";
+  } else if (purchaseDate && isFutureDate(purchaseDate)) {
+    errors.purchaseDate = `Purchase date ${FUTURE_DATE_MESSAGE}`;
+  }
+
+  if (cost !== null && residualValue !== null && !errors.cost && !errors.residualValue && residualValue > cost) {
+    errors.residualValue = "Residual value tidak boleh lebih besar dari cost.";
   }
 
   if (input.retentionUntil && !parseOptionalDate(input.retentionUntil)) {

@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { hasPermission, getCurrentUser, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { wibFormat } from "@/lib/datetime";
 
 export function formatReportDate(date: Date | null) {
   if (!date) return "-";
-  return new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric" }).format(date);
+  return wibFormat({ day: "2-digit", month: "short", year: "numeric" }).format(date);
 }
 
 export function formatReportMoney(value: unknown) {

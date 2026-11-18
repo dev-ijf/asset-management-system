@@ -3,11 +3,12 @@ import { PermissionsSecurityClient, type PermissionSecurityRecord } from "@/comp
 import { requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { paginate } from "@/lib/pagination";
+import { wibFormat } from "@/lib/datetime";
 
 export const dynamic = "force-dynamic";
 
 function formatDate(date: Date) {
-  return new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric" }).format(date);
+  return wibFormat({ day: "2-digit", month: "short", year: "numeric" }).format(date);
 }
 
 export default async function PermissionsPage({ searchParams }: { searchParams: Promise<{ page?: string; limit?: string }> }) {

@@ -1,4 +1,5 @@
 import * as XLSX from "xlsx";
+import { FUTURE_DATE_MESSAGE, isFutureDate } from "@/lib/datetime";
 
 export const MAX_BULK_ROWS = 200;
 export const MAX_BULK_BYTES = 2 * 1024 * 1024;
@@ -75,6 +76,7 @@ export function parseBulkFile(buffer: Buffer, filename: string, mode: "IMPORT" |
     if (values.Cost && (!/^\d{1,13}(\.\d{1,2})?$/.test(values.Cost))) reason = "Cost harus angka positif maksimal 13 digit dan 2 desimal (gunakan titik).";
     const date = values["Purchase Date"];
     if (date && (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0, 10) !== date)) reason = "Purchase Date harus tanggal valid YYYY-MM-DD.";
+    else if (date && isFutureDate(new Date(`${date}T00:00:00.000Z`))) reason = `Purchase Date ${FUTURE_DATE_MESSAGE}`;
     rows.push({ row: index + 2, code, name: values["Asset Name"], values, result: reason ? "Invalid" : duplicate ? "Duplicate" : "Ready", reason: reason || duplicate, changes: [] });
   });
   if (!rows.length) throw new Error("File tidak memiliki data asset.");

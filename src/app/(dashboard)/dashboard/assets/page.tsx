@@ -14,6 +14,7 @@ import { Select } from "@/components/ui/select";
 import { hasPermission, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createPagination, paginationQuery, parsePagination } from "@/lib/pagination";
+import { wibFormat } from "@/lib/datetime";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ type AssetsPageProps = {
 };
 
 function formatDate(date: Date) {
-  return new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric" }).format(date);
+  return wibFormat({ day: "2-digit", month: "short", year: "numeric" }).format(date);
 }
 
 function formatMoney(value: unknown) {

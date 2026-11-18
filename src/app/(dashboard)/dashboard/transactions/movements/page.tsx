@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { formatDate, getTransactionOptions, requireAnyPermission } from "@/lib/asset-transaction-view";
 import { prisma } from "@/lib/prisma";
+import { movementChangeText } from "@/lib/movement-display";
 import { paginate } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
@@ -77,9 +78,9 @@ export default async function MovementsPage({ searchParams }: PageProps) {
                       <tr key={movement.id}>
                         <td className="px-4 py-3">{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
                         <td className="px-4 py-3 font-medium">{movement.asset.code} - {movement.asset.name}</td>
-                        <td className="px-4 py-3">{movement.fromLocation?.name ?? "-"} {"->"} {movement.toLocation?.name ?? "-"}</td>
-                        <td className="px-4 py-3">{movement.fromDepartment?.name ?? "-"} {"->"} {movement.toDepartment?.name ?? "-"}</td>
-                        <td className="px-4 py-3">{movement.fromAssetUser?.name ?? "-"} {"->"} {movement.toAssetUser?.name ?? "-"}</td>
+                        <td className="px-4 py-3">{movementChangeText(movement.fromLocation, movement.toLocationId, movement.toLocation)}</td>
+                        <td className="px-4 py-3">{movementChangeText(movement.fromDepartment, movement.toDepartmentId, movement.toDepartment)}</td>
+                        <td className="px-4 py-3">{movementChangeText(movement.fromAssetUser, movement.toAssetUserId, movement.toAssetUser)}</td>
                         <td className="px-4 py-3">{formatDate(movement.performedAt)}</td>
                         <td className="px-4 py-3">{movement.notes ?? "-"}</td>
                       </tr>

@@ -5,13 +5,15 @@ import { DataTable } from "@/components/tables/data-table";
 import { Pagination } from "@/components/tables/pagination";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { hasPermission } from "@/lib/auth";
 import { requireAnyPermission } from "@/lib/asset-transaction-view";
 import { approvalTypeLabel } from "@/lib/approval-types";
 import { prisma } from "@/lib/prisma";
+import { parseDateRange } from "@/lib/date-range";
+import { DateRangeAlert, DateRangeInputs } from "@/components/ui/date-range-inputs";
 import { paginate } from "@/lib/pagination";
+import { wibFormat } from "@/lib/datetime";
 
 export const dynamic = "force-dynamic";
 
@@ -19,20 +21,8 @@ type PageProps = {
   searchParams: Promise<Record<string, string | undefined>>;
 };
 
-function parseDate(value?: string) {
-  if (!value) return null;
-  const date = new Date(`${value}T00:00:00.000Z`);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function endOfDay(date: Date) {
-  const next = new Date(date);
-  next.setUTCHours(23, 59, 59, 999);
-  return next;
-}
-
 function formatDateTime(date: Date) {
-  return new Intl.DateTimeFormat("id-ID", {
+  return wibFormat({
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
@@ -88,8 +78,7 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
   const user = await requireAnyPermission(["assets.view", "approvals.manage"]);
   const canManage = hasPermission(user, "approvals.manage");
   const filters = await searchParams;
-  const from = parseDate(filters.from);
-  const to = parseDate(filters.to);
+  const range = parseDateRange(filters.from, filters.to);
   const transactionType = filters.type && filters.type in ApprovalTransactionType
     ? (filters.type as ApprovalTransactionType)
     : undefined;
@@ -98,7 +87,9 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
     status: ApprovalStatus.PENDING,
     transactionType,
     assetId: filters.asset || undefined,
-    createdAt: from || to ? { ...(from ? { gte: from } : {}), ...(to ? { lte: endOfDay(to) } : {}) } : undefined,
+    createdAt: range.filter,
+    // A reversed range matches nothing; the alert below explains why.
+    ...(range.error ? { id: { in: [] } } : {}),
   };
   const [assets, result] = await Promise.all([
     prisma.asset.findMany({
@@ -142,13 +133,15 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
                 </option>
               ))}
             </Select>
-            <Input name="from" type="date" defaultValue={filters.from ?? ""} />
-            <Input name="to" type="date" defaultValue={filters.to ?? ""} />
+            <DateRangeInputs from={filters.from} to={filters.to} />
             <button className="rounded-md border border-[var(--primary)] bg-[var(--primary)] px-5 py-2 text-sm font-medium text-white" type="submit">
               Filter
             </button>
           </form>
 
+          {range.error ? (
+            <DateRangeAlert message={range.error} />
+          ) : (
           <DataTable
             columns={["Jenis", "Asset", "Requester", "Tanggal Request", "Status", "Ringkasan", "Aksi"]}
             rows={requests.map((request) => {
@@ -175,6 +168,7 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
             })}
             emptyTitle="Tidak ada approval pending."
           />
+          )}
           <Pagination {...pagination} />
         </CardContent>
       </Card>

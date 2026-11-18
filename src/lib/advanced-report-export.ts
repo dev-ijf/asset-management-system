@@ -1,8 +1,11 @@
 import PDFDocument from "pdfkit";
 import * as XLSX from "xlsx";
 import { AuditStatus } from "@/generated/prisma/client";
-import { createCsv, formatReportDate, formatReportMoney, parseReportDate } from "@/lib/basic-reports";
+import { createCsv, formatReportDate, formatReportMoney } from "@/lib/basic-reports";
+import { parseDateRange } from "@/lib/date-range";
 import { prisma } from "@/lib/prisma";
+import { wibFormat } from "@/lib/datetime";
+import { movementToValue } from "@/lib/movement-display";
 
 export type AdvancedReportFilters = {
   asset?: string;
@@ -19,16 +22,9 @@ type ReportTable = {
   rows: string[][];
 };
 
+/** Export routes reject a reversed range before calling this, so only the filter is needed here. */
 function dateRange(from?: string, to?: string) {
-  const gte = parseReportDate(from ?? null);
-  const lte = parseReportDate(to ?? null);
-
-  if (!gte && !lte) return undefined;
-
-  return {
-    ...(gte ? { gte } : {}),
-    ...(lte ? { lte } : {}),
-  };
+  return parseDateRange(from, to).filter;
 }
 
 function normalizeFilters(searchParams: URLSearchParams): AdvancedReportFilters {
@@ -125,11 +121,11 @@ export async function buildAdvancedReportTables(searchParams: URLSearchParams) {
       rows: movements.map((movement) => [
         `${movement.asset.code} - ${movement.asset.name}`,
         movement.fromLocation?.name ?? "",
-        movement.toLocation?.name ?? "",
+        movementToValue(movement.toLocationId, movement.toLocation),
         movement.fromDepartment?.name ?? "",
-        movement.toDepartment?.name ?? "",
+        movementToValue(movement.toDepartmentId, movement.toDepartment),
         movement.fromAssetUser?.name ?? "",
-        movement.toAssetUser?.name ?? "",
+        movementToValue(movement.toAssetUserId, movement.toAssetUser),
         formatReportDate(movement.performedAt),
         movement.notes ?? "",
       ]),
@@ -183,7 +179,7 @@ export async function buildPdfBuffer(tables: ReportTable[]) {
 
   doc.fontSize(16).text("Asset Management Reports", { align: "left" });
   doc.moveDown(0.5);
-  doc.fontSize(9).fillColor("#4b587c").text(`Generated at ${new Date().toLocaleString("id-ID")}`);
+  doc.fontSize(9).fillColor("#4b587c").text(`Generated at ${wibFormat({ day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date())}`);
   doc.moveDown();
 
   for (const [index, table] of tables.entries()) {

@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/layout/page-header";
 import { hasPermission, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { wibFormat } from "@/lib/datetime";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ function formatDate(date: Date | null) {
     return "-";
   }
 
-  return new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short", year: "numeric" }).format(date);
+  return wibFormat({ day: "2-digit", month: "short", year: "numeric" }).format(date);
 }
 
 function formatDateTime(date: Date | null) {
@@ -29,7 +30,7 @@ function formatDateTime(date: Date | null) {
     return "-";
   }
 
-  return new Intl.DateTimeFormat("id-ID", {
+  return wibFormat({
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",

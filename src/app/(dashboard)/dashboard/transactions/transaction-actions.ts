@@ -15,6 +15,7 @@ import {
   REVERSAL_REASON_MAX_LENGTH,
 } from "@/lib/asset-disposal";
 import { prisma } from "@/lib/prisma";
+import { FUTURE_DATE_MESSAGE, isFutureDate, todayDateOnly } from "@/lib/datetime";
 
 export type TransactionActionState = {
   ok?: boolean;
@@ -54,9 +55,9 @@ function parseOptionalNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+/** Default transaction date: today in WIB. */
 function todayDate() {
-  const now = new Date();
-  return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  return todayDateOnly();
 }
 
 function revalidateAsset(assetId: string) {
@@ -87,6 +88,7 @@ export async function createMovementAction(
   if (!assetId) errors.assetId = "Asset wajib dipilih.";
   if (!toLocationId && !toDepartmentId && !toAssetUserId) errors.destination = "Minimal isi salah satu tujuan baru.";
   if (!performedAt) errors.performedAt = "Tanggal movement tidak valid.";
+  else if (isFutureDate(performedAt)) errors.performedAt = `Tanggal movement ${FUTURE_DATE_MESSAGE}`;
 
   const asset = assetId
     ? await prisma.asset.findUnique({
@@ -171,6 +173,7 @@ export async function createDisposalAction(
   if (!assetId) errors.assetId = "Asset wajib dipilih.";
   if (!reason) errors.reason = "Reason wajib diisi.";
   if (!disposedAt) errors.disposedAt = "Tanggal disposal tidak valid.";
+  else if (isFutureDate(disposedAt)) errors.disposedAt = `Tanggal disposal ${FUTURE_DATE_MESSAGE}`;
 
   const disposedStatusId = await findStatusIdByCode(prisma, DISPOSED_STATUS_CODE);
   if (!disposedStatusId) errors.status = "Status DISPOSED belum tersedia di master Asset Status. Hubungi administrator.";
@@ -308,6 +311,7 @@ export async function createAuditAction(
   if (!assetId) errors.assetId = "Asset wajib dipilih.";
   if (!statuses.includes(status as AuditStatus)) errors.status = "Status audit tidak valid.";
   if (!auditedAt) errors.auditedAt = "Tanggal audit tidak valid.";
+  else if (isFutureDate(auditedAt)) errors.auditedAt = `Tanggal audit ${FUTURE_DATE_MESSAGE}`;
 
   const asset = assetId
     ? await prisma.asset.findUnique({ where: { id: assetId }, select: { id: true, code: true, deletedAt: true } })
