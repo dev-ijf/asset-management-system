@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { createCsv, csvResponse, ensureReportsViewForExport, formatReportDate, formatReportMoney, getParam } from "@/lib/basic-reports";
 import { prisma } from "@/lib/prisma";
 import { dateRangeErrorResponse, parseDateRange } from "@/lib/date-range";
+import { assetLocationFilter } from "@/lib/location-filter";
 
 export async function GET(request: NextRequest) {
   const forbidden = await ensureReportsViewForExport();
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
       assetStatusId: getParam(searchParams, "status") || undefined,
       assetClassId: getParam(searchParams, "class") || undefined,
       assetCategoryId: getParam(searchParams, "category") || undefined,
-      assetLocationId: getParam(searchParams, "location") || undefined,
+      assetLocationId: await assetLocationFilter(getParam(searchParams, "location")),
       departmentId: getParam(searchParams, "department") || undefined,
       createdAt: range.filter,
     },

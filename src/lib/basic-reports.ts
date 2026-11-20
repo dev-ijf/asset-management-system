@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { hasPermission, getCurrentUser, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { wibFormat } from "@/lib/datetime";
+import { locationOptions } from "@/lib/location-tree";
 
 export function formatReportDate(date: Date | null) {
   if (!date) return "-";
@@ -47,7 +48,7 @@ export async function getReportOptions() {
     prisma.assetStatus.findMany({ orderBy: { code: "asc" }, select: { id: true, code: true, name: true } }),
     prisma.assetClass.findMany({ orderBy: { code: "asc" }, select: { id: true, code: true, name: true } }),
     prisma.assetCategory.findMany({ orderBy: { code: "asc" }, select: { id: true, code: true, name: true } }),
-    prisma.assetLocation.findMany({ orderBy: { code: "asc" }, select: { id: true, code: true, name: true } }),
+    prisma.assetLocation.findMany({ select: { id: true, code: true, name: true, parentId: true } }),
     prisma.department.findMany({ orderBy: { code: "asc" }, select: { id: true, code: true, name: true } }),
   ]);
 
@@ -58,7 +59,7 @@ export async function getReportOptions() {
     categories: coded(categories),
     classes: coded(classes),
     departments: coded(departments),
-    locations: coded(locations),
+    locations: locationOptions(locations),
     statuses: coded(statuses),
   };
 }

@@ -3,6 +3,7 @@ import { selectableAssets, type TransactionPurpose } from "@/lib/asset-disposal"
 import { hasPermission, requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { wibFormat } from "@/lib/datetime";
+import { locationOptions } from "@/lib/location-tree";
 
 export function formatDate(date: Date | null) {
   if (!date) return "-";
@@ -42,10 +43,7 @@ export async function getTransactionOptions(purpose: TransactionPurpose = "other
       orderBy: { code: "asc" },
       select: { id: true, code: true, name: true },
     }),
-    prisma.assetLocation.findMany({
-      orderBy: { code: "asc" },
-      select: { id: true, code: true, name: true },
-    }),
+    prisma.assetLocation.findMany({ select: { id: true, code: true, name: true, parentId: true } }),
     prisma.department.findMany({
       orderBy: { code: "asc" },
       select: { id: true, code: true, name: true },
@@ -58,7 +56,7 @@ export async function getTransactionOptions(purpose: TransactionPurpose = "other
 
   return {
     assets: assets.map((asset) => ({ id: asset.id, label: `${asset.code} - ${asset.name}` })),
-    locations: locations.map((location) => ({ id: location.id, label: `${location.code} - ${location.name}` })),
+    locations: locationOptions(locations),
     departments: departments.map((department) => ({ id: department.id, label: `${department.code} - ${department.name}` })),
     users: users.map((user) => ({ id: user.id, label: `${user.name}${user.email ? ` (${user.email})` : ""}` })),
   };

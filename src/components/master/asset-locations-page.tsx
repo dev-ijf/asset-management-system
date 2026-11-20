@@ -8,15 +8,16 @@ import {
 } from "@/components/master/asset-locations-client";
 import { DataTable } from "@/components/tables/data-table";
 import { Pagination } from "@/components/tables/pagination";
-import type { Prisma } from "@/generated/prisma/client";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { hasPermission, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { paginate, type PaginationQuery } from "@/lib/pagination";
+import { createPagination, paginationQuery as paginationQueryArgs, parsePagination, type PaginationQuery } from "@/lib/pagination";
+import { buildLocationTree } from "@/lib/location-tree";
 import { wibFormat } from "@/lib/datetime";
 
 type AssetLocationsPageProps = {
@@ -38,67 +39,58 @@ export async function AssetLocationsPage({ search = "", paginationQuery }: Asset
   const query = search.trim();
 
   try {
-    const where: Prisma.AssetLocationWhereInput | undefined = query
-          ? {
-              OR: [
-                { code: { contains: query, mode: "insensitive" } },
-                { name: { contains: query, mode: "insensitive" } },
-              ],
-            }
-          : undefined;
-    const [{ items: locations, pagination }, parentOptionsData] = await Promise.all([
-      paginate(paginationQuery,
-        () => prisma.assetLocation.count({ where }),
-        ({ skip, take }) => prisma.assetLocation.findMany({ where, skip, take, orderBy: [{ code: "asc" }],
-        include: {
-          parent: {
-            select: {
-              id: true,
-              code: true,
-              name: true,
-            },
-          },
-          _count: {
-            select: {
-              assets: true,
-              children: true,
-            },
-          },
-        }, }),
-      ),
-      prisma.assetLocation.findMany({
-        orderBy: [{ code: "asc" }],
-        select: {
-          id: true,
-          code: true,
-          name: true,
-        },
-      }),
-    ]);
+    const all = await prisma.assetLocation.findMany({
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        description: true,
+        parentId: true,
+        createdAt: true,
+        _count: { select: { assets: true, children: true } },
+      },
+    });
+    const tree = buildLocationTree(all);
+    const needle = query.toLowerCase();
+    const matches = needle
+      ? tree.filter((item) => item.code.toLowerCase().includes(needle) || item.path.toLowerCase().includes(needle))
+      : tree;
+    const { page: requestedPage, pageSize } = parsePagination(paginationQuery);
+    const pagination = createPagination(matches.length, requestedPage, pageSize);
+    const { skip, take } = paginationQueryArgs(pagination);
+    const byId = new Map(tree.map((item) => [item.id, item]));
 
-    const parentOptions: AssetLocationOption[] = parentOptionsData.map((location) => ({
-      id: location.id,
-      code: location.code,
-      name: location.name,
+    const parentOptions: AssetLocationOption[] = tree.map((item) => ({
+      id: item.id,
+      code: item.code,
+      name: item.name,
+      path: item.path,
+      depth: item.depth,
+      subtreeIds: item.subtreeIds,
     }));
 
-    const rows: AssetLocationRow[] = locations.map((location) => ({
-      id: location.id,
-      code: location.code,
-      name: location.name,
-      parentId: location.parentId,
-      parentName: location.parent ? `${location.parent.code} - ${location.parent.name}` : null,
-      description: location.description,
-      createdAt: formatDate(location.createdAt),
-      assetCount: location._count.assets,
-      childCount: location._count.children,
-    }));
+    const rows: AssetLocationRow[] = matches.slice(skip, skip + take).map((location) => {
+      const parent = location.parentId ? byId.get(location.parentId) : undefined;
+      return {
+        id: location.id,
+        code: location.code,
+        name: location.name,
+        depth: location.depth,
+        path: location.path,
+        parentId: location.parentId,
+        parentName: parent ? `${parent.code} - ${parent.path}` : null,
+        description: location.description,
+        createdAt: formatDate(location.createdAt),
+        assetCount: location._count.assets,
+        childCount: location._count.children,
+      };
+    });
 
     return (
       <>
         <PageHeader
           title="Lokasi Aset"
-          subtitle="Kelola lokasi fisik aset dari site, gedung, lantai, ruang, sampai area penyimpanan."
+          subtitle="Parent Location (misalnya gedung) memakai code yang Anda tentukan. Sub-lokasi otomatis memakai code parent-nya, misalnya GDA-01, sehingga dari code sudah terlihat induknya."
           actions={<AssetLocationCreateAction canManage={canManage} parentOptions={parentOptions} />}
         />
 
@@ -108,7 +100,7 @@ export async function AssetLocationsPage({ search = "", paginationQuery }: Asset
             <form className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-lg">
               <input type="hidden" name="limit" value={pagination.pageSize} />
               <div className="relative flex-1">
-                <Input name="q" placeholder="Cari code atau name" defaultValue={query} className="h-10 pr-10" />
+                <Input name="q" placeholder="Cari code, name, atau path" defaultValue={query} className="h-10 pr-10" />
                 <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
               </div>
               <Button type="submit" variant="secondary">
@@ -140,7 +132,10 @@ export async function AssetLocationsPage({ search = "", paginationQuery }: Asset
                 rows={rows.map((location, index) => [
                   <span className="text-[var(--muted)]">{(pagination.page - 1) * pagination.pageSize + index + 1}</span>,
                   <span className="font-semibold">{location.code}</span>,
-                  location.name,
+                  <span className="inline-flex flex-wrap items-center gap-2">
+                    {location.name}
+                    {location.parentId ? null : <Badge variant="primary">Parent Location</Badge>}
+                  </span>,
                   <span className="text-[var(--muted)]">{location.parentName ?? "-"}</span>,
                   <span className="text-[var(--muted)]">{location.description ?? "-"}</span>,
                   <span className="text-[var(--muted)]">{location.createdAt}</span>,

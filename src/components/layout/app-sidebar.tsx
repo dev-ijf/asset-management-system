@@ -111,8 +111,8 @@ export function AppSidebar() {
 
   const toggleSidebar = () => window.dispatchEvent(new Event("ams:toggle-sidebar"));
   const linkClass = (active: boolean) => cn(
-    "primary-sidebar-link flex h-12 shrink-0 items-center rounded-md text-[#71819d] transition hover:bg-[var(--primary-soft)] hover:text-[var(--primary)]",
-    active && "bg-[var(--primary-soft)] text-[var(--primary)]",
+    "primary-sidebar-link flex h-12 shrink-0 items-center rounded-md text-[#71819d] transition hover:bg-[var(--sidebar-hover)] hover:text-[var(--primary)]",
+    active && "bg-[var(--sidebar-active)] font-semibold text-[var(--primary)]",
   );
 
   return (
@@ -134,7 +134,7 @@ export function AppSidebar() {
           </Link>
           <button type="button" onClick={toggleSidebar} aria-label={collapsed ? "Buka sidebar" : "Ciutkan sidebar"}
             aria-expanded={!collapsed} aria-controls="primary-navigation" title={collapsed ? "Buka sidebar" : "Ciutkan sidebar"}
-            className="mb-4 hidden h-9 w-9 shrink-0 items-center justify-center rounded-md text-[#71819d] hover:bg-[var(--primary-soft)] hover:text-[var(--primary)] focus-visible:outline-2 focus-visible:outline-[var(--primary)] lg:inline-flex">
+            className="mb-4 hidden h-9 w-9 shrink-0 items-center justify-center rounded-md text-[#71819d] hover:bg-[var(--sidebar-hover)] hover:text-[var(--primary)] focus-visible:outline-2 focus-visible:outline-[var(--primary)] lg:inline-flex">
             {collapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
           </button>
           <nav id="primary-navigation" aria-label="Navigasi utama" className="flex w-full flex-1 flex-col items-center gap-3">
@@ -163,7 +163,7 @@ export function AppSidebar() {
                           const ChildIcon = child.icon;
                           return <Link key={child.href} href={child.href} onClick={() => setMobileOpen(false)}
                             aria-current={selected ? "page" : undefined}
-                            className={cn("flex items-center gap-2 rounded-md px-3 py-2 text-sm text-[var(--text)] transition hover:bg-[var(--primary-soft)] hover:text-[var(--primary)] focus-visible:outline-2 focus-visible:outline-[var(--primary)]",
+                            className={cn("flex items-center gap-2 rounded-md px-3 py-2 text-sm text-[var(--text)] transition hover:bg-[var(--sidebar-hover)] hover:text-[var(--primary)] focus-visible:outline-2 focus-visible:outline-[var(--primary)]",
                               selected && "bg-[var(--primary)] text-white hover:bg-[var(--primary)] hover:text-white")}>
                             {ChildIcon ? <ChildIcon className="h-4 w-4 shrink-0" /> : null}{child.title}
                           </Link>;

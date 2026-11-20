@@ -16,6 +16,8 @@ import { prisma } from "@/lib/prisma";
 import { createPagination, paginationQuery, parsePagination } from "@/lib/pagination";
 import { wibFormat } from "@/lib/datetime";
 import { categoryClassResolver } from "@/lib/category-class";
+import { locationOptions } from "@/lib/location-tree";
+import { assetLocationFilter } from "@/lib/location-filter";
 
 export const dynamic = "force-dynamic";
 
@@ -124,7 +126,7 @@ async function getAssets({
       ...(statusId ? { assetStatusId: statusId } : {}),
       ...(classId ? { assetClassId: classId } : {}),
       ...(categoryId ? { assetCategoryId: categoryId } : {}),
-      ...(locationId ? { assetLocationId: locationId } : {}),
+      ...(locationId ? { assetLocationId: await assetLocationFilter(locationId) } : {}),
       ...(departmentId ? { departmentId } : {}),
     };
   const total = await prisma.asset.count({ where });
@@ -163,7 +165,7 @@ async function getOptions(): Promise<AssetFormOptions> {
     prisma.assetStatus.findMany({ orderBy: [{ code: "asc" }], select: { id: true, code: true, name: true } }),
     prisma.assetClass.findMany({ orderBy: [{ code: "asc" }], select: { id: true, code: true, name: true } }),
     prisma.assetCategory.findMany({ orderBy: [{ code: "asc" }], select: { id: true, code: true, name: true, parentId: true, assetClassId: true } }),
-    prisma.assetLocation.findMany({ orderBy: [{ code: "asc" }], select: { id: true, code: true, name: true } }),
+    prisma.assetLocation.findMany({ select: { id: true, code: true, name: true, parentId: true } }),
     prisma.unit.findMany({ orderBy: [{ symbol: "asc" }], select: { id: true, symbol: true, name: true } }),
     prisma.department.findMany({ orderBy: [{ code: "asc" }], select: { id: true, code: true, name: true } }),
     prisma.personInCharge.findMany({ orderBy: [{ name: "asc" }], select: { id: true, name: true } }),
@@ -178,7 +180,7 @@ async function getOptions(): Promise<AssetFormOptions> {
     statuses: statuses.map((item) => ({ id: item.id, label: `${item.code} - ${item.name}` })),
     classes: classes.map((item) => ({ id: item.id, label: `${item.code} - ${item.name}` })),
     categories: categories.map((item) => ({ id: item.id, label: `${item.code} - ${item.name}`, classId: classOfCategory(item.id) })),
-    locations: locations.map((item) => ({ id: item.id, label: `${item.code} - ${item.name}` })),
+    locations: locationOptions(locations),
     units: units.map((item) => ({ id: item.id, label: `${item.symbol} - ${item.name}` })),
     departments: departments.map((item) => ({ id: item.id, label: `${item.code} - ${item.name}` })),
     people: people.map((item) => ({ id: item.id, label: item.name })),

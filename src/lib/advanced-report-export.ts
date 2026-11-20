@@ -6,6 +6,7 @@ import { parseDateRange } from "@/lib/date-range";
 import { prisma } from "@/lib/prisma";
 import { wibFormat } from "@/lib/datetime";
 import { movementToValue } from "@/lib/movement-display";
+import { assetLocationFilter } from "@/lib/location-filter";
 
 export type AdvancedReportFilters = {
   asset?: string;
@@ -49,7 +50,7 @@ export async function buildAdvancedReportTables(searchParams: URLSearchParams) {
         deletedAt: null,
         assetStatusId: filters.status,
         assetCategoryId: filters.category,
-        assetLocationId: filters.location,
+        assetLocationId: await assetLocationFilter(filters.location),
         createdAt: createdRange,
       },
       include: {
