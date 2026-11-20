@@ -15,6 +15,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { TEXT_LIMITS } from "@/lib/text-limits";
 import { useFormAction } from "@/components/ui/use-form-action";
 
 export type AssetLocationOption = {
@@ -62,7 +63,7 @@ function AssetLocationFields({
       ) : null}
       <label className="block">
         <span className="text-sm font-medium text-[var(--text)]">Name</span>
-        <Input name="name" placeholder="Warehouse Utama" defaultValue={location?.name} className="mt-2" required />
+        <Input name="name" placeholder="Warehouse Utama" defaultValue={location?.name} className="mt-2" maxLength={TEXT_LIMITS.name} required />
         <FieldError message={state.errors?.name} />
       </label>
       <label className="block">
@@ -84,6 +85,7 @@ function AssetLocationFields({
           placeholder="Deskripsi singkat lokasi aset"
           defaultValue={location?.description ?? ""}
           className="mt-2"
+          maxLength={TEXT_LIMITS.description}
         />
         <FieldError message={state.errors?.description} />
       </label>

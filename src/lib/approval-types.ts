@@ -8,6 +8,9 @@ export const APPROVAL_TYPE_LABELS: Record<ApprovalTransactionType, string> = {
   [ApprovalTransactionType.MAINTENANCE]: "Maintenance",
 };
 
+/** Shortest accepted reject reason: enough to rule out "-" or "x" while allowing "Duplikat". */
+export const REJECT_NOTE_MIN = 5;
+
 export function approvalTypeLabel(type: ApprovalTransactionType) {
   return APPROVAL_TYPE_LABELS[type] ?? type;
 }

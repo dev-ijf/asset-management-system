@@ -5,6 +5,8 @@ import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/auth";
 import { masterInUseMessage } from "@/lib/master-usage";
 import { prisma } from "@/lib/prisma";
+import { readName } from "@/lib/master-validation";
+import { checkLengths, TEXT_LIMITS } from "@/lib/text-limits";
 
 type ActionState = {
   ok?: boolean;
@@ -17,7 +19,7 @@ const PATH = "/dashboard/master/vendor-contracts";
 function readForm(formData: FormData) {
   return {
     id: String(formData.get("id") ?? "").trim(),
-    vendorName: String(formData.get("vendorName") ?? "").trim(),
+    vendorName: readName(formData.get("vendorName")),
     contractNumber: String(formData.get("contractNumber") ?? "").trim(),
     startDate: String(formData.get("startDate") ?? "").trim(),
     endDate: String(formData.get("endDate") ?? "").trim(),
@@ -43,6 +45,12 @@ function validate(input: ReturnType<typeof readForm>) {
   if (!input.vendorName) {
     errors.vendorName = "Vendor name wajib diisi.";
   }
+
+  checkLengths(errors, [
+    ["vendorName", "Vendor name", input.vendorName, TEXT_LIMITS.name],
+    ["contractNumber", "Contract number", input.contractNumber, TEXT_LIMITS.reference],
+    ["notes", "Notes", input.notes, TEXT_LIMITS.description],
+  ]);
 
   if (input.startDate && Number.isNaN(parseOptionalDate(input.startDate)?.getTime())) {
     errors.startDate = "Start date tidak valid.";

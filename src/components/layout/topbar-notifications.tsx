@@ -5,11 +5,15 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bell, Wrench } from "lucide-react";
 import type { NotificationItem, NotificationSummary } from "@/app/api/notifications/route";
+import { useToast, type ToastVariant } from "@/components/ui/toast-provider";
 import { wibFormat } from "@/lib/datetime";
 import { REFRESH_NOTIFICATIONS_EVENT } from "@/lib/notification-events";
 
-
 const POLL_MS = 60_000;
+const TOAST_MS = 8_000;
+/** At most this many toasts per check; the rest are summarised in one more toast. */
+const MAX_TOASTS = 3;
+const SEEN_LIMIT = 200;
 const iconButton =
   "relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-white text-[#6b7895] transition hover:text-[var(--primary)]";
 
@@ -53,6 +57,93 @@ function useNotifications() {
   return data;
 }
 
+/** Same request with a new status (pending → approved) counts as a new notification. */
+function notificationKey(item: NotificationItem) {
+  return `${item.id}:${item.status}`;
+}
+
+/** What is worth a popup: requests waiting for this approver, and decisions on the user's own requests. */
+function announceable(data: NotificationSummary) {
+  return [
+    ...(data.approvals?.items.filter((item) => !item.byMe) ?? []),
+    ...data.mine.filter((item) => item.status !== "PENDING"),
+  ];
+}
+
+/** Pending requests are handled on the main list; decided ones are found in the history tab. */
+function itemHref(item: NotificationItem) {
+  return item.status === "PENDING" ? "/dashboard/approvals" : "/dashboard/approvals?view=history";
+}
+
+const TOAST_VARIANT: Record<NotificationItem["status"], ToastVariant> = {
+  PENDING: "warning",
+  APPROVED: "success",
+  REJECTED: "error",
+  CANCELLED: "info",
+};
+
+function readSeen(storageKey: string) {
+  try {
+    const raw = window.localStorage.getItem(storageKey);
+    return raw ? new Set<string>(JSON.parse(raw) as string[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeSeen(storageKey: string, seen: Set<string>) {
+  try {
+    window.localStorage.setItem(storageKey, JSON.stringify([...seen].slice(-SEEN_LIMIT)));
+  } catch {
+    // Private mode or full storage: notifications may repeat, which is harmless.
+  }
+}
+
+/**
+ * Pops a toast for every notification that arrived since the user last saw the topbar.
+ * Seen items are remembered per user in this browser, so navigating or logging in again
+ * does not repeat them. The very first check only summarises what is already waiting.
+ */
+function useAnnounceNotifications(data: NotificationSummary | null, userId: string) {
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    if (!data) return;
+    const storageKey = `ams:seen-notifications:${userId}`;
+    const items = announceable(data);
+    const seen = readSeen(storageKey);
+
+    if (!seen) {
+      const pending = data.approvals?.pending ?? 0;
+      if (pending > 0) {
+        showToast(`Ada ${pending} request menunggu persetujuan Anda.`, "warning", {
+          title: "Approval menunggu",
+          href: "/dashboard/approvals",
+          linkLabel: "Buka Approvals",
+          durationMs: TOAST_MS,
+        });
+      }
+    } else {
+      const fresh = items.filter((item) => !seen.has(notificationKey(item)));
+      for (const item of fresh.slice(0, MAX_TOASTS)) {
+        showToast(item.detail, TOAST_VARIANT[item.status], {
+          title: item.title,
+          href: itemHref(item),
+          linkLabel: item.status === "PENDING" ? "Proses sekarang" : "Lihat",
+          durationMs: TOAST_MS,
+        });
+      }
+      if (fresh.length > MAX_TOASTS) {
+        showToast(`Ada ${fresh.length - MAX_TOASTS} notifikasi lain. Buka ikon lonceng untuk melihat semuanya.`, "info", {
+          durationMs: TOAST_MS,
+        });
+      }
+    }
+
+    writeSeen(storageKey, new Set([...(seen ?? []), ...items.map(notificationKey)]));
+  }, [data, showToast, userId]);
+}
+
 function MaintenanceShortcut({ summary }: { summary: NotificationSummary["maintenance"] }) {
   // Before the first load the icon shows without a badge, so the topbar does not shift.
   const { open, overdue } = summary ?? { open: 0, overdue: 0 };
@@ -90,7 +181,7 @@ function ItemList({ items, empty }: { items: NotificationItem[]; empty: string }
     <ul className="divide-y divide-[var(--border)]">
       {items.map((item) => (
         <li key={item.id}>
-          <Link href="/dashboard/approvals" className="flex gap-3 px-4 py-3 hover:bg-[var(--table-head)]">
+          <Link href={itemHref(item)} className="flex gap-3 px-4 py-3 hover:bg-[var(--table-head)]">
             <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${tone[item.status] ?? "bg-slate-400"}`} aria-hidden="true" />
             <span className="min-w-0">
               <span className="block text-sm font-medium text-[var(--text)]">{item.title}</span>
@@ -177,8 +268,9 @@ function NotificationBell({ data }: { data: NotificationSummary | null }) {
 }
 
 /** Maintenance badge and notification bell of the topbar; both show only real, current counts. */
-export function TopbarNotifications({ canSeeMaintenance }: { canSeeMaintenance: boolean }) {
+export function TopbarNotifications({ canSeeMaintenance, userId }: { canSeeMaintenance: boolean; userId: string }) {
   const data = useNotifications();
+  useAnnounceNotifications(data, userId);
 
   return (
     <>

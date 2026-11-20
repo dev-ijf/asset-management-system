@@ -5,6 +5,8 @@ import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/auth";
 import { masterInUseMessage } from "@/lib/master-usage";
 import { prisma } from "@/lib/prisma";
+import { readName } from "@/lib/master-validation";
+import { checkLengths, TEXT_LIMITS } from "@/lib/text-limits";
 
 type ActionState = {
   ok?: boolean;
@@ -17,7 +19,7 @@ const PATH = "/dashboard/master/asset-users";
 function readForm(formData: FormData) {
   return {
     id: String(formData.get("id") ?? "").trim(),
-    name: String(formData.get("name") ?? "").trim(),
+    name: readName(formData.get("name")),
     email: String(formData.get("email") ?? "").trim().toLowerCase(),
     phone: String(formData.get("phone") ?? "").trim(),
     departmentId: String(formData.get("departmentId") ?? "").trim(),
@@ -35,6 +37,13 @@ async function validate(input: ReturnType<typeof readForm>) {
   if (input.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email)) {
     errors.email = "Format email tidak valid.";
   }
+
+  checkLengths(errors, [
+    ["name", "Name", input.name, TEXT_LIMITS.name],
+    ["email", "Email", input.email, TEXT_LIMITS.email],
+    ["phone", "Phone", input.phone, TEXT_LIMITS.phone],
+    ["notes", "Notes", input.notes, TEXT_LIMITS.description],
+  ]);
 
   if (input.departmentId) {
     const department = await prisma.department.findUnique({

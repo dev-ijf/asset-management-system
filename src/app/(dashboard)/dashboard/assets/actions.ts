@@ -8,6 +8,7 @@ import { createAssetHistory } from "@/lib/asset-history";
 import { prisma } from "@/lib/prisma";
 import { FUTURE_DATE_MESSAGE, isFutureDate } from "@/lib/datetime";
 import { getNextSequentialCode } from "@/lib/sequential-code";
+import { resolveWarrantyEnd } from "@/lib/warranty";
 
 export type AssetActionState = {
   ok?: boolean;
@@ -253,7 +254,7 @@ async function getDefaultStatusId(selectedStatusId: string) {
   return activeStatus?.id ?? null;
 }
 
-function buildAssetData(input: ReturnType<typeof readAssetForm>, assetStatusId: string | null) {
+function buildAssetData(input: ReturnType<typeof readAssetForm>, assetStatusId: string | null, warrantyEnd: Date | null) {
   return {
     name: input.name,
     serialNumber: input.serialNumber || null,
@@ -269,6 +270,7 @@ function buildAssetData(input: ReturnType<typeof readAssetForm>, assetStatusId: 
     warrantyId: input.warrantyId || null,
     vendorContractId: input.vendorContractId || null,
     purchaseDate: parseOptionalDate(input.purchaseDate),
+    warrantyEnd,
     cost: input.cost ? input.cost : null,
     residualValue: input.residualValue ? input.residualValue : null,
     usefulLifeMonths: parseOptionalInteger(input.usefulLifeMonths),
@@ -313,6 +315,7 @@ export async function createAssetAction(_previousState: AssetActionState, formDa
     const assetStatusId = await getDefaultStatusId(input.assetStatusId);
     const code = await generateAssetCode();
     const qrToken = await generateQrToken();
+    const warrantyEnd = await resolveWarrantyEnd(prisma, input.warrantyId || null, parseOptionalDate(input.purchaseDate));
     photo = await prepareAssetPhoto(file, code);
 
     await prisma.$transaction(async (tx) => {
@@ -320,7 +323,7 @@ export async function createAssetAction(_previousState: AssetActionState, formDa
         data: {
           code,
           qrToken,
-          ...buildAssetData(input, assetStatusId),
+          ...buildAssetData(input, assetStatusId, warrantyEnd),
         },
       });
 
@@ -387,7 +390,11 @@ export async function updateAssetAction(_previousState: AssetActionState, formDa
     await prisma.$transaction(async (tx) => {
       const asset = await tx.asset.update({
         where: { id: input.id, deletedAt: null },
-        data: buildAssetData(input, input.assetStatusId || null),
+        data: buildAssetData(
+          input,
+          input.assetStatusId || null,
+          await resolveWarrantyEnd(tx, input.warrantyId || null, parseOptionalDate(input.purchaseDate)),
+        ),
       });
 
       if ((photo || removePhoto) && oldPhotoId) removed = await removePhotoRecord(tx, asset.id, oldPhotoId);

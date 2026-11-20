@@ -1,3 +1,5 @@
+import { MyRequestsCard } from "@/components/approvals/my-requests-card";
+import { ApprovalTransactionType } from "@/generated/prisma/client";
 import { DisposalForm, ReverseDisposalButton } from "@/components/transactions/transaction-forms";
 import type { Prisma } from "@/generated/prisma/client";
 import { Badge } from "@/components/ui/badge";
@@ -72,6 +74,7 @@ export default async function DisposalsPage({ searchParams }: PageProps) {
       />
       <div className="space-y-5">
         <DisposalForm assets={options.assets} />
+        <MyRequestsCard userId={user.id} types={[ApprovalTransactionType.DISPOSAL, ApprovalTransactionType.DISPOSAL_REVERSAL]} />
         <Card>
           <CardContent className="space-y-4">
             <form>

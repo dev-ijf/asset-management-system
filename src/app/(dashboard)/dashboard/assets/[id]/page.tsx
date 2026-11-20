@@ -142,6 +142,17 @@ export default async function AssetDetailPage({ params }: AssetDetailPageProps) 
         }
       />
 
+      {asset.deletedAt || asset.archivedAt ? (
+        <div role="status" className="mb-5 flex items-start gap-3 rounded-lg border border-[rgba(255,91,82,0.35)] bg-[#ffecea] p-4 text-sm text-[var(--danger)]">
+          <FileWarning className="mt-0.5 h-5 w-5 shrink-0" />
+          <p>
+            <span className="font-semibold">{asset.deletedAt ? "Aset ini sudah dihapus" : "Aset ini sudah diarsipkan"}</span>{" "}
+            pada {formatDateTime(asset.deletedAt ?? asset.archivedAt)}. Halaman ini hanya untuk dibaca; data dan foto tidak bisa
+            diubah. Pulihkan lewat menu Archive jika aset perlu dipakai lagi.
+          </p>
+        </div>
+      ) : null}
+
       <div className="grid gap-5 xl:grid-cols-[1.5fr_1fr]">
         <div className="space-y-5">
           <Card>
@@ -194,6 +205,7 @@ export default async function AssetDetailPage({ params }: AssetDetailPageProps) 
               <DetailItem label="Depreciation Method" value={asset.depreciationMethod} />
               <DetailItem label="Capex/Opex" value={asset.capexOpex ?? "-"} />
               <DetailItem label="Warranty" value={asset.warranty ? `${asset.warranty.name} (${asset.warranty.durationMonths} bulan)` : "-"} />
+              <DetailItem label="Warranty End" value={formatDate(asset.warrantyEnd)} />
               <DetailItem label="Vendor Contract" value={asset.vendorContract ? `${asset.vendorContract.vendorName}${asset.vendorContract.contractNumber ? ` - ${asset.vendorContract.contractNumber}` : ""}` : "-"} />
             </CardContent>
           </Card>

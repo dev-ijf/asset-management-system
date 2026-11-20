@@ -1,3 +1,5 @@
+import { MyRequestsCard } from "@/components/approvals/my-requests-card";
+import { ApprovalTransactionType } from "@/generated/prisma/client";
 import {
   MaintenanceCompleteButton,
   MaintenanceCreateForm,
@@ -13,6 +15,7 @@ import { Pagination } from "@/components/tables/pagination";
 import type { Prisma } from "@/generated/prisma/client";
 import { formatDate, formatMoney, getTransactionOptions, requireAnyPermission } from "@/lib/asset-transaction-view";
 import { prisma } from "@/lib/prisma";
+import { wibDayKey } from "@/lib/datetime";
 import { paginate } from "@/lib/pagination";
 
 export const dynamic = "force-dynamic";
@@ -26,7 +29,7 @@ function dateInput(date: Date | null) {
 }
 
 export default async function MaintenancePage({ searchParams }: PageProps) {
-  await requireAnyPermission(["assets.view", "maintenance.manage"]);
+  const user = await requireAnyPermission(["assets.view", "maintenance.manage"]);
   const params = await searchParams;
   const { q = "" } = params;
   const options = await getTransactionOptions();
@@ -51,9 +54,10 @@ export default async function MaintenancePage({ searchParams }: PageProps) {
 
   return (
     <>
-      <PageHeader title="Maintenance Aset" subtitle="Kelola perawatan asset basic tanpa approval workflow." />
+      <PageHeader title="Maintenance Aset" subtitle="Request maintenance baru masuk Approvals dan tercatat di sini setelah disetujui. Maintenance yang sudah tercatat bisa diperbarui dan diselesaikan dengan tombol Complete." />
       <div className="space-y-5">
         <MaintenanceCreateForm assets={options.assets} />
+        <MyRequestsCard userId={user.id} types={[ApprovalTransactionType.MAINTENANCE]} />
         <Card>
           <CardContent className="space-y-4">
             <form>
@@ -86,6 +90,7 @@ export default async function MaintenancePage({ searchParams }: PageProps) {
                         description: maintenance.description,
                         id: maintenance.id,
                         notes: maintenance.notes ?? "",
+                        requestedDate: wibDayKey(maintenance.createdAt),
                         scheduledDate: dateInput(maintenance.scheduledDate),
                         status: maintenance.status,
                         vendor: maintenance.vendor ?? "",

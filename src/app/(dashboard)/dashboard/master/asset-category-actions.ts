@@ -5,6 +5,8 @@ import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/auth";
 import { masterInUseMessage } from "@/lib/master-usage";
 import { prisma } from "@/lib/prisma";
+import { duplicateNameMessage, readName, sameNameWhere } from "@/lib/master-validation";
+import { checkLengths, TEXT_LIMITS } from "@/lib/text-limits";
 
 export type AssetCategoryActionState = {
   ok?: boolean;
@@ -24,7 +26,7 @@ function readAssetCategoryForm(formData: FormData) {
   return {
     id: String(formData.get("id") ?? "").trim(),
     code: String(formData.get("code") ?? "").trim().toUpperCase(),
-    name: String(formData.get("name") ?? "").trim(),
+    name: readName(formData.get("name")),
     parentId: String(formData.get("parentId") ?? "").trim(),
     description: String(formData.get("description") ?? "").trim(),
   };
@@ -39,6 +41,20 @@ async function validateAssetCategoryInput(input: ReturnType<typeof readAssetCate
 
   if (!input.name) {
     errors.name = "Name wajib diisi.";
+  }
+
+  checkLengths(errors, [
+    ["code", "Code", input.code, TEXT_LIMITS.code],
+    ["name", "Name", input.name, TEXT_LIMITS.name],
+    ["description", "Description", input.description, TEXT_LIMITS.description],
+  ]);
+
+  if (input.name && !errors.name) {
+    const existing = await prisma.assetCategory.findFirst({
+      where: { ...sameNameWhere(input.name, ignoreId), parentId: input.parentId || null },
+      select: { code: true },
+    });
+    if (existing) errors.name = duplicateNameMessage("asset category", existing.code, "di parent yang sama");
   }
 
   if (input.code) {

@@ -5,6 +5,8 @@ import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/auth";
 import { masterInUseMessage } from "@/lib/master-usage";
 import { prisma } from "@/lib/prisma";
+import { duplicateNameMessage, readName, sameNameWhere } from "@/lib/master-validation";
+import { checkLengths, TEXT_LIMITS } from "@/lib/text-limits";
 
 export type AssetLocationActionState = {
   ok?: boolean;
@@ -22,7 +24,7 @@ const ASSET_LOCATIONS_PATH = "/dashboard/master/asset-locations";
 function readAssetLocationForm(formData: FormData) {
   return {
     id: String(formData.get("id") ?? "").trim(),
-    name: String(formData.get("name") ?? "").trim(),
+    name: readName(formData.get("name")),
     parentId: String(formData.get("parentId") ?? "").trim(),
     description: String(formData.get("description") ?? "").trim(),
   };
@@ -33,6 +35,19 @@ async function validateAssetLocationInput(input: ReturnType<typeof readAssetLoca
 
   if (!input.name) {
     errors.name = "Name wajib diisi.";
+  }
+
+  checkLengths(errors, [
+    ["name", "Name", input.name, TEXT_LIMITS.name],
+    ["description", "Description", input.description, TEXT_LIMITS.description],
+  ]);
+
+  if (input.name && !errors.name) {
+    const existing = await prisma.assetLocation.findFirst({
+      where: { ...sameNameWhere(input.name, ignoreId), parentId: input.parentId || null },
+      select: { code: true },
+    });
+    if (existing) errors.name = duplicateNameMessage("location", existing.code, "di parent yang sama");
   }
 
   if (input.parentId) {

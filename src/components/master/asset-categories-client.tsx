@@ -15,6 +15,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { TEXT_LIMITS } from "@/lib/text-limits";
 import { useFormAction } from "@/components/ui/use-form-action";
 
 export type AssetCategoryOption = {
@@ -61,13 +62,14 @@ function AssetCategoryFields({
           placeholder="IT-EQUIP"
           defaultValue={category?.code}
           className="mt-2 uppercase"
+          maxLength={TEXT_LIMITS.code}
           required
         />
         <FieldError message={state.errors?.code} />
       </label>
       <label className="block">
         <span className="text-sm font-medium text-[var(--text)]">Name</span>
-        <Input name="name" placeholder="Peralatan IT" defaultValue={category?.name} className="mt-2" required />
+        <Input name="name" placeholder="Peralatan IT" defaultValue={category?.name} className="mt-2" maxLength={TEXT_LIMITS.name} required />
         <FieldError message={state.errors?.name} />
       </label>
       <label className="block">
@@ -89,6 +91,7 @@ function AssetCategoryFields({
           placeholder="Deskripsi singkat kategori aset"
           defaultValue={category?.description ?? ""}
           className="mt-2"
+          maxLength={TEXT_LIMITS.description}
         />
         <FieldError message={state.errors?.description} />
       </label>

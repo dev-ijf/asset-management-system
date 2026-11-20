@@ -1,14 +1,16 @@
 import { ApprovalStatus, ApprovalTransactionType, Prisma } from "@/generated/prisma/client";
+import Link from "next/link";
 import { ApproveButton, RejectButton } from "@/components/approvals/approval-actions-client";
+import { ApprovalStatusBadge } from "@/components/approvals/approval-status-badge";
 import { PageHeader } from "@/components/layout/page-header";
 import { DataTable } from "@/components/tables/data-table";
 import { Pagination } from "@/components/tables/pagination";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { hasPermission } from "@/lib/auth";
 import { requireAnyPermission } from "@/lib/asset-transaction-view";
 import { approvalTypeLabel } from "@/lib/approval-types";
+import { approvalPayloadSummary } from "@/lib/approval-summary";
 import { prisma } from "@/lib/prisma";
 import { parseDateRange } from "@/lib/date-range";
 import { DateRangeAlert, DateRangeInputs } from "@/components/ui/date-range-inputs";
@@ -31,49 +33,6 @@ function formatDateTime(date: Date) {
   }).format(date);
 }
 
-function payloadObject(payload: Prisma.JsonValue) {
-  if (payload && typeof payload === "object" && !Array.isArray(payload)) {
-    return payload as Record<string, Prisma.JsonValue>;
-  }
-
-  return {};
-}
-
-function payloadSummary(type: ApprovalTransactionType, payload: Prisma.JsonValue) {
-  const data = payloadObject(payload);
-
-  if (type === ApprovalTransactionType.MOVEMENT) {
-    const targets = [
-      data.toLocationId ? "lokasi" : null,
-      data.toDepartmentId ? "departemen" : null,
-      data.toAssetUserId ? "user" : null,
-    ].filter(Boolean);
-
-    return targets.length ? `Ubah ${targets.join(", ")}` : "Movement asset";
-  }
-
-  if (type === ApprovalTransactionType.DISPOSAL) {
-    return typeof data.reason === "string" && data.reason ? data.reason : "Disposal asset";
-  }
-
-  if (type === ApprovalTransactionType.DISPOSAL_REVERSAL) {
-    return typeof data.reason === "string" && data.reason ? `Alasan pembatalan: ${data.reason}` : "Pembatalan disposal";
-  }
-
-  if (type === ApprovalTransactionType.MAINTENANCE) {
-    return typeof data.description === "string" && data.description ? data.description : "Maintenance asset";
-  }
-
-  return "-";
-}
-
-function statusBadge(status: ApprovalStatus) {
-  if (status === ApprovalStatus.PENDING) return <Badge variant="warning">PENDING</Badge>;
-  if (status === ApprovalStatus.APPROVED) return <Badge variant="success">APPROVED</Badge>;
-  if (status === ApprovalStatus.REJECTED) return <Badge variant="danger">REJECTED</Badge>;
-  return <Badge>{status}</Badge>;
-}
-
 export default async function ApprovalsPage({ searchParams }: PageProps) {
   const user = await requireAnyPermission(["assets.view", "approvals.manage"]);
   const canManage = hasPermission(user, "approvals.manage");
@@ -83,11 +42,16 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
     ? (filters.type as ApprovalTransactionType)
     : undefined;
 
+  const history = filters.view === "history";
+  const DECIDED: ApprovalStatus[] = [ApprovalStatus.APPROVED, ApprovalStatus.REJECTED, ApprovalStatus.CANCELLED];
+  const statusFilter = history && DECIDED.includes(filters.status as ApprovalStatus) ? (filters.status as ApprovalStatus) : undefined;
+
   const where: Prisma.AssetApprovalRequestWhereInput = {
-    status: ApprovalStatus.PENDING,
+    // Pending: waiting for a decision. History: decided requests, filtered by when they were decided.
+    status: history ? (statusFilter ?? { in: DECIDED }) : ApprovalStatus.PENDING,
     transactionType,
     assetId: filters.asset || undefined,
-    createdAt: range.filter,
+    ...(history ? { reviewedAt: range.filter } : { createdAt: range.filter }),
     // A reversed range matches nothing; the alert below explains why.
     ...(range.error ? { id: { in: [] } } : {}),
   };
@@ -102,8 +66,9 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
       include: {
         asset: { select: { code: true, name: true } },
         requester: { select: { name: true, email: true } },
+        reviewedBy: { select: { name: true } },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: history ? [{ reviewedAt: "desc" }, { createdAt: "desc" }] : { createdAt: "desc" },
     })),
   ]);
   const { items: requests, pagination } = result;
@@ -111,13 +76,46 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
   return (
     <>
       <PageHeader
-        title="Approval Pending"
-        subtitle="Kelola request pending untuk movement, disposal, dan maintenance asset."
+        title={history ? "Riwayat Approval" : "Approval Pending"}
+        subtitle={
+          history
+            ? "Request movement, disposal, dan maintenance yang sudah disetujui atau ditolak, beserta siapa yang memprosesnya."
+            : "Kelola request pending untuk movement, disposal, dan maintenance asset."
+        }
       />
+      <nav className="mb-4 flex gap-2" aria-label="Tampilan approval">
+        {[
+          { href: "/dashboard/approvals", label: "Pending", active: !history },
+          { href: "/dashboard/approvals?view=history", label: "Riwayat", active: history },
+        ].map((tab) => (
+          <Link
+            key={tab.label}
+            href={tab.href}
+            aria-current={tab.active ? "page" : undefined}
+            className={`rounded-md border px-4 py-2 text-sm font-medium transition ${
+              tab.active
+                ? "border-[var(--primary)] bg-[var(--primary)] text-white"
+                : "border-[var(--border)] bg-white text-[var(--text)] hover:bg-slate-50"
+            }`}
+          >
+            {tab.label}
+          </Link>
+        ))}
+      </nav>
       <Card>
         <CardContent className="space-y-5">
-          <form className="grid gap-4 md:grid-cols-5">
+          <form className={`grid gap-4 ${history ? "md:grid-cols-6" : "md:grid-cols-5"}`}>
             <input type="hidden" name="limit" value={pagination.pageSize} />
+            {history ? (
+              <>
+                <input type="hidden" name="view" value="history" />
+                <Select name="status" defaultValue={statusFilter ?? ""}>
+                  <option value="">Semua Status</option>
+                  <option value={ApprovalStatus.APPROVED}>Approved</option>
+                  <option value={ApprovalStatus.REJECTED}>Rejected</option>
+                </Select>
+              </>
+            ) : null}
             <Select name="type" defaultValue={filters.type ?? ""}>
               <option value="">Semua Jenis</option>
               <option value={ApprovalTransactionType.MOVEMENT}>Movement</option>
@@ -139,8 +137,31 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
             </button>
           </form>
 
+          {history ? (
+            <p className="text-xs text-[var(--muted)]">Filter tanggal pada riwayat memakai tanggal request diproses.</p>
+          ) : null}
           {range.error ? (
             <DateRangeAlert message={range.error} />
+          ) : history ? (
+          <DataTable
+            columns={["Jenis", "Asset", "Requester", "Diajukan", "Status", "Diproses Oleh", "Diproses", "Ringkasan", "Alasan Reject"]}
+            rows={requests.map((request) => [
+              approvalTypeLabel(request.transactionType),
+              `${request.asset.code} - ${request.asset.name}`,
+              request.requester ? request.requester.name : "-",
+              formatDateTime(request.createdAt),
+              <ApprovalStatusBadge key="status" status={request.status} />,
+              request.reviewedBy?.name ?? "-",
+              request.reviewedAt ? formatDateTime(request.reviewedAt) : "-",
+              approvalPayloadSummary(request.transactionType, request.payload),
+              request.status === ApprovalStatus.REJECTED ? (
+                <span key="note" className="text-[var(--danger)]">{request.rejectNote ?? "Tanpa alasan"}</span>
+              ) : (
+                "-"
+              ),
+            ])}
+            emptyTitle="Belum ada riwayat approval."
+          />
           ) : (
           <DataTable
             columns={["Jenis", "Asset", "Requester", "Tanggal Request", "Status", "Ringkasan", "Aksi"]}
@@ -152,8 +173,8 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
                 `${request.asset.code} - ${request.asset.name}`,
                 request.requester ? `${request.requester.name} (${request.requester.email})` : "-",
                 formatDateTime(request.createdAt),
-                statusBadge(request.status),
-                payloadSummary(request.transactionType, request.payload),
+                <ApprovalStatusBadge key="status" status={request.status} />,
+                approvalPayloadSummary(request.transactionType, request.payload),
                 canManage ? (
                   <div key="actions" className="flex flex-wrap gap-2">
                     <ApproveButton approvalId={request.id} label={label} />

@@ -15,6 +15,7 @@ import {
 } from "@/app/(dashboard)/dashboard/transactions/transaction-actions";
 import { FieldError } from "@/components/master/master-form-feedback";
 import { todayInputValue } from "@/lib/datetime";
+import { MAINTENANCE_STATUSES, REQUEST_STATUSES } from "@/lib/maintenance-rules";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -232,36 +233,46 @@ export function MaintenanceCreateForm({ assets }: { assets: SelectOption[] }) {
 
   return (
     <form {...form} className="space-y-4 rounded-lg border border-[var(--border)] bg-white p-5">
-      <MaintenanceFields assets={assets} state={state} />
+      <MaintenanceFields assets={assets} state={state} request />
       <Button type="submit" disabled={pending}>
         <Plus className="h-4 w-4" />
-        {pending ? "Menyimpan..." : "Tambah Maintenance"}
+        {pending ? "Menyimpan..." : "Ajukan Maintenance"}
       </Button>
       <Feedback state={state} />
     </form>
   );
 }
 
+/**
+ * `request`: the create form. A new request is work still to be done, so it offers only
+ * OPEN/IN_PROGRESS and no completed date; it is completed after approval.
+ */
 function MaintenanceFields({
   assets,
   defaults,
+  request = false,
   state,
 }: {
   assets?: SelectOption[];
   defaults?: Record<string, string | null>;
+  request?: boolean;
   state: TransactionActionState;
 }) {
+  const statuses = request ? REQUEST_STATUSES : MAINTENANCE_STATUSES;
+
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {assets ? <AssetSelect assets={assets} error={state.errors?.assetId} /> : null}
       <label className="block">
         <span className="text-sm font-medium text-[var(--text)]">Status</span>
         <Select name="status" defaultValue={defaults?.status ?? "OPEN"} className="mt-2" required>
-          <option value="OPEN">OPEN</option>
-          <option value="IN_PROGRESS">IN_PROGRESS</option>
-          <option value="COMPLETED">COMPLETED</option>
-          <option value="CANCELLED">CANCELLED</option>
+          {statuses.map((status) => (
+            <option key={status} value={status}>
+              {status}
+            </option>
+          ))}
         </Select>
+        <FieldError message={state.errors?.status} />
       </label>
       <label className="block md:col-span-2">
         <span className="text-sm font-medium text-[var(--text)]">Description</span>
@@ -272,10 +283,21 @@ function MaintenanceFields({
         <span className="text-sm font-medium text-[var(--text)]">Scheduled Date</span>
         <Input name="scheduledDate" type="date" defaultValue={defaults?.scheduledDate ?? ""} className="mt-2" />
       </label>
-      <label className="block">
-        <span className="text-sm font-medium text-[var(--text)]">Completed Date</span>
-        <Input name="completedDate" type="date" defaultValue={defaults?.completedDate ?? ""} className="mt-2" />
-      </label>
+      {request ? null : (
+        <label className="block">
+          <span className="text-sm font-medium text-[var(--text)]">Completed Date</span>
+          {/* Earlier than scheduled is fine (finished early); earlier than the request is not. */}
+          <Input
+            name="completedDate"
+            type="date"
+            defaultValue={defaults?.completedDate ?? ""}
+            min={defaults?.requestedDate || undefined}
+            max={todayInputValue()}
+            className="mt-2"
+          />
+          <FieldError message={state.errors?.completedDate} />
+        </label>
+      )}
       <label className="block">
         <span className="text-sm font-medium text-[var(--text)]">Cost</span>
         <Input name="cost" type="number" min="0" step="0.01" defaultValue={defaults?.cost ?? ""} className="mt-2" />
@@ -302,6 +324,8 @@ export function MaintenanceEditForm({
     description: string;
     id: string;
     notes: string;
+    /** WIB day the request was submitted (yyyy-mm-dd); the earliest allowed completed date. */
+    requestedDate: string;
     scheduledDate: string;
     status: string;
     vendor: string;
@@ -343,7 +367,7 @@ export function MaintenanceEditForm({
 export function MaintenanceCompleteButton({ maintenance }: { maintenance: Record<string, string> }) {
   const [state, form, pending] = useFormAction(completeMaintenanceAction, initialState);
 
-  if (maintenance.status === "COMPLETED") return null;
+  if (maintenance.status === "COMPLETED" || maintenance.status === "CANCELLED") return null;
 
   return (
     <form {...form} className="space-y-2">

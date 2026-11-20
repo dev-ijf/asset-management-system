@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormAction } from "@/components/ui/use-form-action";
+import { TEXT_LIMITS } from "@/lib/text-limits";
 
 export type MasterActionState = {
   ok?: boolean;
@@ -28,6 +29,8 @@ export type MasterField = {
   type?: "text" | "email" | "tel" | "number" | "date" | "textarea" | "select";
   placeholder?: string;
   required?: boolean;
+  /** Defaults from the field type: name, email, phone or description limit. */
+  maxLength?: number;
   options?: MasterFieldOption[];
 };
 
@@ -40,6 +43,23 @@ export type MasterCrudRecord = {
 type MasterAction = (previousState: MasterActionState, formData: FormData) => Promise<MasterActionState>;
 
 const initialState: MasterActionState = {};
+
+function maxLengthOf(field: MasterField) {
+  if (field.maxLength) return field.maxLength;
+  switch (field.type) {
+    case "textarea":
+      return TEXT_LIMITS.description;
+    case "email":
+      return TEXT_LIMITS.email;
+    case "tel":
+      return TEXT_LIMITS.phone;
+    case undefined:
+    case "text":
+      return TEXT_LIMITS.name;
+    default:
+      return undefined;
+  }
+}
 
 function MasterFields({
   fields,
@@ -67,6 +87,7 @@ function MasterFields({
                 defaultValue={String(defaultValue)}
                 className="mt-2"
                 required={field.required}
+                maxLength={maxLengthOf(field)}
               />
               <FieldError message={state.errors?.[field.name]} />
             </label>
@@ -99,6 +120,7 @@ function MasterFields({
               defaultValue={String(defaultValue)}
               className="mt-2"
               required={field.required}
+              maxLength={maxLengthOf(field)}
             />
             <FieldError message={state.errors?.[field.name]} />
           </label>

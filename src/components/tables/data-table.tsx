@@ -30,7 +30,8 @@ export function DataTable({ columns, rows = [], emptyTitle }: DataTableProps) {
                 {row.map((cell, cellIndex) => (
                   <td
                     key={cellIndex}
-                    className="border border-[var(--border)] px-6 py-5 text-[var(--text)]"
+                    // Long unbroken text wraps inside its cell instead of stretching the table.
+                    className="border border-[var(--border)] px-6 py-5 text-[var(--text)] [overflow-wrap:anywhere]"
                   >
                     {cell}
                   </td>

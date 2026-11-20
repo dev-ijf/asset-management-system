@@ -117,14 +117,12 @@ export type TransactionPurpose = "disposal" | "movement" | "other";
 
 /**
  * Same rules the server checks on submit, so the dropdown never offers an asset that will be rejected.
- * Disposed = has an active (not reversed) disposal or status DISPOSED.
+ * Disposed = has an active (not reversed) disposal or status DISPOSED. A disposed asset is locked
+ * from every new transaction (movement, disposal, maintenance, audit) until its disposal is reversed.
  */
 export function selectableAssets(purpose: TransactionPurpose): Prisma.AssetWhereInput {
-  const where: Prisma.AssetWhereInput = { deletedAt: null };
-  if (purpose === "other") return where;
-
   return {
-    ...where,
+    deletedAt: null,
     disposals: { none: { reversedAt: null } },
     NOT: { assetStatus: { is: { code: DISPOSED_STATUS_CODE } } },
     // Disposal: one pending disposal request per asset.

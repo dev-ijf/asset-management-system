@@ -18,6 +18,7 @@ import { hasPermission, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { paginate, type PaginationQuery } from "@/lib/pagination";
 import { wibFormat } from "@/lib/datetime";
+import { TEXT_LIMITS } from "@/lib/text-limits";
 
 type Props = {
   search?: string;
@@ -26,7 +27,7 @@ type Props = {
 
 const fields: MasterField[] = [
   { name: "vendorName", label: "Vendor Name", placeholder: "Nama vendor", required: true },
-  { name: "contractNumber", label: "Contract Number", placeholder: "CTR-001" },
+  { name: "contractNumber", label: "Contract Number", placeholder: "CTR-001", maxLength: TEXT_LIMITS.reference },
   { name: "startDate", label: "Start Date", type: "date" },
   { name: "endDate", label: "End Date", type: "date" },
   { name: "slaResponseHours", label: "SLA Response Hours", placeholder: "4", type: "number" },

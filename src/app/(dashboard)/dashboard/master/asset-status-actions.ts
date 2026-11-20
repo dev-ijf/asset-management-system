@@ -6,6 +6,8 @@ import { requirePermission } from "@/lib/auth";
 import { SYSTEM_STATUS_CODES } from "@/lib/asset-disposal";
 import { masterInUseMessage } from "@/lib/master-usage";
 import { prisma } from "@/lib/prisma";
+import { duplicateNameMessage, readName, sameNameWhere } from "@/lib/master-validation";
+import { checkLengths, TEXT_LIMITS } from "@/lib/text-limits";
 
 export type AssetStatusActionState = {
   ok?: boolean;
@@ -24,7 +26,7 @@ function readAssetStatusForm(formData: FormData) {
   return {
     id: String(formData.get("id") ?? "").trim(),
     code: String(formData.get("code") ?? "").trim().toUpperCase(),
-    name: String(formData.get("name") ?? "").trim(),
+    name: readName(formData.get("name")),
     description: String(formData.get("description") ?? "").trim(),
   };
 }
@@ -38,6 +40,17 @@ async function validateAssetStatusInput(input: ReturnType<typeof readAssetStatus
 
   if (!input.name) {
     errors.name = "Name wajib diisi.";
+  }
+
+  checkLengths(errors, [
+    ["code", "Code", input.code, TEXT_LIMITS.code],
+    ["name", "Name", input.name, TEXT_LIMITS.name],
+    ["description", "Description", input.description, TEXT_LIMITS.description],
+  ]);
+
+  if (input.name && !errors.name) {
+    const existing = await prisma.assetStatus.findFirst({ where: sameNameWhere(input.name, ignoreId), select: { code: true } });
+    if (existing) errors.name = duplicateNameMessage("asset status", existing.code);
   }
 
   if (input.code) {

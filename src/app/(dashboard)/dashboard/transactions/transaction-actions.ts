@@ -16,6 +16,12 @@ import {
 } from "@/lib/asset-disposal";
 import { prisma } from "@/lib/prisma";
 import { FUTURE_DATE_MESSAGE, isFutureDate, todayDateOnly } from "@/lib/datetime";
+import {
+  isMaintenanceStatus,
+  maintenanceDateErrors,
+  REQUEST_STATUSES,
+  type MaintenanceStatus,
+} from "@/lib/maintenance-rules";
 
 export type TransactionActionState = {
   ok?: boolean;
@@ -319,6 +325,9 @@ export async function createAuditAction(
 
   if (!asset) errors.assetId = "Asset tidak ditemukan.";
   if (asset?.deletedAt) errors.assetId = "Asset yang sudah dihapus tidak bisa diaudit.";
+  else if (asset && (await findActiveDisposal(prisma, asset.id))) {
+    errors.assetId = "Asset yang sudah disposal tidak bisa diaudit. Batalkan disposal terlebih dahulu jika aset dipakai lagi.";
+  }
 
   if (Object.keys(errors).length > 0 || !asset || !auditedAt) {
     return { errors, message: "Audit gagal dibuat. Periksa kembali input." };
@@ -365,7 +374,6 @@ export async function createMaintenanceAction(
   const description = getString(formData, "description");
   const status = getString(formData, "status") || "OPEN";
   const scheduledDate = parseDate(getString(formData, "scheduledDate"));
-  const completedDate = parseDate(getString(formData, "completedDate"));
   const costInput = getString(formData, "cost");
   const cost = parseOptionalNumber(costInput);
   const vendor = getString(formData, "vendor");
@@ -374,6 +382,10 @@ export async function createMaintenanceAction(
 
   if (!assetId) errors.assetId = "Asset wajib dipilih.";
   if (!description) errors.description = "Description wajib diisi.";
+  // A request is work to be done; it is completed later with the Complete button.
+  if (!REQUEST_STATUSES.includes(status as MaintenanceStatus)) {
+    errors.status = "Request maintenance hanya bisa berstatus OPEN atau IN_PROGRESS. Selesaikan dengan tombol Complete setelah disetujui.";
+  }
   if (costInput && (cost === null || cost < 0)) errors.cost = "Cost harus angka 0 atau lebih.";
 
   const asset = assetId
@@ -382,6 +394,9 @@ export async function createMaintenanceAction(
 
   if (!asset) errors.assetId = "Asset tidak ditemukan.";
   if (asset?.deletedAt) errors.assetId = "Asset yang sudah dihapus tidak bisa dibuat maintenance.";
+  else if (asset && (await findActiveDisposal(prisma, asset.id))) {
+    errors.assetId = "Asset yang sudah disposal tidak bisa dibuat maintenance. Batalkan disposal terlebih dahulu jika aset dipakai lagi.";
+  }
 
   if (Object.keys(errors).length > 0 || !asset) {
     return { errors, message: "Maintenance gagal dibuat. Periksa kembali input." };
@@ -398,7 +413,7 @@ export async function createMaintenanceAction(
           description,
           status,
           scheduledDate: scheduledDate?.toISOString() ?? null,
-          completedDate: completedDate?.toISOString() ?? null,
+          completedDate: null,
           cost: costInput ? costInput : null,
           vendor: optional(vendor),
           notes: optional(notes),
@@ -432,8 +447,12 @@ export async function updateMaintenanceAction(
   const notes = getString(formData, "notes");
   const errors: TransactionActionState["errors"] = {};
 
+  // Completing without a date means "today", the same value that gets stored below.
+  const effectiveCompletedDate = status === "COMPLETED" ? completedDate ?? todayDate() : completedDate;
+
   if (!id) errors.id = "Maintenance tidak valid.";
   if (!description) errors.description = "Description wajib diisi.";
+  if (!isMaintenanceStatus(status)) errors.status = "Status maintenance tidak valid.";
   if (costInput && (cost === null || cost < 0)) errors.cost = "Cost harus angka 0 atau lebih.";
 
   const existing = id
@@ -445,6 +464,12 @@ export async function updateMaintenanceAction(
 
   if (!existing) errors.id = "Maintenance tidak ditemukan.";
   if (existing?.asset.deletedAt) errors.id = "Asset yang sudah dihapus tidak bisa diupdate maintenance.";
+  if (existing) {
+    Object.assign(
+      errors,
+      maintenanceDateErrors({ status, completedDate: effectiveCompletedDate, requestedAt: existing.createdAt }),
+    );
+  }
 
   if (Object.keys(errors).length > 0 || !existing) {
     return { errors, message: "Maintenance gagal diperbarui. Periksa kembali input." };
@@ -458,7 +483,7 @@ export async function updateMaintenanceAction(
           description,
           status,
           scheduledDate,
-          completedDate: status === "COMPLETED" ? completedDate ?? todayDate() : completedDate,
+          completedDate: effectiveCompletedDate,
           cost: costInput ? costInput : null,
           vendor: optional(vendor),
           notes: optional(notes),

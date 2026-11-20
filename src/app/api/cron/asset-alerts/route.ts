@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { todayDateOnly } from "@/lib/datetime";
+import { WARRANTY_ALERT_DAYS } from "@/lib/warranty";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,7 +26,9 @@ export async function GET(request: NextRequest) {
   }
 
   const now = new Date();
-  const warrantyLimit = addDays(now, 30);
+  // warranty_end is date-only: include warranties ending today (WIB).
+  const warrantyStart = todayDateOnly(now);
+  const warrantyLimit = addDays(warrantyStart, WARRANTY_ALERT_DAYS);
   const maintenanceLimit = addDays(now, 7);
 
   const [warrantyAssets, maintenanceDue] = await Promise.all([
@@ -32,7 +36,7 @@ export async function GET(request: NextRequest) {
       where: {
         deletedAt: null,
         warrantyEnd: {
-          gte: now,
+          gte: warrantyStart,
           lte: warrantyLimit,
         },
       },

@@ -12,6 +12,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { TEXT_LIMITS } from "@/lib/text-limits";
 import { MasterRecordForm } from "@/components/master/master-record-form";
 import { FieldError, FormFeedback } from "@/components/master/master-form-feedback";
 import { useFormAction } from "@/components/ui/use-form-action";
@@ -45,13 +46,14 @@ function AssetStatusFields({
           placeholder="ACTIVE"
           defaultValue={status?.code}
           className="mt-2 uppercase"
+          maxLength={TEXT_LIMITS.code}
           required
         />
         <FieldError message={state.errors?.code} />
       </label>
       <label className="block">
         <span className="text-sm font-medium text-[var(--text)]">Name</span>
-        <Input name="name" placeholder="Aktif" defaultValue={status?.name} className="mt-2" required />
+        <Input name="name" placeholder="Aktif" defaultValue={status?.name} className="mt-2" maxLength={TEXT_LIMITS.name} required />
         <FieldError message={state.errors?.name} />
       </label>
       <label className="block">
@@ -61,6 +63,7 @@ function AssetStatusFields({
           placeholder="Deskripsi singkat status aset"
           defaultValue={status?.description ?? ""}
           className="mt-2"
+          maxLength={TEXT_LIMITS.description}
         />
         <FieldError message={state.errors?.description} />
       </label>

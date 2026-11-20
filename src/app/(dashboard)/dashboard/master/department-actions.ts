@@ -5,6 +5,8 @@ import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/auth";
 import { masterInUseMessage } from "@/lib/master-usage";
 import { prisma } from "@/lib/prisma";
+import { duplicateNameMessage, readName, sameNameWhere } from "@/lib/master-validation";
+import { checkLengths, TEXT_LIMITS } from "@/lib/text-limits";
 import { getNextSequentialCode } from "@/lib/sequential-code";
 
 type ActionState = {
@@ -18,7 +20,7 @@ const PATH = "/dashboard/master/departments";
 function readForm(formData: FormData) {
   return {
     id: String(formData.get("id") ?? "").trim(),
-    name: String(formData.get("name") ?? "").trim(),
+    name: readName(formData.get("name")),
     description: String(formData.get("description") ?? "").trim(),
   };
 }
@@ -32,11 +34,21 @@ async function generateCode() {
   return getNextSequentialCode(rows.map((row) => row.code), "DEP");
 }
 
-function validate(input: ReturnType<typeof readForm>) {
+async function validate(input: ReturnType<typeof readForm>, ignoreId?: string) {
   const errors: ActionState["errors"] = {};
 
   if (!input.name) {
     errors.name = "Name wajib diisi.";
+  }
+
+  checkLengths(errors, [
+    ["name", "Name", input.name, TEXT_LIMITS.name],
+    ["description", "Description", input.description, TEXT_LIMITS.description],
+  ]);
+
+  if (input.name && !errors.name) {
+    const existing = await prisma.department.findFirst({ where: sameNameWhere(input.name, ignoreId), select: { code: true } });
+    if (existing) errors.name = duplicateNameMessage("departemen", existing.code);
   }
 
   return errors;
@@ -50,7 +62,7 @@ export async function createDepartmentAction(_previousState: ActionState, formDa
   await requirePermission("assets.manage");
 
   const input = readForm(formData);
-  const errors = validate(input);
+  const errors = await validate(input);
 
   if (hasErrors(errors)) {
     return { errors };
@@ -86,7 +98,7 @@ export async function updateDepartmentAction(_previousState: ActionState, formDa
     return { errors: { form: "Department tidak valid." } };
   }
 
-  const errors = validate(input);
+  const errors = await validate(input, input.id);
 
   if (hasErrors(errors)) {
     return { errors };

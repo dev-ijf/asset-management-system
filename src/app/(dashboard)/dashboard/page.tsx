@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/tables/data-table";
 import { approvalTypeLabel } from "@/lib/approval-types";
 import { prisma } from "@/lib/prisma";
-import { addDays, startOfWibDay as startOfDay, wibDayKey, wibFormat } from "@/lib/datetime";
+import { addDays, startOfWibDay as startOfDay, todayDateOnly, wibDayKey, wibFormat } from "@/lib/datetime";
+import { WARRANTY_ALERT_DAYS } from "@/lib/warranty";
 
 export const dynamic = "force-dynamic";
 
@@ -154,7 +155,6 @@ function TrendChart({
 export default async function DashboardPage() {
   const today = startOfDay(new Date());
   const thirtyDaysAgo = startOfDay(addDays(today, -30));
-  const thirtyDaysAhead = startOfDay(addDays(today, 30));
   const trendStart = startOfDay(addDays(today, -13));
   // Excludes rows dated after today, so a mistyped future date cannot inflate the numbers.
   const tomorrow = addDays(today, 1);
@@ -197,9 +197,10 @@ export default async function DashboardPage() {
     prisma.asset.count({
       where: {
         deletedAt: null,
+        // warranty_end is date-only, so compare against date-only today, not 00:00 WIB.
         warrantyEnd: {
-          gte: today,
-          lte: thirtyDaysAhead,
+          gte: todayDateOnly(),
+          lte: addDays(todayDateOnly(), WARRANTY_ALERT_DAYS),
         },
       },
     }),
@@ -275,7 +276,8 @@ export default async function DashboardPage() {
     {
       title: "Total Aset",
       value: totalAssets.toLocaleString("id-ID"),
-      helper: `Arsip: ${archivedAssets.toLocaleString("id-ID")}  Trash: ${deletedAssets.toLocaleString("id-ID")}`,
+      // Same names as the Archive tabs (Arsip / Dihapus), which count with the same queries.
+      helper: `Arsip: ${archivedAssets.toLocaleString("id-ID")} · Dihapus: ${deletedAssets.toLocaleString("id-ID")} (lihat menu Archive)`,
       icon: Package,
       tone: "bg-[#eeeafe] text-[var(--primary)]",
     },

@@ -1,3 +1,5 @@
+import { MyRequestsCard } from "@/components/approvals/my-requests-card";
+import { ApprovalTransactionType } from "@/generated/prisma/client";
 import { MovementForm } from "@/components/transactions/transaction-forms";
 import type { Prisma } from "@/generated/prisma/client";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -17,7 +19,7 @@ type PageProps = {
 };
 
 export default async function MovementsPage({ searchParams }: PageProps) {
-  await requireAnyPermission(["assets.view", "movements.manage"]);
+  const user = await requireAnyPermission(["assets.view", "movements.manage"]);
   const params = await searchParams;
   const { q = "" } = params;
   const options = await getTransactionOptions("movement");
@@ -51,6 +53,7 @@ export default async function MovementsPage({ searchParams }: PageProps) {
       <PageHeader title="Movement Aset" subtitle="Catat perpindahan lokasi, departemen, atau asset user." />
       <div className="space-y-5">
         <MovementForm assets={options.assets} locations={options.locations} departments={options.departments} users={options.users} />
+        <MyRequestsCard userId={user.id} types={[ApprovalTransactionType.MOVEMENT]} />
         <Card>
           <CardContent className="space-y-4">
             <form>

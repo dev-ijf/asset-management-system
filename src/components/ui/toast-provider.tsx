@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { AlertCircle, CheckCircle2, Info, X } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 export type ToastVariant = "success" | "error" | "warning" | "info";
-type Toast = { id: number; message: string; variant: ToastVariant };
-type ToastContextValue = { showToast: (message: string, variant?: ToastVariant) => void };
+/** Extra parts of a toast; notifications use them, form feedback does not. */
+export type ToastOptions = { title?: string; href?: string; linkLabel?: string; durationMs?: number };
+type Toast = ToastOptions & { id: number; message: string; variant: ToastVariant };
+type ToastContextValue = { showToast: (message: string, variant?: ToastVariant, options?: ToastOptions) => void };
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
@@ -20,10 +23,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const nextId = useRef(0);
   const dismiss = useCallback((id: number) => setToasts((current) => current.filter((toast) => toast.id !== id)), []);
-  const showToast = useCallback((message: string, variant: ToastVariant = "info") => {
+  const showToast = useCallback((message: string, variant: ToastVariant = "info", options: ToastOptions = {}) => {
     const id = ++nextId.current;
-    setToasts((current) => [...current, { id, message, variant }]);
-    window.setTimeout(() => dismiss(id), variant === "error" ? 6500 : 4000);
+    setToasts((current) => [...current, { ...options, id, message, variant }]);
+    window.setTimeout(() => dismiss(id), options.durationMs ?? (variant === "error" ? 6500 : 4000));
   }, [dismiss]);
 
   return (
@@ -35,7 +38,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           return (
             <div key={toast.id} role={toast.variant === "error" ? "alert" : "status"} className={`flex items-start gap-3 rounded-lg border p-4 shadow-lg ${styles[toast.variant]}`}>
               <Icon className="mt-0.5 h-5 w-5 shrink-0" />
-              <p className="flex-1 text-sm font-medium">{toast.message}</p>
+              <div className="min-w-0 flex-1 text-sm">
+                {toast.title ? <p className="font-semibold">{toast.title}</p> : null}
+                <p className={toast.title ? "mt-0.5 break-words" : "font-medium"}>{toast.message}</p>
+                {toast.href ? (
+                  <Link href={toast.href} onClick={() => dismiss(toast.id)} className="mt-2 inline-block text-xs font-semibold underline underline-offset-2">
+                    {toast.linkLabel ?? "Lihat"}
+                  </Link>
+                ) : null}
+              </div>
               <button type="button" onClick={() => dismiss(toast.id)} aria-label="Tutup notifikasi" className="rounded p-0.5 hover:bg-black/5"><X className="h-4 w-4" /></button>
             </div>
           );

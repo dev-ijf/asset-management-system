@@ -5,6 +5,9 @@ import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/auth";
 import { masterInUseMessage } from "@/lib/master-usage";
 import { prisma } from "@/lib/prisma";
+import { duplicateNameMessage, readName, sameNameWhere } from "@/lib/master-validation";
+import { checkLengths, TEXT_LIMITS } from "@/lib/text-limits";
+import { recomputeWarrantyEndSql } from "@/lib/warranty";
 
 type ActionState = {
   ok?: boolean;
@@ -17,18 +20,28 @@ const PATH = "/dashboard/master/warranties";
 function readForm(formData: FormData) {
   return {
     id: String(formData.get("id") ?? "").trim(),
-    name: String(formData.get("name") ?? "").trim(),
+    name: readName(formData.get("name")),
     durationMonths: String(formData.get("durationMonths") ?? "").trim(),
     notes: String(formData.get("notes") ?? "").trim(),
   };
 }
 
-function validate(input: ReturnType<typeof readForm>) {
+async function validate(input: ReturnType<typeof readForm>, ignoreId?: string) {
   const errors: ActionState["errors"] = {};
   const durationMonths = Number(input.durationMonths);
 
   if (!input.name) {
     errors.name = "Name wajib diisi.";
+  }
+
+  checkLengths(errors, [
+    ["name", "Name", input.name, TEXT_LIMITS.name],
+    ["notes", "Notes", input.notes, TEXT_LIMITS.description],
+  ]);
+
+  if (input.name && !errors.name) {
+    const existing = await prisma.warranty.findFirst({ where: sameNameWhere(input.name, ignoreId), select: { id: true } });
+    if (existing) errors.name = duplicateNameMessage("warranty", null);
   }
 
   if (!input.durationMonths || !Number.isInteger(durationMonths) || durationMonths < 1) {
@@ -46,7 +59,7 @@ export async function createWarrantyAction(_previousState: ActionState, formData
   await requirePermission("assets.manage");
 
   const input = readForm(formData);
-  const errors = validate(input);
+  const errors = await validate(input);
 
   if (hasErrors(errors)) {
     return { errors };
@@ -78,20 +91,24 @@ export async function updateWarrantyAction(_previousState: ActionState, formData
     return { errors: { form: "Warranty tidak valid." } };
   }
 
-  const errors = validate(input);
+  const errors = await validate(input, input.id);
 
   if (hasErrors(errors)) {
     return { errors };
   }
 
   try {
-    await prisma.warranty.update({
-      where: { id: input.id },
-      data: {
-        name: input.name,
-        durationMonths: Number(input.durationMonths),
-        notes: input.notes || null,
-      },
+    await prisma.$transaction(async (tx) => {
+      await tx.warranty.update({
+        where: { id: input.id },
+        data: {
+          name: input.name,
+          durationMonths: Number(input.durationMonths),
+          notes: input.notes || null,
+        },
+      });
+      // Assets store their end date, so a new duration must move it too.
+      await tx.$executeRaw(recomputeWarrantyEndSql(input.id, Number(input.durationMonths)));
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {

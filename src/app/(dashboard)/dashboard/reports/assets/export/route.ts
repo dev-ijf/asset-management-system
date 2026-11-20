@@ -10,10 +10,21 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const range = parseDateRange(getParam(searchParams, "from"), getParam(searchParams, "to"));
   if (range.error) return dateRangeErrorResponse();
+  // Same search as the Assets list, so its Export button downloads exactly what is on screen.
+  const query = getParam(searchParams, "q");
   const assets = await prisma.asset.findMany({
     where: {
       deletedAt: null,
       archivedAt: null,
+      ...(query
+        ? {
+            OR: [
+              { code: { contains: query, mode: "insensitive" } },
+              { name: { contains: query, mode: "insensitive" } },
+              { serialNumber: { contains: query, mode: "insensitive" } },
+            ],
+          }
+        : {}),
       assetStatusId: getParam(searchParams, "status") || undefined,
       assetClassId: getParam(searchParams, "class") || undefined,
       assetCategoryId: getParam(searchParams, "category") || undefined,

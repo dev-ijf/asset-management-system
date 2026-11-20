@@ -207,6 +207,12 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
     ]);
     const { items: assets, pagination } = assetResult;
     const hasFilter = Boolean(query || statusId || classId || categoryId || locationId || departmentId);
+    // Export carries the active search and filters (not the page), so the file matches the list.
+    const exportParams = new URLSearchParams(
+      Object.entries({ q: query, status: statusId, class: classId, category: categoryId, location: locationId, department: departmentId })
+        .filter(([, value]) => value),
+    );
+    const exportHref = `/dashboard/reports/assets/export${exportParams.size ? `?${exportParams}` : ""}`;
 
     return (
       <AssetBulkProvider key={JSON.stringify(params)} canManage={canManage}>
@@ -214,7 +220,7 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
           title="Data List Aset"
           subtitle="Kelola daftar aset, kode inventaris, status operasional, lokasi, dan kepemilikan aset."
           actions={<div className="flex flex-wrap gap-2"><AssetImportButton />
-            {hasPermission(user, "reports.view") ? <Link href="/dashboard/reports/assets/export" className="inline-flex h-10 items-center rounded-md border border-[var(--border)] bg-white px-5 text-sm font-medium hover:bg-slate-50">Export</Link> : null}
+            {hasPermission(user, "reports.view") ? <a href={exportHref} title={hasFilter ? "Export aset sesuai pencarian dan filter yang aktif" : "Export semua aset"} className="inline-flex h-10 items-center rounded-md border border-[var(--border)] bg-white px-5 text-sm font-medium hover:bg-slate-50">{hasFilter ? "Export (terfilter)" : "Export"}</a> : null}
             <AssetCreateAction canManage={canManage} options={options} /></div>}
         />
 

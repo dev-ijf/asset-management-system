@@ -10,6 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { REJECT_NOTE_MIN } from "@/lib/approval-types";
+import { TEXT_LIMITS } from "@/lib/text-limits";
 import { useActionFeedback } from "@/components/ui/toast-provider";
 import { useFormAction } from "@/components/ui/use-form-action";
 
@@ -77,8 +79,20 @@ export function RejectButton({ approvalId, label }: { approvalId: string; label:
           >
             <input name="id" type="hidden" value={approvalId} />
             <label className="block">
-              <span className="text-sm font-medium text-[var(--text)]">Catatan reject optional</span>
-              <Textarea name="rejectNote" className="mt-2" placeholder="Alasan penolakan..." />
+              <span className="text-sm font-medium text-[var(--text)]">
+                Alasan reject <span className="text-[var(--danger)]">*</span>
+              </span>
+              <Textarea
+                name="rejectNote"
+                className="mt-2"
+                placeholder="Contoh: Lokasi tujuan salah, seharusnya Gudang B."
+                required
+                minLength={REJECT_NOTE_MIN}
+                maxLength={TEXT_LIMITS.description}
+              />
+              <span className="mt-1 block text-xs text-[var(--muted)]">
+                Wajib, minimal {REJECT_NOTE_MIN} karakter. Alasan ini ditampilkan ke requester.
+              </span>
             </label>
             <div className="mt-3">
               <Feedback state={state} />

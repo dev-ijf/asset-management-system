@@ -12,12 +12,21 @@ const LIST_LIMIT = 5;
 /** How long a decided request of the user stays in their notification list. */
 const DECISION_WINDOW_DAYS = 7;
 
+const STATUS_TEXT: Record<ApprovalStatus, string> = {
+  PENDING: "menunggu approval",
+  APPROVED: "disetujui",
+  REJECTED: "ditolak",
+  CANCELLED: "dibatalkan",
+};
+
 export type NotificationItem = {
   id: string;
   title: string;
   detail: string;
   at: string;
   status: ApprovalStatus;
+  /** True when the current user made this request, so the topbar does not announce it to them. */
+  byMe: boolean;
 };
 
 export type NotificationSummary = {
@@ -78,19 +87,19 @@ export async function GET() {
             detail: `${request.asset.code} - ${request.asset.name} · oleh ${request.requester?.name ?? "-"}`,
             at: request.createdAt.toISOString(),
             status: request.status,
+            byMe: request.requesterId === user.id,
           })),
         }
       : null,
     mine: mine.map((request) => ({
       id: request.id,
-      title: `${approvalTypeLabel(request.transactionType)} Anda ${
-        request.status === ApprovalStatus.APPROVED ? "disetujui" : request.status === ApprovalStatus.REJECTED ? "ditolak" : "menunggu approval"
-      }`,
+      title: `${approvalTypeLabel(request.transactionType)} Anda ${STATUS_TEXT[request.status]}`,
       detail: `${request.asset.code} - ${request.asset.name}${
         request.reviewedBy ? ` · oleh ${request.reviewedBy.name}` : ""
       }${request.status === ApprovalStatus.REJECTED && request.rejectNote ? ` · ${request.rejectNote}` : ""}`,
       at: (request.reviewedAt ?? request.createdAt).toISOString(),
       status: request.status,
+      byMe: true,
     })),
   };
 

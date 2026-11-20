@@ -15,6 +15,9 @@ import {
 import { approvalTypeLabel } from "@/lib/approval-types";
 import { prisma } from "@/lib/prisma";
 import { isFutureDate } from "@/lib/datetime";
+import { REQUEST_STATUSES, type MaintenanceStatus } from "@/lib/maintenance-rules";
+import { REJECT_NOTE_MIN } from "@/lib/approval-types";
+import { TEXT_LIMITS } from "@/lib/text-limits";
 
 export type ApprovalActionState = {
   ok?: boolean;
@@ -234,17 +237,25 @@ async function applyMaintenance(
     assetId: string;
     requesterId: string | null;
     payload: Prisma.JsonValue;
+    createdAt: Date;
     asset: { code: string };
   },
   approverId: string,
 ) {
+  // The asset may have been disposed while this request waited.
+  if (await findActiveDisposal(tx, request.assetId)) {
+    throw new ApprovalRuleError("Asset sudah didisposal sehingga maintenance tidak bisa diterapkan. Tolak request ini.");
+  }
+
   const payload = payloadObject(request.payload);
-  const status = optionalString(payload.status) ?? "COMPLETED";
-  const completedDate = optionalString(payload.completedDate)
-    ? payloadDate(payload.completedDate)
-    : status === "COMPLETED"
-      ? new Date()
-      : null;
+  const status = optionalString(payload.status) ?? "OPEN";
+  // Requests made before this rule could already say COMPLETED; they must be resubmitted.
+  if (!REQUEST_STATUSES.includes(status as MaintenanceStatus)) {
+    throw new ApprovalRuleError(
+      `Request maintenance berstatus ${status}, padahal request hanya boleh OPEN atau IN_PROGRESS. Tolak request ini dan minta diajukan ulang.`,
+    );
+  }
+  const completedDate = null;
 
   const maintenance = await tx.assetMaintenance.create({
     data: {
@@ -257,6 +268,8 @@ async function applyMaintenance(
       vendor: optionalString(payload.vendor),
       notes: optionalString(payload.notes),
       createdById: request.requesterId,
+      // When the work was requested, not when it was approved: the earliest valid completed date.
+      createdAt: request.createdAt,
     },
   });
 
@@ -354,6 +367,13 @@ export async function rejectApprovalRequestAction(
   const rejectNote = getString(formData, "rejectNote");
 
   if (!id) return { message: "Approval request tidak valid." };
+  // The requester only sees this note, so a rejection must say why.
+  if (rejectNote.length < REJECT_NOTE_MIN) {
+    return { message: `Alasan reject wajib diisi (minimal ${REJECT_NOTE_MIN} karakter) agar requester tahu apa yang perlu diperbaiki.` };
+  }
+  if (rejectNote.length > TEXT_LIMITS.description) {
+    return { message: `Alasan reject maksimal ${TEXT_LIMITS.description} karakter.` };
+  }
 
   const request = await prisma.assetApprovalRequest.findUnique({
     where: { id },
