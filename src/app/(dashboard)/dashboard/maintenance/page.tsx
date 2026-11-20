@@ -68,18 +68,18 @@ export default async function MaintenancePage({ searchParams }: PageProps) {
               <EmptyState title="Belum ada data maintenance." description="Maintenance yang dibuat akan tampil di sini." />
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1100px] text-left text-sm">
-                  <thead className="bg-[var(--table-head)] text-xs uppercase text-[var(--muted)]">
+                <table className="w-full min-w-[1100px] text-left text-xs">
+                  <thead className="whitespace-nowrap bg-[var(--table-head)] text-xs uppercase text-[var(--muted)]">
                     <tr>
-                      <th className="px-4 py-3">No</th>
-                      <th className="px-4 py-3">Asset</th>
-                      <th className="px-4 py-3">Description</th>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3">Schedule</th>
-                      <th className="px-4 py-3">Completed</th>
-                      <th className="px-4 py-3">Cost</th>
-                      <th className="px-4 py-3">Vendor</th>
-                      <th className="px-4 py-3">Action</th>
+                      <th className="px-3 py-2">No</th>
+                      <th className="px-3 py-2">Asset</th>
+                      <th className="px-3 py-2">Description</th>
+                      <th className="px-3 py-2">Status</th>
+                      <th className="px-3 py-2">Schedule</th>
+                      <th className="px-3 py-2">Completed</th>
+                      <th className="px-3 py-2">Cost</th>
+                      <th className="px-3 py-2">Vendor</th>
+                      <th className="px-3 py-2">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--border)]">
@@ -97,15 +97,15 @@ export default async function MaintenancePage({ searchParams }: PageProps) {
                       };
                       return (
                         <tr key={maintenance.id} className="align-top">
-                          <td className="px-4 py-3">{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
-                          <td className="px-4 py-3 font-medium">{maintenance.asset.code} - {maintenance.asset.name}</td>
-                          <td className="px-4 py-3">{maintenance.description}</td>
-                          <td className="px-4 py-3"><Badge variant={maintenance.status === "COMPLETED" ? "success" : "warning"}>{maintenance.status}</Badge></td>
-                          <td className="px-4 py-3">{formatDate(maintenance.scheduledDate)}</td>
-                          <td className="px-4 py-3">{formatDate(maintenance.completedDate)}</td>
-                          <td className="px-4 py-3">{formatMoney(maintenance.cost)}</td>
-                          <td className="px-4 py-3">{maintenance.vendor ?? "-"}</td>
-                          <td className="space-y-2 px-4 py-3">
+                          <td className="px-3 py-2">{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
+                          <td className="px-3 py-2 font-medium">{maintenance.asset.code} - {maintenance.asset.name}</td>
+                          <td className="px-3 py-2">{maintenance.description}</td>
+                          <td className="px-3 py-2"><Badge variant={maintenance.status === "COMPLETED" ? "success" : "warning"}>{maintenance.status}</Badge></td>
+                          <td className="px-3 py-2">{formatDate(maintenance.scheduledDate)}</td>
+                          <td className="px-3 py-2">{formatDate(maintenance.completedDate)}</td>
+                          <td className="px-3 py-2">{formatMoney(maintenance.cost)}</td>
+                          <td className="px-3 py-2">{maintenance.vendor ?? "-"}</td>
+                          <td className="space-y-2 px-3 py-2">
                             <div className="flex flex-wrap gap-2">
                               <MaintenanceEditForm maintenance={editData} />
                               <MaintenanceCompleteButton maintenance={editData} />

@@ -85,17 +85,17 @@ export default async function DisposalsPage({ searchParams }: PageProps) {
               <EmptyState title="Belum ada data disposal." description="Disposal yang dibuat akan tampil di sini." />
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1000px] text-left text-sm">
-                  <thead className="bg-[var(--table-head)] text-xs uppercase text-[var(--muted)]">
+                <table className="w-full min-w-[1000px] text-left text-xs">
+                  <thead className="whitespace-nowrap bg-[var(--table-head)] text-xs uppercase text-[var(--muted)]">
                     <tr>
-                      <th className="px-4 py-3">No</th>
-                      <th className="px-4 py-3">Asset</th>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3">Disposed At</th>
-                      <th className="px-4 py-3">Reason</th>
-                      <th className="px-4 py-3">By</th>
-                      <th className="px-4 py-3">Pembatalan</th>
-                      <th className="px-4 py-3">Action</th>
+                      <th className="px-3 py-2">No</th>
+                      <th className="px-3 py-2">Asset</th>
+                      <th className="px-3 py-2">Status</th>
+                      <th className="px-3 py-2">Disposed At</th>
+                      <th className="px-3 py-2">Reason</th>
+                      <th className="px-3 py-2">By</th>
+                      <th className="px-3 py-2">Pembatalan</th>
+                      <th className="px-3 py-2">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--border)]">
@@ -104,9 +104,9 @@ export default async function DisposalsPage({ searchParams }: PageProps) {
 
                       return (
                         <tr key={disposal.id}>
-                          <td className="px-4 py-3">{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
-                          <td className="px-4 py-3 font-medium">{disposal.asset.code} - {disposal.asset.name}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 py-2">{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
+                          <td className="px-3 py-2 font-medium">{disposal.asset.code} - {disposal.asset.name}</td>
+                          <td className="px-3 py-2">
                             {disposal.reversedAt ? (
                               <Badge variant="warning">Dibatalkan</Badge>
                             ) : waiting ? (
@@ -115,10 +115,10 @@ export default async function DisposalsPage({ searchParams }: PageProps) {
                               <Badge>Disposed</Badge>
                             )}
                           </td>
-                          <td className="px-4 py-3">{formatDate(disposal.disposedAt)}</td>
-                          <td className="px-4 py-3">{disposal.reason}</td>
-                          <td className="px-4 py-3">{disposal.performedBy?.name ?? "-"}</td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 py-2">{formatDate(disposal.disposedAt)}</td>
+                          <td className="px-3 py-2">{disposal.reason}</td>
+                          <td className="px-3 py-2">{disposal.performedBy?.name ?? "-"}</td>
+                          <td className="px-3 py-2">
                             {disposal.reversedAt ? (
                               <div className="space-y-1">
                                 <div>{disposal.reversalReason ?? "-"}</div>
@@ -131,7 +131,7 @@ export default async function DisposalsPage({ searchParams }: PageProps) {
                               "-"
                             )}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-3 py-2">
                             {canManage ? (
                               <ReverseDisposalButton
                                 disposalId={disposal.id}

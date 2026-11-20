@@ -64,28 +64,28 @@ export default async function MovementsPage({ searchParams }: PageProps) {
               <EmptyState title="Belum ada data movement." description="Movement yang dibuat akan tampil di sini." />
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[980px] text-left text-sm">
-                  <thead className="bg-[var(--table-head)] text-xs uppercase text-[var(--muted)]">
+                <table className="w-full min-w-[980px] text-left text-xs">
+                  <thead className="whitespace-nowrap bg-[var(--table-head)] text-xs uppercase text-[var(--muted)]">
                     <tr>
-                      <th className="px-4 py-3">No</th>
-                      <th className="px-4 py-3">Asset</th>
-                      <th className="px-4 py-3">Location</th>
-                      <th className="px-4 py-3">Department</th>
-                      <th className="px-4 py-3">Asset User</th>
-                      <th className="px-4 py-3">Performed At</th>
-                      <th className="px-4 py-3">Notes</th>
+                      <th className="px-3 py-2">No</th>
+                      <th className="px-3 py-2">Asset</th>
+                      <th className="px-3 py-2">Location</th>
+                      <th className="px-3 py-2">Department</th>
+                      <th className="px-3 py-2">Asset User</th>
+                      <th className="px-3 py-2">Performed At</th>
+                      <th className="px-3 py-2">Notes</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--border)]">
                     {movements.map((movement, index) => (
                       <tr key={movement.id}>
-                        <td className="px-4 py-3">{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
-                        <td className="px-4 py-3 font-medium">{movement.asset.code} - {movement.asset.name}</td>
-                        <td className="px-4 py-3">{movementChangeText(movement.fromLocation, movement.toLocationId, movement.toLocation)}</td>
-                        <td className="px-4 py-3">{movementChangeText(movement.fromDepartment, movement.toDepartmentId, movement.toDepartment)}</td>
-                        <td className="px-4 py-3">{movementChangeText(movement.fromAssetUser, movement.toAssetUserId, movement.toAssetUser)}</td>
-                        <td className="px-4 py-3">{formatDate(movement.performedAt)}</td>
-                        <td className="px-4 py-3">{movement.notes ?? "-"}</td>
+                        <td className="px-3 py-2">{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
+                        <td className="px-3 py-2 font-medium">{movement.asset.code} - {movement.asset.name}</td>
+                        <td className="px-3 py-2">{movementChangeText(movement.fromLocation, movement.toLocationId, movement.toLocation)}</td>
+                        <td className="px-3 py-2">{movementChangeText(movement.fromDepartment, movement.toDepartmentId, movement.toDepartment)}</td>
+                        <td className="px-3 py-2">{movementChangeText(movement.fromAssetUser, movement.toAssetUserId, movement.toAssetUser)}</td>
+                        <td className="px-3 py-2">{formatDate(movement.performedAt)}</td>
+                        <td className="px-3 py-2">{movement.notes ?? "-"}</td>
                       </tr>
                     ))}
                   </tbody>

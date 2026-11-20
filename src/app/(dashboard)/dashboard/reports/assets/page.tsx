@@ -118,36 +118,36 @@ export default async function AssetReportPage({ searchParams }: PageProps) {
             <EmptyState title="Tidak ada data asset." description="Ubah filter untuk melihat data report." />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1200px] text-left text-sm">
-                <thead className="bg-[var(--table-head)] text-xs uppercase text-[var(--muted)]">
+              <table className="w-full min-w-[1200px] text-left text-xs">
+                <thead className="whitespace-nowrap bg-[var(--table-head)] text-xs uppercase text-[var(--muted)]">
                   <tr>
-                    <th className="px-4 py-3">No</th>
-                    <th className="px-4 py-3">Code</th>
-                    <th className="px-4 py-3">Name</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Class</th>
-                    <th className="px-4 py-3">Category</th>
-                    <th className="px-4 py-3">Location</th>
-                    <th className="px-4 py-3">Department</th>
-                    <th className="px-4 py-3">PIC/User</th>
-                    <th className="px-4 py-3">Cost</th>
-                    <th className="px-4 py-3">Created At</th>
+                    <th className="px-3 py-2">No</th>
+                    <th className="px-3 py-2">Code</th>
+                    <th className="px-3 py-2">Name</th>
+                    <th className="px-3 py-2">Status</th>
+                    <th className="px-3 py-2">Class</th>
+                    <th className="px-3 py-2">Category</th>
+                    <th className="px-3 py-2">Location</th>
+                    <th className="px-3 py-2">Department</th>
+                    <th className="px-3 py-2">PIC/User</th>
+                    <th className="px-3 py-2">Cost</th>
+                    <th className="px-3 py-2">Created At</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border)]">
                   {assets.map((asset, index) => (
                     <tr key={asset.id}>
-                      <td className="px-4 py-3">{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
-                      <td className="px-4 py-3 font-semibold">{asset.code}</td>
-                      <td className="px-4 py-3">{asset.name}</td>
-                      <td className="px-4 py-3">{asset.assetStatus ? <Badge>{asset.assetStatus.name}</Badge> : "-"}</td>
-                      <td className="px-4 py-3">{asset.assetClass?.name ?? "-"}</td>
-                      <td className="px-4 py-3">{asset.assetCategory?.name ?? "-"}</td>
-                      <td className="px-4 py-3">{asset.assetLocation?.name ?? "-"}</td>
-                      <td className="px-4 py-3">{asset.department?.name ?? "-"}</td>
-                      <td className="px-4 py-3">{asset.personInCharge?.name ?? asset.assetUser?.name ?? "-"}</td>
-                      <td className="px-4 py-3">{formatReportMoney(asset.cost)}</td>
-                      <td className="px-4 py-3">{formatReportDate(asset.createdAt)}</td>
+                      <td className="px-3 py-2">{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
+                      <td className="px-3 py-2 font-semibold">{asset.code}</td>
+                      <td className="px-3 py-2">{asset.name}</td>
+                      <td className="px-3 py-2">{asset.assetStatus ? <Badge>{asset.assetStatus.name}</Badge> : "-"}</td>
+                      <td className="px-3 py-2">{asset.assetClass?.name ?? "-"}</td>
+                      <td className="px-3 py-2">{asset.assetCategory?.name ?? "-"}</td>
+                      <td className="px-3 py-2">{asset.assetLocation?.name ?? "-"}</td>
+                      <td className="px-3 py-2">{asset.department?.name ?? "-"}</td>
+                      <td className="px-3 py-2">{asset.personInCharge?.name ?? asset.assetUser?.name ?? "-"}</td>
+                      <td className="px-3 py-2">{formatReportMoney(asset.cost)}</td>
+                      <td className="px-3 py-2">{formatReportDate(asset.createdAt)}</td>
                     </tr>
                   ))}
                 </tbody>

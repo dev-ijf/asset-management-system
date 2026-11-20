@@ -56,28 +56,28 @@ export default async function AuditsPage({ searchParams }: PageProps) {
               <EmptyState title="Belum ada data audit." description="Audit yang dibuat akan tampil di sini." />
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[860px] text-left text-sm">
-                  <thead className="bg-[var(--table-head)] text-xs uppercase text-[var(--muted)]">
+                <table className="w-full min-w-[860px] text-left text-xs">
+                  <thead className="whitespace-nowrap bg-[var(--table-head)] text-xs uppercase text-[var(--muted)]">
                     <tr>
-                      <th className="px-4 py-3">No</th>
-                      <th className="px-4 py-3">Asset</th>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3">Location</th>
-                      <th className="px-4 py-3">Audited At</th>
-                      <th className="px-4 py-3">Auditor</th>
-                      <th className="px-4 py-3">Notes</th>
+                      <th className="px-3 py-2">No</th>
+                      <th className="px-3 py-2">Asset</th>
+                      <th className="px-3 py-2">Status</th>
+                      <th className="px-3 py-2">Location</th>
+                      <th className="px-3 py-2">Audited At</th>
+                      <th className="px-3 py-2">Auditor</th>
+                      <th className="px-3 py-2">Notes</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--border)]">
                     {audits.map((audit, index) => (
                       <tr key={audit.id}>
-                        <td className="px-4 py-3">{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
-                        <td className="px-4 py-3 font-medium">{audit.asset.code} - {audit.asset.name}</td>
-                        <td className="px-4 py-3"><Badge variant={audit.status === "MISSING" || audit.status === "DAMAGED" ? "danger" : "success"}>{audit.status}</Badge></td>
-                        <td className="px-4 py-3">{audit.location ? `${audit.location.code} - ${audit.location.name}` : "-"}</td>
-                        <td className="px-4 py-3">{formatDate(audit.auditedAt)}</td>
-                        <td className="px-4 py-3">{audit.auditedBy?.name ?? "-"}</td>
-                        <td className="px-4 py-3">{audit.notes ?? "-"}</td>
+                        <td className="px-3 py-2">{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
+                        <td className="px-3 py-2 font-medium">{audit.asset.code} - {audit.asset.name}</td>
+                        <td className="px-3 py-2"><Badge variant={audit.status === "MISSING" || audit.status === "DAMAGED" ? "danger" : "success"}>{audit.status}</Badge></td>
+                        <td className="px-3 py-2">{audit.location ? `${audit.location.code} - ${audit.location.name}` : "-"}</td>
+                        <td className="px-3 py-2">{formatDate(audit.auditedAt)}</td>
+                        <td className="px-3 py-2">{audit.auditedBy?.name ?? "-"}</td>
+                        <td className="px-3 py-2">{audit.notes ?? "-"}</td>
                       </tr>
                     ))}
                   </tbody>

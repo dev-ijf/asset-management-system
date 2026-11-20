@@ -55,26 +55,26 @@ export async function MyRequestsCard({ userId, types }: { userId: string; types:
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left text-sm">
-            <thead className="bg-[var(--table-head)] text-xs uppercase text-[var(--muted)]">
+          <table className="w-full min-w-[760px] text-left text-xs">
+            <thead className="whitespace-nowrap bg-[var(--table-head)] text-xs uppercase text-[var(--muted)]">
               <tr>
-                <th className="px-4 py-3">Jenis</th>
-                <th className="px-4 py-3">Asset</th>
-                <th className="px-4 py-3">Ringkasan</th>
-                <th className="px-4 py-3">Diajukan</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Keterangan</th>
+                <th className="px-3 py-2">Jenis</th>
+                <th className="px-3 py-2">Asset</th>
+                <th className="px-3 py-2">Ringkasan</th>
+                <th className="px-3 py-2">Diajukan</th>
+                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">Keterangan</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border)]">
               {requests.map((request) => (
                 <tr key={request.id} className="align-top">
-                  <td className="px-4 py-3">{approvalTypeLabel(request.transactionType)}</td>
-                  <td className="px-4 py-3 font-medium">{request.asset.code} - {request.asset.name}</td>
-                  <td className="px-4 py-3 [overflow-wrap:anywhere]">{approvalPayloadSummary(request.transactionType, request.payload)}</td>
-                  <td className="px-4 py-3">{time.format(request.createdAt)}</td>
-                  <td className="px-4 py-3"><ApprovalStatusBadge status={request.status} /></td>
-                  <td className="px-4 py-3 [overflow-wrap:anywhere]">
+                  <td className="px-3 py-2">{approvalTypeLabel(request.transactionType)}</td>
+                  <td className="px-3 py-2 font-medium">{request.asset.code} - {request.asset.name}</td>
+                  <td className="px-3 py-2 max-w-[24rem] [overflow-wrap:break-word]">{approvalPayloadSummary(request.transactionType, request.payload)}</td>
+                  <td className="px-3 py-2">{time.format(request.createdAt)}</td>
+                  <td className="px-3 py-2"><ApprovalStatusBadge status={request.status} /></td>
+                  <td className="px-3 py-2 max-w-[24rem] [overflow-wrap:break-word]">
                     {request.status === ApprovalStatus.REJECTED ? (
                       <>
                         <span className="text-[var(--danger)]">{request.rejectNote ?? "Tanpa alasan"}</span>

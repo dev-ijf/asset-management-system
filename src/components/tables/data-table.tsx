@@ -7,16 +7,21 @@ type DataTableProps = {
   emptyTitle?: string;
 };
 
+/**
+ * Compact table: small text and tight padding so ordinary values stay on one line.
+ * Each cell is capped at 24rem; only text longer than that (e.g. a long unbroken name) wraps,
+ * so one long value cannot stretch the whole table.
+ */
 export function DataTable({ columns, rows = [], emptyTitle }: DataTableProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[760px] border-collapse text-sm">
+      <table className="w-full min-w-[760px] border-collapse text-xs">
         <thead className="bg-[var(--table-head)]">
           <tr>
             {columns.map((column, columnIndex) => (
               <th
                 key={columnIndex}
-                className="border border-[var(--border)] px-6 py-4 text-left font-medium text-[var(--text)]"
+                className="whitespace-nowrap border border-[var(--border)] px-3 py-2.5 text-left font-semibold text-[var(--text)]"
               >
                 {column}
               </th>
@@ -28,12 +33,8 @@ export function DataTable({ columns, rows = [], emptyTitle }: DataTableProps) {
             rows.map((row, rowIndex) => (
               <tr key={rowIndex}>
                 {row.map((cell, cellIndex) => (
-                  <td
-                    key={cellIndex}
-                    // Long unbroken text wraps inside its cell instead of stretching the table.
-                    className="border border-[var(--border)] px-6 py-5 text-[var(--text)] [overflow-wrap:anywhere]"
-                  >
-                    {cell}
+                  <td key={cellIndex} className="border border-[var(--border)] px-3 py-2.5 align-top text-[var(--text)]">
+                    <div className="max-w-[24rem] [overflow-wrap:break-word]">{cell}</div>
                   </td>
                 ))}
               </tr>
