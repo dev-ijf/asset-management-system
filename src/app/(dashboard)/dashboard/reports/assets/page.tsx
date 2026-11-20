@@ -13,7 +13,7 @@ import { prisma } from "@/lib/prisma";
 import { parseDateRange } from "@/lib/date-range";
 import { DateRangeAlert, DateRangeInputs } from "@/components/ui/date-range-inputs";
 import { paginate } from "@/lib/pagination";
-import { assetLocationFilter } from "@/lib/location-filter";
+import { assetLocationFilter, departmentFilter } from "@/lib/location-filter";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +48,7 @@ export default async function AssetReportPage({ searchParams }: PageProps) {
       assetClassId: filters.class || undefined,
       assetCategoryId: filters.category || undefined,
       assetLocationId: await assetLocationFilter(filters.location),
-      departmentId: filters.department || undefined,
+      departmentId: await departmentFilter(filters.department),
       createdAt: range.filter,
     };
   const { items: assets, pagination } = await paginate(filters,

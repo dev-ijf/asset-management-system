@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { duplicateNameMessage, readName, sameNameWhere } from "@/lib/master-validation";
 import { checkLengths, TEXT_LIMITS } from "@/lib/text-limits";
 import { isChildCodeOf, LOCATION_CODE_PATTERN } from "@/lib/location-tree";
-import { nextCodeUnder, recodeChildren } from "@/lib/location-codes";
+import { locationCodeStore, nextCodeUnder, recodeChildren } from "@/lib/hierarchy-codes";
 
 export type AssetLocationActionState = {
   ok?: boolean;
@@ -128,7 +128,7 @@ export async function createAssetLocationAction(
   let code = input.code;
   try {
     await prisma.$transaction(async (tx) => {
-      if (input.parentId) code = await nextCodeUnder(tx, input.parentId);
+      if (input.parentId) code = await nextCodeUnder(locationCodeStore(tx), input.parentId);
       await tx.assetLocation.create({
         data: {
           code,
@@ -179,7 +179,7 @@ export async function updateAssetLocationAction(
       if (input.parentId) {
         // Keep the current number while it already follows the parent (GDA-03 stays GDA-03).
         const parent = await tx.assetLocation.findUniqueOrThrow({ where: { id: input.parentId }, select: { code: true } });
-        code = isChildCodeOf(existing.code, parent.code) ? existing.code : await nextCodeUnder(tx, input.parentId);
+        code = isChildCodeOf(existing.code, parent.code) ? existing.code : await nextCodeUnder(locationCodeStore(tx), input.parentId);
       }
 
       await tx.assetLocation.update({
@@ -192,7 +192,7 @@ export async function updateAssetLocationAction(
         },
       });
 
-      if (code !== existing.code) await recodeChildren(tx, input.id, existing.code, code);
+      if (code !== existing.code) await recodeChildren(locationCodeStore(tx), input.id, existing.code, code);
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {

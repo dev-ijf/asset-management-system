@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { hasPermission, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { locationOptions } from "@/lib/location-tree";
 import { paginate, type PaginationQuery } from "@/lib/pagination";
 import { wibFormat } from "@/lib/datetime";
 
@@ -52,10 +53,7 @@ export async function AssetUsersPage({ search = "", paginationQuery }: Props) {
           _count: { select: { assets: true } },
         }, }),
       ),
-      prisma.department.findMany({
-        orderBy: [{ code: "asc" }],
-        select: { id: true, code: true, name: true },
-      }),
+      prisma.department.findMany({ select: { id: true, code: true, name: true, parentId: true } }),
     ]);
 
     const fields: MasterField[] = [
@@ -68,10 +66,7 @@ export async function AssetUsersPage({ search = "", paginationQuery }: Props) {
         type: "select",
         options: [
           { label: "Tidak ada department", value: "" },
-          ...departments.map((department) => ({
-            label: `${department.code} - ${department.name}`,
-            value: department.id,
-          })),
+          ...locationOptions(departments).map((department) => ({ label: department.label, value: department.id })),
         ],
       },
       { name: "notes", label: "Notes", placeholder: "Catatan singkat", type: "textarea" },

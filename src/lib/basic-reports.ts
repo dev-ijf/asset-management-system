@@ -49,7 +49,7 @@ export async function getReportOptions() {
     prisma.assetClass.findMany({ orderBy: { code: "asc" }, select: { id: true, code: true, name: true } }),
     prisma.assetCategory.findMany({ orderBy: { code: "asc" }, select: { id: true, code: true, name: true } }),
     prisma.assetLocation.findMany({ select: { id: true, code: true, name: true, parentId: true } }),
-    prisma.department.findMany({ orderBy: { code: "asc" }, select: { id: true, code: true, name: true } }),
+    prisma.department.findMany({ select: { id: true, code: true, name: true, parentId: true } }),
   ]);
 
   const coded = (items: { code: string; id: string; name: string }[]) => items.map((item) => ({ id: item.id, label: `${item.code} - ${item.name}` }));
@@ -58,7 +58,7 @@ export async function getReportOptions() {
     assets: assets.map((asset) => ({ id: asset.id, label: `${asset.code} - ${asset.name}` })),
     categories: coded(categories),
     classes: coded(classes),
-    departments: coded(departments),
+    departments: locationOptions(departments),
     locations: locationOptions(locations),
     statuses: coded(statuses),
   };

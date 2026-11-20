@@ -44,10 +44,7 @@ export async function getTransactionOptions(purpose: TransactionPurpose = "other
       select: { id: true, code: true, name: true },
     }),
     prisma.assetLocation.findMany({ select: { id: true, code: true, name: true, parentId: true } }),
-    prisma.department.findMany({
-      orderBy: { code: "asc" },
-      select: { id: true, code: true, name: true },
-    }),
+    prisma.department.findMany({ select: { id: true, code: true, name: true, parentId: true } }),
     prisma.assetUser.findMany({
       orderBy: { name: "asc" },
       select: { id: true, name: true, email: true },
@@ -57,7 +54,7 @@ export async function getTransactionOptions(purpose: TransactionPurpose = "other
   return {
     assets: assets.map((asset) => ({ id: asset.id, label: `${asset.code} - ${asset.name}` })),
     locations: locationOptions(locations),
-    departments: departments.map((department) => ({ id: department.id, label: `${department.code} - ${department.name}` })),
+    departments: locationOptions(departments),
     users: users.map((user) => ({ id: user.id, label: `${user.name}${user.email ? ` (${user.email})` : ""}` })),
   };
 }
