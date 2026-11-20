@@ -3,7 +3,7 @@ import { MAX_BULK_ROWS } from "@/lib/asset-bulk-format";
 
 export async function masterTemplateBuffer({ name, columns, data, instructions, options }: {
   name: string; columns: string[]; data: string[][]; instructions: string[][];
-  options: Record<string, { id: string; name: string }[]>;
+  options: Record<string, { id: string; name: string; code?: string }[]>;
 }) {
   const workbook = new ExcelJS.Workbook();
   const input = workbook.addWorksheet(name);
@@ -17,16 +17,20 @@ export async function masterTemplateBuffer({ name, columns, data, instructions, 
   help.columns = [{ width: 24 }, { width: 14 }, { width: 18 }, { width: 100 }];
 
   Object.entries(options).forEach(([label, choices], index) => {
-    // Separate ID/Name blocks retain actual database identities for reference.
-    const idCol = index * 3 + 1;
-    const nameCol = idCol + 1;
-    reference.getCell(1, idCol).value = label;
-    reference.getCell(2, idCol).value = "ID";
+    // One block per master: Code + Name when the master has codes (same code as shown in the app),
+    // otherwise Name only. Import matches on Name, which is what the dropdown inserts.
+    const firstCol = index * 3 + 1;
+    const hasCode = choices.some(choice => choice.code);
+    const nameCol = hasCode ? firstCol + 1 : firstCol;
+    reference.getCell(1, firstCol).value = label;
+    if (hasCode) {
+      reference.getCell(2, firstCol).value = "Code";
+      reference.getColumn(firstCol).width = 16;
+    }
     reference.getCell(2, nameCol).value = "Name";
-    reference.getColumn(idCol).width = 38;
     reference.getColumn(nameCol).width = 30;
     choices.forEach((choice, row) => {
-      reference.getCell(row + 3, idCol).value = choice.id;
+      if (hasCode) reference.getCell(row + 3, firstCol).value = choice.code ?? "";
       reference.getCell(row + 3, nameCol).value = choice.name;
     });
     const rangeName = `Master_${index + 1}`;

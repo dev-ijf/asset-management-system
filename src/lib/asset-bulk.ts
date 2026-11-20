@@ -5,21 +5,39 @@ import { DISPOSED_STATUS_CODE, statusChangeError } from "@/lib/asset-disposal";
 import { createAssetHistory } from "@/lib/asset-history";
 import { masterTemplateBuffer } from "@/lib/asset-bulk-template";
 import { categoryClassResolver } from "@/lib/category-class";
-import { importColumns, updateColumns, MAX_BULK_ROWS, type BulkMode, type BulkRow, type BulkPreview, workbookBuffer } from "@/lib/asset-bulk-format";
+import { warrantyEndDate } from "@/lib/warranty";
+import {
+  CAPEX_OPEX_CHOICES, DEPRECIATION_CHOICES, importColumns, parseYesNo, updateColumns, YES_NO_CHOICES,
+  MAX_BULK_ROWS, type BulkMode, type BulkRow, type BulkPreview, workbookBuffer,
+} from "@/lib/asset-bulk-format";
+import type { CapexOpex, DepreciationMethod } from "@/generated/prisma/client";
 
 type DB = Prisma.TransactionClient;
 const relations = {
   Category: "assetCategoryId", Class: "assetClassId", Status: "assetStatusId", Location: "assetLocationId",
   Department: "departmentId", "Asset User": "assetUserId", PIC: "personInChargeId",
+  Unit: "unitId", Warranty: "warrantyId", "Vendor Contract": "vendorContractId",
 } as const;
-type Option = { id: string; name: string; code?: string; parentId?: string | null; assetClassId?: string | null };
+type Option = { id: string; name: string; code?: string; parentId?: string | null; assetClassId?: string | null; durationMonths?: number };
 type Catalog = Record<keyof typeof relations, Option[]>;
 async function catalog(db: DB): Promise<Catalog> {
-  const [Category, Class, Status, Location, Department, users, PIC] = await Promise.all([
+  const [Category, Class, Status, Location, Department, users, PIC, units, warranties, contracts] = await Promise.all([
     db.assetCategory.findMany({ orderBy: [{ name: "asc" }, { id: "asc" }] }), db.assetClass.findMany({ orderBy: [{ name: "asc" }, { id: "asc" }] }), db.assetStatus.findMany({ orderBy: [{ name: "asc" }, { id: "asc" }] }), db.assetLocation.findMany({ orderBy: [{ name: "asc" }, { id: "asc" }] }),
     db.department.findMany({ orderBy: [{ name: "asc" }, { id: "asc" }] }), db.assetUser.findMany({ orderBy: [{ name: "asc" }, { id: "asc" }] }), db.personInCharge.findMany({ orderBy: [{ name: "asc" }, { id: "asc" }] }),
+    db.unit.findMany({ orderBy: [{ symbol: "asc" }, { id: "asc" }] }),
+    db.warranty.findMany({ orderBy: [{ name: "asc" }, { id: "asc" }] }),
+    db.vendorContract.findMany({ orderBy: [{ vendorName: "asc" }, { id: "asc" }] }),
   ]);
-  return { Category, Class, Status, Location, Department, "Asset User": users, PIC };
+  return {
+    Category, Class, Status, Location, Department, "Asset User": users, PIC,
+    // Same labels as the asset form dropdowns; symbol / contract number keep them unambiguous.
+    Unit: units.map((unit) => ({ id: unit.id, name: `${unit.symbol} - ${unit.name}` })),
+    Warranty: warranties.map((warranty) => ({ id: warranty.id, name: warranty.name, durationMonths: warranty.durationMonths })),
+    "Vendor Contract": contracts.map((contract) => ({
+      id: contract.id,
+      name: contract.contractNumber ? `${contract.vendorName} - ${contract.contractNumber}` : contract.vendorName,
+    })),
+  };
 }
 function resolveOption(options: Option[], value: string, label: string) {
   if (!value) return null;
@@ -61,6 +79,23 @@ function assetData(row: BulkRow, options: Catalog, mode: BulkMode) {
     data.cost = row.values.Cost || null;
     data.purchaseDate = row.values["Purchase Date"] ? new Date(`${row.values["Purchase Date"]}T00:00:00Z`) : null;
     data.assetStatusId ??= options.Status.find(o => o.code === "ACTIVE")?.id ?? null;
+    const v = row.values;
+    const warranty = options.Warranty.find(o => o.id === data.warrantyId);
+    data.warrantyEnd = warrantyEndDate(data.purchaseDate as Date | null, warranty?.durationMonths);
+    data.residualValue = v["Residual Value"] || null;
+    data.usefulLifeMonths = v["Useful Life (Months)"] ? Number(v["Useful Life (Months)"]) : null;
+    data.depreciationMethod = (v["Depreciation Method"]?.toUpperCase() || "STRAIGHT_LINE") as DepreciationMethod;
+    data.capexOpex = (v["Capex/Opex"]?.toUpperCase() || null) as CapexOpex | null;
+    data.quantity = v.Quantity ? Number(v.Quantity) : 1;
+    data.availableQuantity = v["Available Quantity"] ? Number(v["Available Quantity"]) : null;
+    data.isConsumable = parseYesNo(v.Consumable) ?? false;
+    data.isPool = parseYesNo(v["Pool Asset"]) ?? false;
+    data.rfidTag = v["RFID Tag"] || null;
+    data.nfcTag = v["NFC Tag"] || null;
+    data.qrPath = v["QR Path"] || null;
+    data.labelTemplate = v["Label Template"] || null;
+    data.retentionUntil = v["Retention Until"] ? new Date(`${v["Retention Until"]}T00:00:00Z`) : null;
+    data.metadata = v.Metadata ? JSON.parse(v.Metadata) : Prisma.JsonNull;
   }
   return data;
 }
@@ -92,6 +127,14 @@ async function inspect(row: BulkRow, mode: BulkMode, options: Catalog, db: DB, s
       row.result = "Duplicate";
       row.reason = existing.code === row.code ? `Asset Code ${row.code} already exists.` : `Serial Number ${row.values["Serial Number"]} already exists.`;
       return;
+    }
+    for (const [label, field] of [["RFID Tag", "rfidTag"], ["NFC Tag", "nfcTag"]] as const) {
+      const tag = row.values[label];
+      if (tag && await db.asset.findFirst({ where: { [field]: tag }, select: { id: true } })) {
+        row.result = "Duplicate";
+        row.reason = `${label} ${tag} already exists.`;
+        return;
+      }
     }
   } else {
     const asset = await db.asset.findUnique({ where: { code: row.code } });
@@ -144,7 +187,7 @@ export async function confirmBulk(userId: string, id: string) {
     // A short, bounded batch avoids adding a breaking constraint to existing data.
     await tx.$executeRaw`SET LOCAL lock_timeout = '5s'`;
     await tx.$executeRaw`LOCK TABLE assets IN SHARE ROW EXCLUSIVE MODE`;
-    await tx.$executeRaw`LOCK TABLE asset_categories, asset_classes, asset_statuses, asset_locations, departments, asset_users, person_in_charges IN SHARE MODE`;
+    await tx.$executeRaw`LOCK TABLE asset_categories, asset_classes, asset_statuses, asset_locations, departments, asset_users, person_in_charges, units, warranties, vendor_contracts IN SHARE MODE`;
     const job = await tx.assetBulkJob.findFirst({ where: { id, userId } });
     if (!job) throw new Error("Preview tidak ditemukan.");
     if (job.status === "COMPLETED") return asPreview(job);
@@ -201,17 +244,43 @@ export async function bulkTemplate(mode: "IMPORT" | "UPDATE", rawIds?: unknown) 
     ["Serial Number", "No", "Text", "Unik jika diisi, termasuk asset soft deleted. Simpan sebagai teks untuk mempertahankan nol awal."],
     ["Description", "No", "Text", "Maksimal 5000 karakter."],
     ["Cost", "No", "Number", "Angka >= 0, titik desimal tanpa pemisah ribuan. Contoh 15000000.00."],
-    ["Purchase Date", "No", "Date", "YYYY-MM-DD atau sel tanggal Excel. Contoh 2026-09-30."],
+    ["Purchase Date", "No", "Date", "YYYY-MM-DD atau sel tanggal Excel. Contoh 2026-09-30. Tidak boleh di masa depan."],
+    ["Warranty", "No", "Dropdown", "Warranty End dihitung otomatis dari Purchase Date + durasi warranty."],
+    ["Residual Value", "No", "Number", "Angka >= 0 dan tidak lebih besar dari Cost. Contoh 1000000.00."],
+    ["Useful Life (Months)", "No", "Integer", "Bilangan bulat >= 1. Contoh 60."],
+    ["Depreciation Method", "No", "Dropdown", `${DEPRECIATION_CHOICES.join(" / ")}. Kosong: STRAIGHT_LINE.`],
+    ["Capex/Opex", "No", "Dropdown", "CAPEX atau OPEX."],
+    ["Quantity", "No", "Integer", "Bilangan bulat >= 1. Kosong: 1."],
+    ["Available Quantity", "No", "Integer", "Bilangan bulat >= 0, tidak lebih besar dari Quantity."],
+    ["Consumable", "No", "Yes/No", "Yes atau No. Kosong: No."],
+    ["Pool Asset", "No", "Yes/No", "Yes atau No. Kosong: No."],
+    ["RFID Tag", "No", "Text", "Unik jika diisi."],
+    ["NFC Tag", "No", "Text", "Unik jika diisi."],
+    ["QR Path", "No", "Text", "Opsional, contoh /qr/asset.png."],
+    ["Label Template", "No", "Text", "Opsional, contoh default."],
+    ["Retention Until", "No", "Date", "YYYY-MM-DD."],
+    ["Metadata", "No", "JSON", 'JSON valid, contoh {"merk":"Epson"}.'],
+    ["Photo", "", "Rule", "Foto tidak bisa diimport lewat file. Upload foto dari halaman detail/edit asset setelah import."],
     ["Duplicate", "", "Rule", "Code / serial dibandingkan persis (case-sensitive). Duplikat dilewati; nama asset saja bukan duplicate key."],
     ["Update", "", "Rule", "Kolom opsional kosong menghapus nilai; kolom yang tidak ada dalam file tidak diubah."],
     ["Limit", "", "Rule", `Maksimal ${MAX_BULK_ROWS} baris; 2 MB; tanpa formula. Preview berlaku 30 menit.`],
     ["Category & Class", "", "Rule", "Jika kategori sudah dipasangkan ke class di Master Kategori, kolom Class boleh dikosongkan dan akan diisi otomatis. Class yang berbeda dari class kategori ditolak."],
     ["Master changes", "", "Rule", "Pilihan berasal dari database saat download. Jika nama berubah/dihapus, download template terbaru. Nama ambigu ditolak; administrator perlu membedakan namanya."],
   ];
-  for (const label of Object.keys(options)) {
+  for (const label of Object.keys(options).filter(label => columns.includes(label))) {
     instructions.push([label, "No", "Dropdown", `Select ${label} from available database values in Reference Data. ${label === "Status" && mode === "IMPORT" ? "Kosong: default ACTIVE jika tersedia." : "Opsional sesuai model Asset."}`]);
   }
-  return masterTemplateBuffer({ name: mode === "IMPORT" ? "Import Asset" : "Update Asset", columns, data, instructions, options });
+  const choices = (values: readonly string[]) => values.map(value => ({ id: value, name: value }));
+  const dropdowns = mode === "IMPORT"
+    ? {
+        ...options,
+        "Depreciation Method": choices(DEPRECIATION_CHOICES),
+        "Capex/Opex": choices(CAPEX_OPEX_CHOICES),
+        Consumable: choices(YES_NO_CHOICES),
+        "Pool Asset": choices(YES_NO_CHOICES),
+      }
+    : options;
+  return masterTemplateBuffer({ name: mode === "IMPORT" ? "Import Asset" : "Update Asset", columns, data, instructions, options: dropdowns });
 }
 export async function bulkReport(userId: string, id: string) {
   const job = await prisma.assetBulkJob.findFirst({ where: { id, userId } });
