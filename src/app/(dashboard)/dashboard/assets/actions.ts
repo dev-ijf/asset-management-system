@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { FUTURE_DATE_MESSAGE, isFutureDate } from "@/lib/datetime";
 import { getNextSequentialCode } from "@/lib/sequential-code";
 import { resolveWarrantyEnd } from "@/lib/warranty";
+import { loadCategoryClassResolver } from "@/lib/category-class";
 
 export type AssetActionState = {
   ok?: boolean;
@@ -184,6 +185,17 @@ async function validateAssetInput(input: ReturnType<typeof readAssetForm>, ignor
   for (const [field, id, model] of relations) {
     if (!(await existsById(model, id))) {
       errors[field] = "Data pilihan tidak ditemukan.";
+    }
+  }
+
+  // A category paired with a class decides the asset's class. Empty means "follow the category".
+  if (input.assetCategoryId && !errors.assetCategoryId) {
+    const requiredClassId = (await loadCategoryClassResolver(prisma))(input.assetCategoryId);
+    if (requiredClassId && !input.assetClassId) {
+      input.assetClassId = requiredClassId;
+    } else if (requiredClassId && input.assetClassId !== requiredClassId) {
+      const required = await prisma.assetClass.findUnique({ where: { id: requiredClassId }, select: { code: true, name: true } });
+      errors.assetClassId = `Class harus mengikuti kategori: ${required ? `${required.code} - ${required.name}` : "class kategori"}.`;
     }
   }
 

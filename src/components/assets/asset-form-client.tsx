@@ -24,6 +24,8 @@ import { useFormAction } from "@/components/ui/use-form-action";
 export type AssetSelectOption = {
   id: string;
   label: string;
+  /** Categories only: the class this category dictates, if it is paired with one. */
+  classId?: string | null;
 };
 
 export type AssetFormOptions = {
@@ -122,6 +124,56 @@ function SelectField({
   );
 }
 
+/** Category decides the class: a paired category locks Class to its class; an unpaired one leaves it free. */
+function CategoryClassFields({
+  asset,
+  options,
+  state,
+}: {
+  asset?: { assetCategoryId: string | null; assetClassId: string | null };
+  options: { classes: AssetSelectOption[]; categories: AssetSelectOption[] };
+  state: { errors?: { assetCategoryId?: string; assetClassId?: string } };
+}) {
+  const [categoryId, setCategoryId] = useState(asset?.assetCategoryId ?? "");
+  const lockedClassId = options.categories.find((option) => option.id === categoryId)?.classId ?? null;
+
+  return (
+    <>
+      <label className="block">
+        <span className="text-sm font-medium text-[var(--text)]">Category</span>
+        <Select name="assetCategoryId" value={categoryId} onChange={(event) => setCategoryId(event.target.value)} className="mt-2">
+          <option value="">Tidak dipilih</option>
+          {options.categories.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
+        <FieldError message={state.errors?.assetCategoryId} />
+      </label>
+      {lockedClassId ? (
+        <label className="block">
+          <span className="text-sm font-medium text-[var(--text)]">Class</span>
+          <input type="hidden" name="assetClassId" value={lockedClassId} />
+          <Select value={lockedClassId} disabled className="mt-2" aria-describedby="class-locked-hint">
+            {options.classes.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
+          <span id="class-locked-hint" className="mt-1 block text-xs text-[var(--muted)]">
+            Otomatis mengikuti kategori.
+          </span>
+          <FieldError message={state.errors?.assetClassId} />
+        </label>
+      ) : (
+        <SelectField name="assetClassId" label="Class" options={options.classes} defaultValue={asset?.assetClassId} error={state.errors?.assetClassId} />
+      )}
+    </>
+  );
+}
+
 function CheckboxField({
   defaultChecked,
   label,
@@ -183,8 +235,7 @@ function AssetFields({
 
       <Section title="Classification">
         <SelectField name="assetStatusId" label="Status" options={options.statuses} defaultValue={asset?.assetStatusId} error={state.errors?.assetStatusId} />
-        <SelectField name="assetClassId" label="Class" options={options.classes} defaultValue={asset?.assetClassId} error={state.errors?.assetClassId} />
-        <SelectField name="assetCategoryId" label="Category" options={options.categories} defaultValue={asset?.assetCategoryId} error={state.errors?.assetCategoryId} />
+        <CategoryClassFields asset={asset} options={options} state={state} />
         <SelectField name="unitId" label="Unit" options={options.units} defaultValue={asset?.unitId} error={state.errors?.unitId} />
       </Section>
 

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { DISPOSED_STATUS_CODE, statusChangeError } from "@/lib/asset-disposal";
 import { createAssetHistory } from "@/lib/asset-history";
 import { masterTemplateBuffer } from "@/lib/asset-bulk-template";
+import { categoryClassResolver } from "@/lib/category-class";
 import { importColumns, updateColumns, MAX_BULK_ROWS, type BulkMode, type BulkRow, type BulkPreview, workbookBuffer } from "@/lib/asset-bulk-format";
 
 type DB = Prisma.TransactionClient;
@@ -11,7 +12,7 @@ const relations = {
   Category: "assetCategoryId", Class: "assetClassId", Status: "assetStatusId", Location: "assetLocationId",
   Department: "departmentId", "Asset User": "assetUserId", PIC: "personInChargeId",
 } as const;
-type Option = { id: string; name: string; code?: string };
+type Option = { id: string; name: string; code?: string; parentId?: string | null; assetClassId?: string | null };
 type Catalog = Record<keyof typeof relations, Option[]>;
 async function catalog(db: DB): Promise<Catalog> {
   const [Category, Class, Status, Location, Department, users, PIC] = await Promise.all([
@@ -26,6 +27,28 @@ function resolveOption(options: Option[], value: string, label: string) {
   if (!named.length) throw new Error(`${label} '${value}' does not exist in master data.`);
   if (named.length > 1) throw new Error(`${label} '${value}' is ambiguous in master data. Hubungi administrator untuk membedakan nama master.`);
   return named[0].id;
+}
+/**
+ * A category paired with a class decides the class (see lib/category-class): an empty Class cell is
+ * filled with it, a different one is rejected. Runs before changes are listed, so the preview is exact.
+ */
+function fillCategoryClass(row: BulkRow, options: Catalog) {
+  const categoryName = row.values.Category;
+  if (!categoryName) return;
+  const categoryId = resolveOption(options.Category, categoryName, "Category");
+  const classOf = categoryClassResolver(
+    options.Category.map((category) => ({ id: category.id, parentId: category.parentId ?? null, assetClassId: category.assetClassId ?? null })),
+  );
+  const classId = classOf(categoryId);
+  const className = classId ? options.Class.find((option) => option.id === classId)?.name : undefined;
+  if (!classId || !className) return;
+  if (!row.values.Class) {
+    row.values.Class = className;
+    return;
+  }
+  if (resolveOption(options.Class, row.values.Class, "Class") !== classId) {
+    throw new Error(`Class '${row.values.Class}' tidak sesuai kategori '${categoryName}', yang memakai class '${className}'. Kosongkan kolom Class atau isi '${className}'.`);
+  }
 }
 function assetData(row: BulkRow, options: Catalog, mode: BulkMode) {
   const data: Omit<Prisma.AssetUncheckedCreateInput, "code" | "qrToken"> = { name: row.name };
@@ -61,6 +84,7 @@ export function selectedIds(raw: unknown): string[] {
 }
 async function inspect(row: BulkRow, mode: BulkMode, options: Catalog, db: DB, selected?: Set<string>, confirm = false) {
   if (row.result !== "Ready") return;
+  if (mode !== "DELETE") fillCategoryClass(row, options);
   let currentStatusId: string | null = null;
   if (mode === "IMPORT") {
     const existing = await db.asset.findFirst({ where: { OR: [{ code: row.code }, ...(row.values["Serial Number"] ? [{ serialNumber: row.values["Serial Number"] }] : [])] } });
@@ -181,6 +205,7 @@ export async function bulkTemplate(mode: "IMPORT" | "UPDATE", rawIds?: unknown) 
     ["Duplicate", "", "Rule", "Code / serial dibandingkan persis (case-sensitive). Duplikat dilewati; nama asset saja bukan duplicate key."],
     ["Update", "", "Rule", "Kolom opsional kosong menghapus nilai; kolom yang tidak ada dalam file tidak diubah."],
     ["Limit", "", "Rule", `Maksimal ${MAX_BULK_ROWS} baris; 2 MB; tanpa formula. Preview berlaku 30 menit.`],
+    ["Category & Class", "", "Rule", "Jika kategori sudah dipasangkan ke class di Master Kategori, kolom Class boleh dikosongkan dan akan diisi otomatis. Class yang berbeda dari class kategori ditolak."],
     ["Master changes", "", "Rule", "Pilihan berasal dari database saat download. Jika nama berubah/dihapus, download template terbaru. Nama ambigu ditolak; administrator perlu membedakan namanya."],
   ];
   for (const label of Object.keys(options)) {

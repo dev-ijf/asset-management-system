@@ -18,6 +18,7 @@ import { hasPermission, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { paginate, type PaginationQuery } from "@/lib/pagination";
 import { wibFormat } from "@/lib/datetime";
+import { TEXT_LIMITS } from "@/lib/text-limits";
 
 type Props = {
   search?: string;
@@ -25,7 +26,8 @@ type Props = {
 };
 
 const fields: MasterField[] = [
-  { name: "name", label: "Name", placeholder: "Kelas aset", required: true },
+  { name: "code", label: "Code", placeholder: "PRM", required: true, maxLength: TEXT_LIMITS.code },
+  { name: "name", label: "Name", placeholder: "Peralatan & Mesin", required: true },
   { name: "description", label: "Description", placeholder: "Deskripsi singkat kelas aset", type: "textarea" },
 ];
 
@@ -64,7 +66,7 @@ export async function AssetClassesPage({ search = "", paginationQuery }: Props) 
               action={createAssetClassAction}
               buttonLabel="Tambah Kelas"
               canManage={canManage}
-              description="Buat kelas aset baru. Code dibuat otomatis oleh sistem."
+              description="Buat kelas aset baru. Isi code singkat yang mudah dibaca, misalnya TNH, GDB, atau PRM."
               fields={fields}
               title="Tambah Kelas Aset"
             />
@@ -92,7 +94,7 @@ export async function AssetClassesPage({ search = "", paginationQuery }: Props) 
                 rows={classes.map((assetClass, index) => {
                   const record: MasterCrudRecord = {
                     id: assetClass.id,
-                    values: { name: assetClass.name, description: assetClass.description },
+                    values: { code: assetClass.code, name: assetClass.name, description: assetClass.description },
                     assetCount: assetClass._count.assets,
                   };
 
@@ -107,7 +109,7 @@ export async function AssetClassesPage({ search = "", paginationQuery }: Props) 
                       deleteAction={deleteAssetClassAction}
                       deleteDescription={`Kelas "${assetClass.name}" akan dihapus jika belum dipakai asset.`}
                       deleteTitle="Hapus Kelas Aset"
-                      editDescription="Perbarui nama atau deskripsi kelas aset."
+                      editDescription="Perbarui code, nama, atau deskripsi kelas aset. Aset yang memakai class ini tidak perlu diubah."
                       editFields={fields}
                       editTitle="Edit Kelas Aset"
                       record={record}

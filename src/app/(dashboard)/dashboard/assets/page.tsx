@@ -15,6 +15,7 @@ import { hasPermission, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createPagination, paginationQuery, parsePagination } from "@/lib/pagination";
 import { wibFormat } from "@/lib/datetime";
+import { categoryClassResolver } from "@/lib/category-class";
 
 export const dynamic = "force-dynamic";
 
@@ -161,7 +162,7 @@ async function getOptions(): Promise<AssetFormOptions> {
   ] = await Promise.all([
     prisma.assetStatus.findMany({ orderBy: [{ code: "asc" }], select: { id: true, code: true, name: true } }),
     prisma.assetClass.findMany({ orderBy: [{ code: "asc" }], select: { id: true, code: true, name: true } }),
-    prisma.assetCategory.findMany({ orderBy: [{ code: "asc" }], select: { id: true, code: true, name: true } }),
+    prisma.assetCategory.findMany({ orderBy: [{ code: "asc" }], select: { id: true, code: true, name: true, parentId: true, assetClassId: true } }),
     prisma.assetLocation.findMany({ orderBy: [{ code: "asc" }], select: { id: true, code: true, name: true } }),
     prisma.unit.findMany({ orderBy: [{ symbol: "asc" }], select: { id: true, symbol: true, name: true } }),
     prisma.department.findMany({ orderBy: [{ code: "asc" }], select: { id: true, code: true, name: true } }),
@@ -171,10 +172,12 @@ async function getOptions(): Promise<AssetFormOptions> {
     prisma.vendorContract.findMany({ orderBy: [{ vendorName: "asc" }], select: { id: true, vendorName: true, contractNumber: true } }),
   ]);
 
+  const classOfCategory = categoryClassResolver(categories);
+
   return {
     statuses: statuses.map((item) => ({ id: item.id, label: `${item.code} - ${item.name}` })),
     classes: classes.map((item) => ({ id: item.id, label: `${item.code} - ${item.name}` })),
-    categories: categories.map((item) => ({ id: item.id, label: `${item.code} - ${item.name}` })),
+    categories: categories.map((item) => ({ id: item.id, label: `${item.code} - ${item.name}`, classId: classOfCategory(item.id) })),
     locations: locations.map((item) => ({ id: item.id, label: `${item.code} - ${item.name}` })),
     units: units.map((item) => ({ id: item.id, label: `${item.symbol} - ${item.name}` })),
     departments: departments.map((item) => ({ id: item.id, label: `${item.code} - ${item.name}` })),
@@ -281,19 +284,19 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
 
                   return [
                     <span key="number" className="text-[var(--muted)]">{(pagination.page - 1) * pagination.pageSize + index + 1}</span>,
-                    <span key="code" className="font-semibold">{asset.code}</span>,
-                    <div key="name">
+                    <span key="code" className="whitespace-nowrap font-semibold">{asset.code}</span>,
+                    <div key="name" className="min-w-[11rem]">
                       <p className="font-medium">{asset.name}</p>
                       {asset.serialNumber ? <p className="text-xs text-[var(--muted)]">{asset.serialNumber}</p> : null}
                     </div>,
-                    asset.assetStatus ? <Badge key="status">{asset.assetStatus.name}</Badge> : <span key="status" className="text-[var(--muted)]">-</span>,
-                    <span key="class" className="text-[var(--muted)]">{asset.assetClass?.name ?? "-"}</span>,
-                    <span key="category" className="text-[var(--muted)]">{asset.assetCategory?.name ?? "-"}</span>,
-                    <span key="location" className="text-[var(--muted)]">{asset.assetLocation?.name ?? "-"}</span>,
-                    <span key="department" className="text-[var(--muted)]">{asset.department?.name ?? "-"}</span>,
-                    <span key="user" className="text-[var(--muted)]">{asset.assetUser?.name ?? asset.personInCharge?.name ?? "-"}</span>,
-                    <span key="cost" className="text-[var(--muted)]">{formatMoney(asset.cost)}</span>,
-                    <span key="created" className="text-[var(--muted)]">{formatDate(asset.createdAt)}</span>,
+                    asset.assetStatus ? <Badge key="status" className="whitespace-nowrap">{asset.assetStatus.name}</Badge> : <span key="status" className="text-[var(--muted)]">-</span>,
+                    <span key="class" className="block min-w-[6rem] text-[var(--muted)]">{asset.assetClass?.name ?? "-"}</span>,
+                    <span key="category" className="block min-w-[6rem] text-[var(--muted)]">{asset.assetCategory?.name ?? "-"}</span>,
+                    <span key="location" className="block min-w-[6rem] text-[var(--muted)]">{asset.assetLocation?.name ?? "-"}</span>,
+                    <span key="department" className="block min-w-[6rem] text-[var(--muted)]">{asset.department?.name ?? "-"}</span>,
+                    <span key="user" className="block min-w-[6rem] text-[var(--muted)]">{asset.assetUser?.name ?? asset.personInCharge?.name ?? "-"}</span>,
+                    <span key="cost" className="whitespace-nowrap text-[var(--muted)]">{formatMoney(asset.cost)}</span>,
+                    <span key="created" className="whitespace-nowrap text-[var(--muted)]">{formatDate(asset.createdAt)}</span>,
                     <AssetRowActions key="actions" asset={row} canManage={canManage} options={options} />,
                   ];
                 })}

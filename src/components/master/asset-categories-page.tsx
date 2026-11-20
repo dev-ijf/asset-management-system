@@ -18,6 +18,7 @@ import { hasPermission, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { paginate, type PaginationQuery } from "@/lib/pagination";
 import { wibFormat } from "@/lib/datetime";
+import { categoryClassResolver } from "@/lib/category-class";
 
 type AssetCategoriesPageProps = {
   search?: string;
@@ -46,7 +47,7 @@ export async function AssetCategoriesPage({ search = "", paginationQuery }: Asse
               ],
             }
           : undefined;
-    const [{ items: categories, pagination }, parentOptionsData] = await Promise.all([
+    const [{ items: categories, pagination }, parentOptionsData, classes] = await Promise.all([
       paginate(paginationQuery,
         () => prisma.assetCategory.count({ where }),
         ({ skip, take }) => prisma.assetCategory.findMany({ where, skip, take, orderBy: [{ code: "asc" }],
@@ -72,14 +73,25 @@ export async function AssetCategoriesPage({ search = "", paginationQuery }: Asse
           id: true,
           code: true,
           name: true,
+          parentId: true,
+          assetClassId: true,
         },
       }),
+      prisma.assetClass.findMany({ orderBy: [{ code: "asc" }], select: { id: true, code: true, name: true } }),
     ]);
+    const classOf = categoryClassResolver(parentOptionsData);
+    const classLabels = new Map(classes.map((item) => [item.id, `${item.code} - ${item.name}`]));
+    const classLabel = (categoryId: string) => {
+      const classId = classOf(categoryId);
+      return classId ? classLabels.get(classId) ?? null : null;
+    };
+    const classOptions: AssetCategoryOption[] = classes;
 
     const parentOptions: AssetCategoryOption[] = parentOptionsData.map((category) => ({
       id: category.id,
       code: category.code,
       name: category.name,
+      classLabel: classLabel(category.id),
     }));
 
     const rows: AssetCategoryRow[] = categories.map((category) => ({
@@ -88,6 +100,8 @@ export async function AssetCategoriesPage({ search = "", paginationQuery }: Asse
       name: category.name,
       parentId: category.parentId,
       parentName: category.parent ? `${category.parent.code} - ${category.parent.name}` : null,
+      assetClassId: category.assetClassId,
+      classLabel: classLabel(category.id),
       description: category.description,
       createdAt: formatDate(category.createdAt),
       assetCount: category._count.assets,
@@ -98,8 +112,8 @@ export async function AssetCategoriesPage({ search = "", paginationQuery }: Asse
       <>
         <PageHeader
           title="Kategori Aset"
-          subtitle="Kelola kategori aset untuk struktur inventaris, penomoran, dan laporan."
-          actions={<AssetCategoryCreateAction canManage={canManage} parentOptions={parentOptions} />}
+          subtitle="Kelola kategori aset untuk struktur inventaris, penomoran, dan laporan. Class diisi di kategori teratas; sub-kategori dan asetnya otomatis mengikuti."
+          actions={<AssetCategoryCreateAction canManage={canManage} parentOptions={parentOptions} classOptions={classOptions} />}
         />
 
         <Card>
@@ -136,18 +150,27 @@ export async function AssetCategoriesPage({ search = "", paginationQuery }: Asse
               />
             ) : (
               <DataTable
-                columns={["No", "Code", "Name", "Parent Category", "Description", "Created At", "Action"]}
+                columns={["No", "Code", "Name", "Parent Category", "Class", "Description", "Created At", "Action"]}
                 rows={rows.map((category, index) => [
                   <span className="text-[var(--muted)]">{(pagination.page - 1) * pagination.pageSize + index + 1}</span>,
                   <span className="font-semibold">{category.code}</span>,
                   category.name,
                   <span className="text-[var(--muted)]">{category.parentName ?? "-"}</span>,
+                  category.classLabel ? (
+                    <span>
+                      {category.classLabel}
+                      {category.parentId ? <span className="block text-[var(--muted)]">mengikuti parent</span> : null}
+                    </span>
+                  ) : (
+                    <span className="text-[var(--muted)]">Belum dipasangkan</span>
+                  ),
                   <span className="text-[var(--muted)]">{category.description ?? "-"}</span>,
                   <span className="text-[var(--muted)]">{category.createdAt}</span>,
                   <AssetCategoryRowActions
                     category={category}
                     canManage={canManage}
                     parentOptions={parentOptions}
+                    classOptions={classOptions}
                   />,
                 ])}
               />

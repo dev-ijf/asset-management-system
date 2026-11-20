@@ -7,6 +7,7 @@ import { masterInUseMessage } from "@/lib/master-usage";
 import { prisma } from "@/lib/prisma";
 import { duplicateNameMessage, readName, sameNameWhere } from "@/lib/master-validation";
 import { checkLengths, TEXT_LIMITS } from "@/lib/text-limits";
+import { syncAssetClassesForCategory } from "@/lib/category-class";
 
 export type AssetCategoryActionState = {
   ok?: boolean;
@@ -15,6 +16,7 @@ export type AssetCategoryActionState = {
     code?: string;
     name?: string;
     parentId?: string;
+    assetClassId?: string;
     description?: string;
     form?: string;
   };
@@ -28,6 +30,7 @@ function readAssetCategoryForm(formData: FormData) {
     code: String(formData.get("code") ?? "").trim().toUpperCase(),
     name: readName(formData.get("name")),
     parentId: String(formData.get("parentId") ?? "").trim(),
+    assetClassId: String(formData.get("assetClassId") ?? "").trim(),
     description: String(formData.get("description") ?? "").trim(),
   };
 }
@@ -68,6 +71,10 @@ async function validateAssetCategoryInput(input: ReturnType<typeof readAssetCate
     }
   }
 
+  if (input.assetClassId && !(await prisma.assetClass.findUnique({ where: { id: input.assetClassId }, select: { id: true } }))) {
+    errors.assetClassId = "Class tidak ditemukan.";
+  }
+
   if (input.parentId) {
     if (input.parentId === ignoreId) {
       errors.parentId = "Parent category tidak boleh memilih dirinya sendiri.";
@@ -102,6 +109,11 @@ async function validateAssetCategoryInput(input: ReturnType<typeof readAssetCate
   return errors;
 }
 
+/** Class is stored on top-level categories only; a sub-category inherits it from its parent. */
+function classOf(input: ReturnType<typeof readAssetCategoryForm>) {
+  return input.parentId ? null : input.assetClassId || null;
+}
+
 function hasErrors(errors: AssetCategoryActionState["errors"]) {
   return Boolean(errors && Object.keys(errors).length > 0);
 }
@@ -125,6 +137,7 @@ export async function createAssetCategoryAction(
         code: input.code,
         name: input.name,
         parentId: input.parentId || null,
+        assetClassId: classOf(input),
         description: input.description || null,
       },
     });
@@ -145,7 +158,7 @@ export async function updateAssetCategoryAction(
   _previousState: AssetCategoryActionState,
   formData: FormData,
 ): Promise<AssetCategoryActionState> {
-  await requirePermission("assets.manage");
+  const user = await requirePermission("assets.manage");
 
   const input = readAssetCategoryForm(formData);
 
@@ -159,15 +172,21 @@ export async function updateAssetCategoryAction(
     return { errors };
   }
 
+  let synced = 0;
   try {
-    await prisma.assetCategory.update({
-      where: { id: input.id },
-      data: {
-        code: input.code,
-        name: input.name,
-        parentId: input.parentId || null,
-        description: input.description || null,
-      },
+    synced = await prisma.$transaction(async (tx) => {
+      await tx.assetCategory.update({
+        where: { id: input.id },
+        data: {
+          code: input.code,
+          name: input.name,
+          parentId: input.parentId || null,
+          assetClassId: classOf(input),
+          description: input.description || null,
+        },
+      });
+      // A new class or a new parent changes the class this category's assets must have.
+      return syncAssetClassesForCategory(tx, input.id, user.id);
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
@@ -182,8 +201,14 @@ export async function updateAssetCategoryAction(
   }
 
   revalidatePath(ASSET_CATEGORIES_PATH);
+  if (synced > 0) revalidatePath("/dashboard/assets");
 
-  return { ok: true, message: "Asset category berhasil diperbarui." };
+  return {
+    ok: true,
+    message: synced > 0
+      ? `Asset category berhasil diperbarui. Class ${synced} aset ikut disesuaikan dan tercatat di riwayat aset.`
+      : "Asset category berhasil diperbarui.",
+  };
 }
 
 export async function deleteAssetCategoryAction(

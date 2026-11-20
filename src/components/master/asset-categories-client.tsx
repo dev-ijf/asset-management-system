@@ -22,6 +22,8 @@ export type AssetCategoryOption = {
   id: string;
   code: string;
   name: string;
+  /** Class the category dictates (own or inherited), for parents shown in the form. */
+  classLabel?: string | null;
 };
 
 export type AssetCategoryRow = {
@@ -30,6 +32,10 @@ export type AssetCategoryRow = {
   name: string;
   parentId: string | null;
   parentName: string | null;
+  /** Own class; only top-level categories have one. */
+  assetClassId: string | null;
+  /** Effective class: own, or inherited from the top ancestor. */
+  classLabel: string | null;
   description: string | null;
   createdAt: string;
   assetCount: number;
@@ -40,16 +46,20 @@ const initialState: AssetCategoryActionState = {};
 
 function AssetCategoryFields({
   category,
+  classOptions,
   parentOptions,
   state,
 }: {
   category?: AssetCategoryRow;
+  classOptions: AssetCategoryOption[];
   parentOptions: AssetCategoryOption[];
   state: AssetCategoryActionState;
 }) {
+  const [parentId, setParentId] = useState(category?.parentId ?? "");
   const availableParents = category
     ? parentOptions.filter((parent) => parent.id !== category.id)
     : parentOptions;
+  const parent = parentOptions.find((option) => option.id === parentId);
 
   return (
     <>
@@ -74,7 +84,7 @@ function AssetCategoryFields({
       </label>
       <label className="block">
         <span className="text-sm font-medium text-[var(--text)]">Parent Category</span>
-        <Select name="parentId" defaultValue={category?.parentId ?? ""} className="mt-2">
+        <Select name="parentId" value={parentId} onChange={(event) => setParentId(event.target.value)} className="mt-2">
           <option value="">Tidak ada parent</option>
           {availableParents.map((parent) => (
             <option key={parent.id} value={parent.id}>
@@ -84,6 +94,32 @@ function AssetCategoryFields({
         </Select>
         <FieldError message={state.errors?.parentId} />
       </label>
+      {parentId ? (
+        <div className="block">
+          <span className="text-sm font-medium text-[var(--text)]">Class</span>
+          <p className="mt-2 rounded-md border border-[var(--border)] bg-[var(--table-head)] px-3 py-2 text-sm text-[var(--muted)]">
+            {parent?.classLabel
+              ? `Mengikuti parent: ${parent.classLabel}`
+              : "Mengikuti parent. Parent belum dipasangkan ke class, jadi class aset dipilih manual."}
+          </p>
+        </div>
+      ) : (
+        <label className="block">
+          <span className="text-sm font-medium text-[var(--text)]">Class</span>
+          <Select name="assetClassId" defaultValue={category?.assetClassId ?? ""} className="mt-2">
+            <option value="">Belum dipasangkan (class dipilih manual di aset)</option>
+            {classOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.code} - {option.name}
+              </option>
+            ))}
+          </Select>
+          <span className="mt-1 block text-xs text-[var(--muted)]">
+            Sub-kategori dan semua aset di kategori ini otomatis memakai class ini.
+          </span>
+          <FieldError message={state.errors?.assetClassId} />
+        </label>
+      )}
       <label className="block">
         <span className="text-sm font-medium text-[var(--text)]">Description</span>
         <Textarea
@@ -99,7 +135,7 @@ function AssetCategoryFields({
   );
 }
 
-function CreateAssetCategoryButton({ parentOptions }: { parentOptions: AssetCategoryOption[] }) {
+function CreateAssetCategoryButton({ classOptions, parentOptions }: { classOptions: AssetCategoryOption[]; parentOptions: AssetCategoryOption[] }) {
   const [open, setOpen] = useState(false);
   const [state, form, pending] = useFormAction(createAssetCategoryAction, initialState);
 
@@ -127,7 +163,7 @@ function CreateAssetCategoryButton({ parentOptions }: { parentOptions: AssetCate
               </Button>
             }
           >
-            <AssetCategoryFields parentOptions={parentOptions} state={state} />
+            <AssetCategoryFields parentOptions={parentOptions} classOptions={classOptions} state={state} />
           </MasterRecordForm>
         </form>
       ) : null}
@@ -137,9 +173,11 @@ function CreateAssetCategoryButton({ parentOptions }: { parentOptions: AssetCate
 
 function EditAssetCategoryButton({
   category,
+  classOptions,
   parentOptions,
 }: {
   category: AssetCategoryRow;
+  classOptions: AssetCategoryOption[];
   parentOptions: AssetCategoryOption[];
 }) {
   const [open, setOpen] = useState(false);
@@ -169,7 +207,7 @@ function EditAssetCategoryButton({
               </Button>
             }
           >
-            <AssetCategoryFields category={category} parentOptions={parentOptions} state={state} />
+            <AssetCategoryFields category={category} parentOptions={parentOptions} classOptions={classOptions} state={state} />
           </MasterRecordForm>
         </form>
       ) : null}
@@ -223,25 +261,29 @@ function DeleteAssetCategoryButton({ category }: { category: AssetCategoryRow })
 
 export function AssetCategoryCreateAction({
   canManage,
+  classOptions,
   parentOptions,
 }: {
   canManage: boolean;
+  classOptions: AssetCategoryOption[];
   parentOptions: AssetCategoryOption[];
 }) {
   if (!canManage) {
     return null;
   }
 
-  return <CreateAssetCategoryButton parentOptions={parentOptions} />;
+  return <CreateAssetCategoryButton parentOptions={parentOptions} classOptions={classOptions} />;
 }
 
 export function AssetCategoryRowActions({
   canManage,
   category,
+  classOptions,
   parentOptions,
 }: {
   canManage: boolean;
   category: AssetCategoryRow;
+  classOptions: AssetCategoryOption[];
   parentOptions: AssetCategoryOption[];
 }) {
   if (!canManage) {
@@ -250,7 +292,7 @@ export function AssetCategoryRowActions({
 
   return (
     <div className="flex flex-wrap gap-2">
-      <EditAssetCategoryButton category={category} parentOptions={parentOptions} />
+      <EditAssetCategoryButton category={category} parentOptions={parentOptions} classOptions={classOptions} />
       <DeleteAssetCategoryButton category={category} />
     </div>
   );

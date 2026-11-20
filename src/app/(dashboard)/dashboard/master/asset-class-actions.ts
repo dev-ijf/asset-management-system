@@ -7,7 +7,6 @@ import { masterInUseMessage } from "@/lib/master-usage";
 import { prisma } from "@/lib/prisma";
 import { duplicateNameMessage, readName, sameNameWhere } from "@/lib/master-validation";
 import { checkLengths, TEXT_LIMITS } from "@/lib/text-limits";
-import { getNextSequentialCode } from "@/lib/sequential-code";
 
 type ActionState = {
   ok?: boolean;
@@ -20,31 +19,38 @@ const PATH = "/dashboard/master/asset-classes";
 function readForm(formData: FormData) {
   return {
     id: String(formData.get("id") ?? "").trim(),
+    code: String(formData.get("code") ?? "").trim().toUpperCase(),
     name: readName(formData.get("name")),
     description: String(formData.get("description") ?? "").trim(),
   };
 }
 
-async function generateCode() {
-  const rows = await prisma.assetClass.findMany({
-    where: { code: { startsWith: "CLS-" } },
-    select: { code: true },
-  });
-
-  return getNextSequentialCode(rows.map((row) => row.code), "CLS");
-}
+/** Short readable codes such as TNH, GDB, PRM: letters, digits, "-" and "_". */
+const CODE_PATTERN = /^[A-Z0-9][A-Z0-9_-]*$/;
 
 async function validate(input: ReturnType<typeof readForm>, ignoreId?: string) {
   const errors: ActionState["errors"] = {};
+
+  if (!input.code) {
+    errors.code = "Code wajib diisi.";
+  } else if (!CODE_PATTERN.test(input.code)) {
+    errors.code = "Code hanya boleh huruf, angka, tanda - atau _, tanpa spasi. Contoh: PRM.";
+  }
 
   if (!input.name) {
     errors.name = "Name wajib diisi.";
   }
 
   checkLengths(errors, [
+    ["code", "Code", input.code, TEXT_LIMITS.code],
     ["name", "Name", input.name, TEXT_LIMITS.name],
     ["description", "Description", input.description, TEXT_LIMITS.description],
   ]);
+
+  if (input.code && !errors.code) {
+    const existing = await prisma.assetClass.findUnique({ where: { code: input.code }, select: { id: true } });
+    if (existing && existing.id !== ignoreId) errors.code = "Code sudah digunakan class lain.";
+  }
 
   if (input.name && !errors.name) {
     const existing = await prisma.assetClass.findFirst({ where: sameNameWhere(input.name, ignoreId), select: { code: true } });
@@ -71,14 +77,14 @@ export async function createAssetClassAction(_previousState: ActionState, formDa
   try {
     await prisma.assetClass.create({
       data: {
-        code: await generateCode(),
+        code: input.code,
         name: input.name,
         description: input.description || null,
       },
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return { errors: { form: "Code kelas aset otomatis sudah digunakan. Coba simpan ulang." } };
+      return { errors: { code: "Code sudah digunakan class lain." } };
     }
 
     return { errors: { form: "Asset class gagal dibuat. Coba lagi." } };
@@ -108,11 +114,16 @@ export async function updateAssetClassAction(_previousState: ActionState, formDa
     await prisma.assetClass.update({
       where: { id: input.id },
       data: {
+        code: input.code,
         name: input.name,
         description: input.description || null,
       },
     });
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return { errors: { code: "Code sudah digunakan class lain." } };
+    }
+
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
       return { errors: { form: "Asset class tidak ditemukan." } };
     }
@@ -138,6 +149,11 @@ export async function deleteAssetClassAction(_previousState: ActionState, formDa
 
   if (inUse) {
     return { errors: { form: inUse } };
+  }
+
+  const categories = await prisma.assetCategory.count({ where: { assetClassId: id } });
+  if (categories > 0) {
+    return { errors: { form: `Asset class tidak bisa dihapus karena masih dipasangkan ke ${categories} kategori. Ganti class di Master Kategori terlebih dahulu.` } };
   }
 
   try {
