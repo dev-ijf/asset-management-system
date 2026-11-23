@@ -72,6 +72,15 @@ export default async function AssetViewPage({ params }: AssetViewPageProps) {
     return <AssetViewNotFound />;
   }
 
+  // "Location" shows the asset's own (sub-)location; "Lokasi" below shows its Parent Location
+  // (the top of the tree). An asset placed directly on a Parent Location shows it in both.
+  let parentLocation = asset.assetLocation;
+  for (let depth = 0; parentLocation?.parentId && depth < 20; depth += 1) {
+    const parent = await prisma.assetLocation.findUnique({ where: { id: parentLocation.parentId } });
+    if (!parent) break;
+    parentLocation = parent;
+  }
+
   return (
     <main className="min-h-screen bg-[var(--app-bg)] px-4 py-8">
       <div className="mx-auto max-w-3xl space-y-5">
@@ -98,7 +107,7 @@ export default async function AssetViewPage({ params }: AssetViewPageProps) {
             <div className="grid gap-4 sm:grid-cols-2">
               <InfoItem label="Status" value={asset.assetStatus?.name} />
               <InfoItem label="Category" value={asset.assetCategory ? `${asset.assetCategory.code} - ${asset.assetCategory.name}` : null} />
-              <InfoItem label="Location" value={asset.assetLocation ? `${asset.assetLocation.code} - ${asset.assetLocation.name}` : null} />
+              <InfoItem label="Detail Location" value={asset.assetLocation?.name} />
               <InfoItem label="Department" value={asset.department ? `${asset.department.code} - ${asset.department.name}` : null} />
               <InfoItem label="Asset User" value={asset.assetUser?.name} />
               <InfoItem label="Person In Charge" value={asset.personInCharge?.name} />
@@ -110,7 +119,7 @@ export default async function AssetViewPage({ params }: AssetViewPageProps) {
           <div className="rounded-md border border-[var(--border)] bg-white p-4">
             <MapPin className="h-5 w-5 text-[var(--primary)]" />
             <p className="mt-2 text-xs font-medium uppercase tracking-wide text-[var(--muted)]">Lokasi</p>
-            <p className="mt-1 text-sm font-semibold text-[var(--text)]">{asset.assetLocation?.name ?? "-"}</p>
+            <p className="mt-1 text-sm font-semibold text-[var(--text)]">{parentLocation?.name ?? "-"}</p>
           </div>
           <div className="rounded-md border border-[var(--border)] bg-white p-4">
             <Building2 className="h-5 w-5 text-[var(--primary)]" />
