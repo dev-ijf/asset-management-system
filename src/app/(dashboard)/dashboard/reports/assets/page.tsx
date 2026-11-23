@@ -12,6 +12,7 @@ import { formatReportDate, formatReportMoney, getReportOptions, requireReportsVi
 import { prisma } from "@/lib/prisma";
 import { parseDateRange } from "@/lib/date-range";
 import { DateRangeAlert, DateRangeInputs } from "@/components/ui/date-range-inputs";
+import { FilterField, FilterPanel } from "@/components/tables/filter-panel";
 import { paginate } from "@/lib/pagination";
 import { assetLocationFilter, departmentFilter } from "@/lib/location-filter";
 
@@ -82,35 +83,44 @@ export default async function AssetReportPage({ searchParams }: PageProps) {
       />
       <Card>
         <CardContent className="space-y-5">
-          <form className="grid gap-4 md:grid-cols-5">
+          <form>
             <input type="hidden" name="limit" value={pagination.pageSize} />
-            <Select name="status" defaultValue={filters.status ?? ""}>
-              <option value="">Semua Status</option>
-              {optionList(options.statuses)}
-            </Select>
-            <Select name="class" defaultValue={filters.class ?? ""}>
-              <option value="">Semua Class</option>
-              {optionList(options.classes)}
-            </Select>
-            <Select name="category" defaultValue={filters.category ?? ""}>
-              <option value="">Semua Category</option>
-              {optionList(options.categories)}
-            </Select>
-            <Select name="location" defaultValue={filters.location ?? ""}>
-              <option value="">Semua Location</option>
-              {optionList(options.locations)}
-            </Select>
-            <Select name="department" defaultValue={filters.department ?? ""}>
-              <option value="">Semua Department</option>
-              {optionList(options.departments)}
-            </Select>
-            <DateRangeInputs from={filters.from} to={filters.to} />
-            <div className="md:col-span-5 flex gap-2">
-              <Button type="submit">Filter</Button>
-              <Link href="/dashboard/reports/assets">
-                <Button type="button" variant="secondary">Reset</Button>
-              </Link>
-            </div>
+            <FilterPanel
+              activeCount={[filters.status, filters.class, filters.category, filters.location, filters.department, filters.from, filters.to].filter(Boolean).length}
+              resetHref="/dashboard/reports/assets"
+            >
+              <FilterField label="Status">
+                <Select name="status" defaultValue={filters.status ?? ""}>
+                  <option value="">Semua status</option>
+                  {optionList(options.statuses)}
+                </Select>
+              </FilterField>
+              <FilterField label="Class">
+                <Select name="class" defaultValue={filters.class ?? ""}>
+                  <option value="">Semua class</option>
+                  {optionList(options.classes)}
+                </Select>
+              </FilterField>
+              <FilterField label="Category">
+                <Select name="category" defaultValue={filters.category ?? ""}>
+                  <option value="">Semua category</option>
+                  {optionList(options.categories)}
+                </Select>
+              </FilterField>
+              <FilterField label="Location">
+                <Select name="location" defaultValue={filters.location ?? ""}>
+                  <option value="">Semua location</option>
+                  {optionList(options.locations)}
+                </Select>
+              </FilterField>
+              <FilterField label="Department">
+                <Select name="department" defaultValue={filters.department ?? ""}>
+                  <option value="">Semua department</option>
+                  {optionList(options.departments)}
+                </Select>
+              </FilterField>
+              <DateRangeInputs from={filters.from} to={filters.to} labelled />
+            </FilterPanel>
           </form>
 
           {range.error ? (

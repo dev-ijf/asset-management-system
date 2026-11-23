@@ -18,10 +18,15 @@ import { prisma } from "@/lib/prisma";
 import { wibDayKey } from "@/lib/datetime";
 import { paginate } from "@/lib/pagination";
 
+import { FilterField, FilterPanel } from "@/components/tables/filter-panel";
+import { DateRangeAlert, DateRangeInputs } from "@/components/ui/date-range-inputs";
+import { parseDateRange } from "@/lib/date-range";
+import { Select } from "@/components/ui/select";
+import { isMaintenanceStatus, MAINTENANCE_STATUSES } from "@/lib/maintenance-rules";
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  searchParams: Promise<{ q?: string; page?: string; limit?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; limit?: string; from?: string; to?: string; status?: string }>;
 };
 
 function dateInput(date: Date | null) {
@@ -34,16 +39,24 @@ export default async function MaintenancePage({ searchParams }: PageProps) {
   const { q = "" } = params;
   const options = await getTransactionOptions();
 
-  const where: Prisma.AssetMaintenanceWhereInput | undefined = q
+  const range = parseDateRange(params.from, params.to);
+  const where: Prisma.AssetMaintenanceWhereInput = {
+    ...(q
       ? {
           asset: {
             OR: [
-              { code: { contains: q, mode: "insensitive" } },
-              { name: { contains: q, mode: "insensitive" } },
+              { code: { contains: q, mode: "insensitive" as const } },
+              { name: { contains: q, mode: "insensitive" as const } },
             ],
           },
         }
-      : undefined;
+      : {}),
+      // A reversed range matches nothing; the alert above the table explains why.
+      ...(range.error ? { id: { in: [] } } : {}),
+      createdAt: range.filter,
+      status: isMaintenanceStatus(params.status ?? "") ? params.status : undefined,
+    };
+  const activeFilters = [params.status, params.from, params.to].filter(Boolean).length;
   const { items: maintenances, pagination } = await paginate(params,
     () => prisma.assetMaintenance.count({ where }),
     ({ skip, take }) => prisma.assetMaintenance.findMany({ where, skip, take, include: {
@@ -62,8 +75,22 @@ export default async function MaintenancePage({ searchParams }: PageProps) {
           <CardContent className="space-y-4">
             <form>
               <input type="hidden" name="limit" value={pagination.pageSize} />
-              <Input name="q" defaultValue={q} placeholder="Search asset code/name..." />
+              <FilterPanel
+                searchValue={q}
+                searchPlaceholder="Cari code atau name asset"
+                activeCount={activeFilters}
+                resetHref={q ? `/dashboard/maintenance?q=${encodeURIComponent(q)}` : "/dashboard/maintenance"}
+              >
+                <FilterField label="Status">
+                  <Select name="status" defaultValue={params.status ?? ""}>
+                    <option value="">Semua status</option>
+                    {MAINTENANCE_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+                  </Select>
+                </FilterField>
+                <DateRangeInputs from={params.from} to={params.to} labelled />
+              </FilterPanel>
             </form>
+            <DateRangeAlert message={range.error} />
             {maintenances.length === 0 ? (
               <EmptyState title="Belum ada data maintenance." description="Maintenance yang dibuat akan tampil di sini." />
             ) : (

@@ -10,10 +10,15 @@ import { formatDate, getTransactionOptions, requireAnyPermission } from "@/lib/a
 import { prisma } from "@/lib/prisma";
 import { paginate } from "@/lib/pagination";
 
+import { FilterField, FilterPanel } from "@/components/tables/filter-panel";
+import { DateRangeAlert, DateRangeInputs } from "@/components/ui/date-range-inputs";
+import { parseDateRange } from "@/lib/date-range";
+import { Select } from "@/components/ui/select";
+const AUDIT_STATUSES = ["MATCHED", "MISSING", "DAMAGED", "MATCH", "MISMATCH"] as const;
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  searchParams: Promise<{ q?: string; page?: string; limit?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; limit?: string; from?: string; to?: string; status?: string }>;
 };
 
 export default async function AuditsPage({ searchParams }: PageProps) {
@@ -22,16 +27,24 @@ export default async function AuditsPage({ searchParams }: PageProps) {
   const { q = "" } = params;
   const options = await getTransactionOptions();
 
-  const where: Prisma.AssetAuditWhereInput | undefined = q
+  const range = parseDateRange(params.from, params.to);
+  const where: Prisma.AssetAuditWhereInput = {
+    ...(q
       ? {
           asset: {
             OR: [
-              { code: { contains: q, mode: "insensitive" } },
-              { name: { contains: q, mode: "insensitive" } },
+              { code: { contains: q, mode: "insensitive" as const } },
+              { name: { contains: q, mode: "insensitive" as const } },
             ],
           },
         }
-      : undefined;
+      : {}),
+      // A reversed range matches nothing; the alert above the table explains why.
+      ...(range.error ? { id: { in: [] } } : {}),
+      createdAt: range.filter,
+      status: AUDIT_STATUSES.includes(params.status as (typeof AUDIT_STATUSES)[number]) ? (params.status as (typeof AUDIT_STATUSES)[number]) : undefined,
+    };
+  const activeFilters = [params.status, params.from, params.to].filter(Boolean).length;
   const { items: audits, pagination } = await paginate(params,
     () => prisma.assetAudit.count({ where }),
     ({ skip, take }) => prisma.assetAudit.findMany({ where, skip, take, include: {
@@ -50,8 +63,22 @@ export default async function AuditsPage({ searchParams }: PageProps) {
           <CardContent className="space-y-4">
             <form>
               <input type="hidden" name="limit" value={pagination.pageSize} />
-              <Input name="q" defaultValue={q} placeholder="Search asset code/name..." />
+              <FilterPanel
+                searchValue={q}
+                searchPlaceholder="Cari code atau name asset"
+                activeCount={activeFilters}
+                resetHref={q ? `/dashboard/transactions/audits?q=${encodeURIComponent(q)}` : "/dashboard/transactions/audits"}
+              >
+                <FilterField label="Status">
+                  <Select name="status" defaultValue={params.status ?? ""}>
+                    <option value="">Semua status</option>
+                    {AUDIT_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+                  </Select>
+                </FilterField>
+                <DateRangeInputs from={params.from} to={params.to} labelled />
+              </FilterPanel>
             </form>
+            <DateRangeAlert message={range.error} />
             {audits.length === 0 ? (
               <EmptyState title="Belum ada data audit." description="Audit yang dibuat akan tampil di sini." />
             ) : (

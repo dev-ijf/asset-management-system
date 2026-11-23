@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { movementChangeText } from "@/lib/movement-display";
 import { parseDateRange } from "@/lib/date-range";
 import { DateRangeAlert, DateRangeInputs } from "@/components/ui/date-range-inputs";
+import { FilterField, FilterPanel } from "@/components/tables/filter-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -44,12 +45,19 @@ export default async function MovementReportPage({ searchParams }: PageProps) {
       <PageHeader title="Report Movements" subtitle="Laporan perpindahan asset." actions={<div className="flex flex-wrap gap-2"><Link href={`/dashboard/reports/movements/export?${query.toString()}`}><Button><Download className="h-4 w-4" />CSV</Button></Link><Link href={`/dashboard/reports/export/excel?${query.toString()}`}><Button variant="secondary"><Download className="h-4 w-4" />Excel</Button></Link><Link href={`/dashboard/reports/export/pdf?${query.toString()}`}><Button variant="secondary"><Download className="h-4 w-4" />PDF</Button></Link></div>} />
       <Card>
         <CardContent className="space-y-5">
-          <form className="grid gap-4 md:grid-cols-4">
-            <Select name="asset" defaultValue={filters.asset ?? ""}><option value="">Semua Asset</option>{options(reportOptions.assets)}</Select>
-            <Select name="fromLocation" defaultValue={filters.fromLocation ?? ""}><option value="">Semua From Location</option>{options(reportOptions.locations)}</Select>
-            <Select name="toLocation" defaultValue={filters.toLocation ?? ""}><option value="">Semua To Location</option>{options(reportOptions.locations)}</Select>
-            <DateRangeInputs from={filters.from} to={filters.to} />
-            <div className="md:col-span-4 flex gap-2"><Button type="submit">Filter</Button><Link href="/dashboard/reports/movements"><Button type="button" variant="secondary">Reset</Button></Link></div>
+          <form>
+            <FilterPanel activeCount={[filters.asset, filters.fromLocation, filters.toLocation, filters.from, filters.to].filter(Boolean).length} resetHref="/dashboard/reports/movements">
+              <FilterField label="Asset">
+                <Select name="asset" defaultValue={filters.asset ?? ""}><option value="">Semua asset</option>{options(reportOptions.assets)}</Select>
+              </FilterField>
+              <FilterField label="Dari lokasi">
+                <Select name="fromLocation" defaultValue={filters.fromLocation ?? ""}><option value="">Semua lokasi</option>{options(reportOptions.locations)}</Select>
+              </FilterField>
+              <FilterField label="Ke lokasi">
+                <Select name="toLocation" defaultValue={filters.toLocation ?? ""}><option value="">Semua lokasi</option>{options(reportOptions.locations)}</Select>
+              </FilterField>
+              <DateRangeInputs from={filters.from} to={filters.to} labelled />
+            </FilterPanel>
           </form>
           {range.error ? <DateRangeAlert message={range.error} /> : movements.length === 0 ? <EmptyState title="Tidak ada data movement." description="Ubah filter untuk melihat report." /> : (
             <div className="overflow-x-auto">

@@ -8,7 +8,7 @@ import { DATE_RANGE_ERROR } from "@/lib/date-range";
  * The "from" / "to" date inputs of a GET filter form.
  * Blocks submitting a reversed range in the browser; the server still validates it for edited URLs.
  */
-export function DateRangeInputs({ from, to }: { from?: string; to?: string }) {
+export function DateRangeInputs({ from, to, labelled = false }: { from?: string; to?: string; labelled?: boolean }) {
   const [start, setStart] = useState(from ?? "");
   const [end, setEnd] = useState(to ?? "");
   const toInput = useRef<HTMLInputElement>(null);
@@ -22,29 +22,53 @@ export function DateRangeInputs({ from, to }: { from?: string; to?: string }) {
     toInput.current?.setCustomValidity(reversed ? DATE_RANGE_ERROR : "");
   }, [reversed]);
 
+  const fromInput = (
+    <Input
+      type="date"
+      name="from"
+      value={start}
+      max={end || undefined}
+      onChange={(event) => setStart(event.target.value)}
+      aria-label="Dari tanggal"
+      title="Dari tanggal"
+      className={labelled ? "mt-1 h-10 w-full" : undefined}
+    />
+  );
+  const toInputElement = (
+    <Input
+      ref={toInput}
+      type="date"
+      name="to"
+      value={end}
+      min={start || undefined}
+      onChange={(event) => setEnd(event.target.value)}
+      aria-label="Sampai tanggal"
+      title="Sampai tanggal"
+      aria-invalid={reversed || undefined}
+      className={[labelled ? "mt-1 h-10 w-full" : "", reversed ? "border-[var(--danger)]" : ""].join(" ").trim() || undefined}
+    />
+  );
+
+  if (!labelled) {
+    return (
+      <>
+        {fromInput}
+        {toInputElement}
+      </>
+    );
+  }
+
+  // Same look as FilterField (components/tables/filter-panel): a small caption above each input.
   return (
     <>
-      <Input
-        type="date"
-        name="from"
-        value={start}
-        max={end || undefined}
-        onChange={(event) => setStart(event.target.value)}
-        aria-label="Dari tanggal"
-        title="Dari tanggal"
-      />
-      <Input
-        ref={toInput}
-        type="date"
-        name="to"
-        value={end}
-        min={start || undefined}
-        onChange={(event) => setEnd(event.target.value)}
-        aria-label="Sampai tanggal"
-        title="Sampai tanggal"
-        aria-invalid={reversed || undefined}
-        className={reversed ? "border-[var(--danger)]" : undefined}
-      />
+      <label className="block min-w-0">
+        <span className="text-xs font-medium text-[var(--muted)]">Dari tanggal</span>
+        {fromInput}
+      </label>
+      <label className="block min-w-0">
+        <span className="text-xs font-medium text-[var(--muted)]">Sampai tanggal</span>
+        {toInputElement}
+      </label>
     </>
   );
 }

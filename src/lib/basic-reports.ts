@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { hasPermission, getCurrentUser, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { wibFormat } from "@/lib/datetime";
-import { locationOptions } from "@/lib/location-tree";
+import { locationPathOptions } from "@/lib/location-tree";
 
 export function formatReportDate(date: Date | null) {
   if (!date) return "-";
@@ -52,15 +52,16 @@ export async function getReportOptions() {
     prisma.department.findMany({ select: { id: true, code: true, name: true, parentId: true } }),
   ]);
 
-  const coded = (items: { code: string; id: string; name: string }[]) => items.map((item) => ({ id: item.id, label: `${item.code} - ${item.name}` }));
+  const named = (items: { id: string; name: string }[]) =>
+    [...items].sort((a, b) => a.name.localeCompare(b.name, "id")).map((item) => ({ id: item.id, label: item.name }));
 
   return {
     assets: assets.map((asset) => ({ id: asset.id, label: `${asset.code} - ${asset.name}` })),
-    categories: coded(categories),
-    classes: coded(classes),
-    departments: locationOptions(departments),
-    locations: locationOptions(locations),
-    statuses: coded(statuses),
+    categories: named(categories),
+    classes: named(classes),
+    departments: locationPathOptions(departments),
+    locations: locationPathOptions(locations),
+    statuses: named(statuses),
   };
 }
 

@@ -19,7 +19,7 @@ export default async function MasterDetailPage({
   searchParams,
 }: {
   params: Promise<{ masterPage: string }>;
-  searchParams: Promise<{ q?: string; page?: string; limit?: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const { masterPage } = await params;
   const query = await searchParams;

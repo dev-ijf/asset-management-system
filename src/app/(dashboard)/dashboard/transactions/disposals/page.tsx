@@ -13,10 +13,14 @@ import { hasPermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { paginate } from "@/lib/pagination";
 
+import { FilterField, FilterPanel } from "@/components/tables/filter-panel";
+import { DateRangeAlert, DateRangeInputs } from "@/components/ui/date-range-inputs";
+import { parseDateRange } from "@/lib/date-range";
+import { Select } from "@/components/ui/select";
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  searchParams: Promise<{ q?: string; page?: string; limit?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; limit?: string; from?: string; to?: string; status?: string }>;
 };
 
 function payloadDisposalId(payload: Prisma.JsonValue) {
@@ -34,16 +38,24 @@ export default async function DisposalsPage({ searchParams }: PageProps) {
   const { q = "" } = params;
   const options = await getTransactionOptions("disposal");
 
-  const where: Prisma.AssetDisposalWhereInput | undefined = q
+  const range = parseDateRange(params.from, params.to);
+  const where: Prisma.AssetDisposalWhereInput = {
+    ...(q
       ? {
           asset: {
             OR: [
-              { code: { contains: q, mode: "insensitive" } },
-              { name: { contains: q, mode: "insensitive" } },
+              { code: { contains: q, mode: "insensitive" as const } },
+              { name: { contains: q, mode: "insensitive" as const } },
             ],
           },
         }
-      : undefined;
+      : {}),
+      // A reversed range matches nothing; the alert above the table explains why.
+      ...(range.error ? { id: { in: [] } } : {}),
+      createdAt: range.filter,
+      reversedAt: params.status === "reversed" ? { not: null } : params.status === "disposed" ? null : undefined,
+    };
+  const activeFilters = [params.status, params.from, params.to].filter(Boolean).length;
   const { items: disposals, pagination } = await paginate(params,
     () => prisma.assetDisposal.count({ where }),
     ({ skip, take }) => prisma.assetDisposal.findMany({ where, skip, take, include: {
@@ -79,8 +91,23 @@ export default async function DisposalsPage({ searchParams }: PageProps) {
           <CardContent className="space-y-4">
             <form>
               <input type="hidden" name="limit" value={pagination.pageSize} />
-              <Input name="q" defaultValue={q} placeholder="Search asset code/name..." />
+              <FilterPanel
+                searchValue={q}
+                searchPlaceholder="Cari code atau name asset"
+                activeCount={activeFilters}
+                resetHref={q ? `/dashboard/transactions/disposals?q=${encodeURIComponent(q)}` : "/dashboard/transactions/disposals"}
+              >
+                <FilterField label="Status">
+                  <Select name="status" defaultValue={params.status ?? ""}>
+                    <option value="">Semua status</option>
+                    <option value="disposed">Disposed</option>
+                    <option value="reversed">Dibatalkan (reversed)</option>
+                  </Select>
+                </FilterField>
+                <DateRangeInputs from={params.from} to={params.to} labelled />
+              </FilterPanel>
             </form>
+            <DateRangeAlert message={range.error} />
             {disposals.length === 0 ? (
               <EmptyState title="Belum ada data disposal." description="Disposal yang dibuat akan tampil di sini." />
             ) : (

@@ -16,7 +16,8 @@ import { prisma } from "@/lib/prisma";
 import { createPagination, paginationQuery, parsePagination } from "@/lib/pagination";
 import { wibFormat } from "@/lib/datetime";
 import { categoryClassResolver } from "@/lib/category-class";
-import { locationOptions } from "@/lib/location-tree";
+import { locationOptions, locationPathOptions } from "@/lib/location-tree";
+import { FilterField, FilterPanel } from "@/components/tables/filter-panel";
 import { assetLocationFilter, departmentFilter } from "@/lib/location-filter";
 
 export const dynamic = "force-dynamic";
@@ -149,7 +150,10 @@ async function getAssets({
   return { items, pagination };
 }
 
-async function getOptions(): Promise<AssetFormOptions> {
+type FilterOption = { id: string; label: string };
+type FilterOptions = Record<"statuses" | "classes" | "categories" | "locations" | "departments", FilterOption[]>;
+
+async function getOptions(): Promise<AssetFormOptions & { filters: FilterOptions }> {
   const [
     statuses,
     classes,
@@ -175,6 +179,8 @@ async function getOptions(): Promise<AssetFormOptions> {
   ]);
 
   const classOfCategory = categoryClassResolver(categories);
+  const byName = (items: { id: string; name: string }[]) =>
+    [...items].sort((a, b) => a.name.localeCompare(b.name, "id")).map((item) => ({ id: item.id, label: item.name }));
 
   return {
     statuses: statuses.map((item) => ({ id: item.id, label: `${item.code} - ${item.name}` })),
@@ -190,6 +196,14 @@ async function getOptions(): Promise<AssetFormOptions> {
       id: item.id,
       label: item.contractNumber ? `${item.vendorName} - ${item.contractNumber}` : item.vendorName,
     })),
+    // The list filters show names only; the asset form keeps "code - name".
+    filters: {
+      statuses: byName(statuses),
+      classes: byName(classes),
+      categories: byName(categories),
+      locations: locationPathOptions(locations),
+      departments: locationPathOptions(departments),
+    },
   };
 }
 
@@ -206,12 +220,13 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
   const { page: requestedPage, pageSize } = parsePagination(params);
 
   try {
-    const [assetResult, options] = await Promise.all([
+    const [assetResult, { filters, ...options }] = await Promise.all([
       getAssets({ categoryId, classId, departmentId, locationId, query, statusId, requestedPage, pageSize }),
       getOptions(),
     ]);
     const { items: assets, pagination } = assetResult;
-    const hasFilter = Boolean(query || statusId || classId || categoryId || locationId || departmentId);
+    const activeFilters = [statusId, classId, categoryId, locationId, departmentId].filter(Boolean).length;
+    const hasFilter = Boolean(query) || activeFilters > 0;
     // Export carries the active search and filters (not the page), so the file matches the list.
     const exportParams = new URLSearchParams(
       Object.entries({ q: query, status: statusId, class: classId, category: categoryId, location: locationId, department: departmentId })
@@ -239,35 +254,45 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
                 </Link>
               ) : null}
             </div>
-            <form className="grid gap-3 lg:grid-cols-6">
+            <form>
               <input type="hidden" name="limit" value={pagination.pageSize} />
-              <div className="relative lg:col-span-2">
-                <Input name="q" placeholder="Cari code, name, serial number" defaultValue={query} className="h-10 pr-10" />
-                <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
-              </div>
-              <Select name="status" defaultValue={statusId} className="h-10">
-                <option value="">Semua status</option>
-                {options.statuses.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-              </Select>
-              <Select name="class" defaultValue={classId} className="h-10">
-                <option value="">Semua class</option>
-                {options.classes.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-              </Select>
-              <Select name="category" defaultValue={categoryId} className="h-10">
-                <option value="">Semua category</option>
-                {options.categories.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-              </Select>
-              <div className="flex gap-2">
-                <Button type="submit" variant="secondary" className="h-10 flex-1">Filter</Button>
-              </div>
-              <Select name="location" defaultValue={locationId} className="h-10">
-                <option value="">Semua location</option>
-                {options.locations.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-              </Select>
-              <Select name="department" defaultValue={departmentId} className="h-10">
-                <option value="">Semua department</option>
-                {options.departments.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
-              </Select>
+              <FilterPanel
+                searchValue={query}
+                searchPlaceholder="Cari code, name, serial number"
+                activeCount={activeFilters}
+                resetHref={query ? `/dashboard/assets?q=${encodeURIComponent(query)}` : "/dashboard/assets"}
+              >
+                <FilterField label="Status">
+                  <Select name="status" defaultValue={statusId}>
+                    <option value="">Semua status</option>
+                    {filters.statuses.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                  </Select>
+                </FilterField>
+                <FilterField label="Class">
+                  <Select name="class" defaultValue={classId}>
+                    <option value="">Semua class</option>
+                    {filters.classes.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                  </Select>
+                </FilterField>
+                <FilterField label="Category">
+                  <Select name="category" defaultValue={categoryId}>
+                    <option value="">Semua category</option>
+                    {filters.categories.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                  </Select>
+                </FilterField>
+                <FilterField label="Location">
+                  <Select name="location" defaultValue={locationId}>
+                    <option value="">Semua location</option>
+                    {filters.locations.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                  </Select>
+                </FilterField>
+                <FilterField label="Department">
+                  <Select name="department" defaultValue={departmentId}>
+                    <option value="">Semua department</option>
+                    {filters.departments.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                  </Select>
+                </FilterField>
+              </FilterPanel>
             </form>
           </CardHeader>
           <CardContent>

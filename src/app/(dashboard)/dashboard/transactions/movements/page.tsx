@@ -12,10 +12,16 @@ import { prisma } from "@/lib/prisma";
 import { movementChangeText } from "@/lib/movement-display";
 import { paginate } from "@/lib/pagination";
 
+import { FilterField, FilterPanel } from "@/components/tables/filter-panel";
+import { DateRangeAlert, DateRangeInputs } from "@/components/ui/date-range-inputs";
+import { parseDateRange } from "@/lib/date-range";
+import { Select } from "@/components/ui/select";
+import { assetLocationFilter } from "@/lib/location-filter";
+import { locationPathOptions } from "@/lib/location-tree";
 export const dynamic = "force-dynamic";
 
 type PageProps = {
-  searchParams: Promise<{ q?: string; page?: string; limit?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; limit?: string; from?: string; to?: string; toLocation?: string }>;
 };
 
 export default async function MovementsPage({ searchParams }: PageProps) {
@@ -24,16 +30,27 @@ export default async function MovementsPage({ searchParams }: PageProps) {
   const { q = "" } = params;
   const options = await getTransactionOptions("movement");
 
-  const where: Prisma.AssetMovementWhereInput | undefined = q
+  const range = parseDateRange(params.from, params.to);
+  const locationChoices = locationPathOptions(
+    await prisma.assetLocation.findMany({ select: { id: true, code: true, name: true, parentId: true } }),
+  );
+  const where: Prisma.AssetMovementWhereInput = {
+    ...(q
       ? {
           asset: {
             OR: [
-              { code: { contains: q, mode: "insensitive" } },
-              { name: { contains: q, mode: "insensitive" } },
+              { code: { contains: q, mode: "insensitive" as const } },
+              { name: { contains: q, mode: "insensitive" as const } },
             ],
           },
         }
-      : undefined;
+      : {}),
+      // A reversed range matches nothing; the alert above the table explains why.
+      ...(range.error ? { id: { in: [] } } : {}),
+      createdAt: range.filter,
+      toLocationId: await assetLocationFilter(params.toLocation),
+    };
+  const activeFilters = [params.toLocation, params.from, params.to].filter(Boolean).length;
   const { items: movements, pagination } = await paginate(params,
     () => prisma.assetMovement.count({ where }),
     ({ skip, take }) => prisma.assetMovement.findMany({ where, skip, take, include: {
@@ -58,8 +75,22 @@ export default async function MovementsPage({ searchParams }: PageProps) {
           <CardContent className="space-y-4">
             <form>
               <input type="hidden" name="limit" value={pagination.pageSize} />
-              <Input name="q" defaultValue={q} placeholder="Search asset code/name..." />
+              <FilterPanel
+                searchValue={q}
+                searchPlaceholder="Cari code atau name asset"
+                activeCount={activeFilters}
+                resetHref={q ? `/dashboard/transactions/movements?q=${encodeURIComponent(q)}` : "/dashboard/transactions/movements"}
+              >
+                <FilterField label="Ke lokasi">
+                  <Select name="toLocation" defaultValue={params.toLocation ?? ""}>
+                    <option value="">Semua lokasi</option>
+                    {locationChoices.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                  </Select>
+                </FilterField>
+                <DateRangeInputs from={params.from} to={params.to} labelled />
+              </FilterPanel>
             </form>
+            <DateRangeAlert message={range.error} />
             {movements.length === 0 ? (
               <EmptyState title="Belum ada data movement." description="Movement yang dibuat akan tampil di sini." />
             ) : (

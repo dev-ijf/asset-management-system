@@ -14,6 +14,7 @@ import { approvalPayloadSummary } from "@/lib/approval-summary";
 import { prisma } from "@/lib/prisma";
 import { parseDateRange } from "@/lib/date-range";
 import { DateRangeAlert, DateRangeInputs } from "@/components/ui/date-range-inputs";
+import { FilterField, FilterPanel } from "@/components/tables/filter-panel";
 import { paginate } from "@/lib/pagination";
 import { wibFormat } from "@/lib/datetime";
 
@@ -104,37 +105,43 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
       </nav>
       <Card>
         <CardContent className="space-y-5">
-          <form className={`grid gap-4 ${history ? "md:grid-cols-6" : "md:grid-cols-5"}`}>
+          <form>
             <input type="hidden" name="limit" value={pagination.pageSize} />
-            {history ? (
-              <>
-                <input type="hidden" name="view" value="history" />
-                <Select name="status" defaultValue={statusFilter ?? ""}>
-                  <option value="">Semua Status</option>
-                  <option value={ApprovalStatus.APPROVED}>Approved</option>
-                  <option value={ApprovalStatus.REJECTED}>Rejected</option>
+            {history ? <input type="hidden" name="view" value="history" /> : null}
+            <FilterPanel
+              activeCount={[history ? statusFilter : "", filters.type, filters.asset, filters.from, filters.to].filter(Boolean).length}
+              resetHref={history ? "/dashboard/approvals?view=history" : "/dashboard/approvals"}
+            >
+              {history ? (
+                <FilterField label="Status">
+                  <Select name="status" defaultValue={statusFilter ?? ""}>
+                    <option value="">Semua status</option>
+                    <option value={ApprovalStatus.APPROVED}>Approved</option>
+                    <option value={ApprovalStatus.REJECTED}>Rejected</option>
+                  </Select>
+                </FilterField>
+              ) : null}
+              <FilterField label="Jenis">
+                <Select name="type" defaultValue={filters.type ?? ""}>
+                  <option value="">Semua jenis</option>
+                  <option value={ApprovalTransactionType.MOVEMENT}>Movement</option>
+                  <option value={ApprovalTransactionType.DISPOSAL}>Disposal</option>
+                  <option value={ApprovalTransactionType.DISPOSAL_REVERSAL}>Pembatalan Disposal</option>
+                  <option value={ApprovalTransactionType.MAINTENANCE}>Maintenance</option>
                 </Select>
-              </>
-            ) : null}
-            <Select name="type" defaultValue={filters.type ?? ""}>
-              <option value="">Semua Jenis</option>
-              <option value={ApprovalTransactionType.MOVEMENT}>Movement</option>
-              <option value={ApprovalTransactionType.DISPOSAL}>Disposal</option>
-              <option value={ApprovalTransactionType.DISPOSAL_REVERSAL}>Pembatalan Disposal</option>
-              <option value={ApprovalTransactionType.MAINTENANCE}>Maintenance</option>
-            </Select>
-            <Select name="asset" defaultValue={filters.asset ?? ""}>
-              <option value="">Semua Asset</option>
-              {assets.map((asset) => (
-                <option key={asset.id} value={asset.id}>
-                  {asset.code} - {asset.name}
-                </option>
-              ))}
-            </Select>
-            <DateRangeInputs from={filters.from} to={filters.to} />
-            <button className="rounded-md border border-[var(--primary)] bg-[var(--primary)] px-5 py-2 text-sm font-medium text-white" type="submit">
-              Filter
-            </button>
+              </FilterField>
+              <FilterField label="Asset">
+                <Select name="asset" defaultValue={filters.asset ?? ""}>
+                  <option value="">Semua asset</option>
+                  {assets.map((asset) => (
+                    <option key={asset.id} value={asset.id}>
+                      {asset.code} - {asset.name}
+                    </option>
+                  ))}
+                </Select>
+              </FilterField>
+              <DateRangeInputs from={filters.from} to={filters.to} labelled />
+            </FilterPanel>
           </form>
 
           {history ? (

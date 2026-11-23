@@ -20,9 +20,12 @@ import { paginate, type PaginationQuery } from "@/lib/pagination";
 import { wibFormat } from "@/lib/datetime";
 import { TEXT_LIMITS } from "@/lib/text-limits";
 
+import { FilterPanel } from "@/components/tables/filter-panel";
+import { SelectFilterField } from "@/components/master/master-filter-fields";
+import { activeFilterCount, type MasterParams } from "@/lib/master-filters";
 type Props = {
   search?: string;
-  paginationQuery: PaginationQuery;
+  paginationQuery: MasterParams;
 };
 
 const fields: MasterField[] = [
@@ -41,7 +44,7 @@ export async function AssetClassesPage({ search = "", paginationQuery }: Props) 
   const query = search.trim();
 
   try {
-    const where: Prisma.AssetClassWhereInput | undefined = query
+    const searchWhere: Prisma.AssetClassWhereInput | undefined = query
         ? {
             OR: [
               { code: { contains: query, mode: "insensitive" } },
@@ -49,6 +52,9 @@ export async function AssetClassesPage({ search = "", paginationQuery }: Props) 
             ],
           }
         : undefined;
+    const nameOptions = (await prisma.assetClass.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } })).map((item) => ({ value: item.id, label: item.name }));
+    const where: Prisma.AssetClassWhereInput = { AND: [searchWhere ?? {}, paginationQuery.name ? { id: paginationQuery.name } : {}] };
+    const activeFilters = activeFilterCount(paginationQuery, ["name"]);
     const { items: classes, pagination } = await paginate(paginationQuery,
       () => prisma.assetClass.count({ where }),
       ({ skip, take }) => prisma.assetClass.findMany({ where, skip, take, orderBy: [{ code: "asc" }],
@@ -73,16 +79,18 @@ export async function AssetClassesPage({ search = "", paginationQuery }: Props) 
           }
         />
         <Card>
-          <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <CardHeader className="space-y-4">
             <CardTitle>Daftar Kelas Aset</CardTitle>
-            <form className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-lg">
+            <form>
               <input type="hidden" name="limit" value={pagination.pageSize} />
-              <div className="relative flex-1">
-                <Input name="q" placeholder="Cari code atau name" defaultValue={query} className="h-10 pr-10" />
-                <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
-              </div>
-              <Button type="submit" variant="secondary">Search</Button>
-              {query ? <Link href="/dashboard/master/asset-classes" className="inline-flex h-10 items-center justify-center rounded-md border border-transparent bg-transparent px-5 text-sm font-medium text-[var(--primary)] transition-colors hover:bg-[var(--primary-soft)]">Reset</Link> : null}
+              <FilterPanel
+                searchValue={query}
+                searchPlaceholder="Cari code atau name"
+                activeCount={activeFilters}
+                resetHref={query ? `/dashboard/master/asset-classes?q=${encodeURIComponent(query)}` : "/dashboard/master/asset-classes"}
+              >
+                <SelectFilterField label="Name" name="name" value={paginationQuery.name} allLabel="Semua" options={nameOptions} />
+              </FilterPanel>
             </form>
           </CardHeader>
           <CardContent>

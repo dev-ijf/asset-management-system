@@ -16,9 +16,12 @@ import { createPagination, paginationQuery as paginationQueryArgs, parsePaginati
 import { buildLocationTree as buildHierarchy } from "@/lib/location-tree";
 import { wibFormat } from "@/lib/datetime";
 
+import { FilterPanel } from "@/components/tables/filter-panel";
+import { SelectFilterField } from "@/components/master/master-filter-fields";
+import { activeFilterCount, type MasterParams } from "@/lib/master-filters";
 type DepartmentsPageProps = {
   search?: string;
-  paginationQuery: PaginationQuery;
+  paginationQuery: MasterParams;
 };
 
 function formatDate(date: Date) {
@@ -51,8 +54,14 @@ export async function DepartmentsPage({ search = "", paginationQuery }: Departme
     const matches = needle
       ? tree.filter((item) => item.code.toLowerCase().includes(needle) || item.path.toLowerCase().includes(needle))
       : tree;
+    // Column filters: Name and the direct parent shown in the "Parent Department" column.
+    const filtered = matches.filter((item) =>
+      (!paginationQuery.name || item.id === paginationQuery.name) &&
+      (paginationQuery.parent === "none" ? !item.parentId : paginationQuery.parent ? item.parentId === paginationQuery.parent : true),
+    );
+    const activeFilters = activeFilterCount(paginationQuery, ["name", "parent"]);
     const { page: requestedPage, pageSize } = parsePagination(paginationQuery);
-    const pagination = createPagination(matches.length, requestedPage, pageSize);
+    const pagination = createPagination(filtered.length, requestedPage, pageSize);
     const { skip, take } = paginationQueryArgs(pagination);
     const byId = new Map(tree.map((item) => [item.id, item]));
 
@@ -65,7 +74,7 @@ export async function DepartmentsPage({ search = "", paginationQuery }: Departme
       subtreeIds: item.subtreeIds,
     }));
 
-    const rows: HierarchyRow[] = matches.slice(skip, skip + take).map((department) => {
+    const rows: HierarchyRow[] = filtered.slice(skip, skip + take).map((department) => {
       const parent = department.parentId ? byId.get(department.parentId) : undefined;
       return {
         id: department.id,
@@ -91,25 +100,19 @@ export async function DepartmentsPage({ search = "", paginationQuery }: Departme
         />
 
         <Card>
-          <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <CardHeader className="space-y-4">
             <CardTitle>Daftar Departemen</CardTitle>
-            <form className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-lg">
+            <form>
               <input type="hidden" name="limit" value={pagination.pageSize} />
-              <div className="relative flex-1">
-                <Input name="q" placeholder="Cari code, name, atau path" defaultValue={query} className="h-10 pr-10" />
-                <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
-              </div>
-              <Button type="submit" variant="secondary">
-                Search
-              </Button>
-              {query ? (
-                <Link
-                  href="/dashboard/master/departments"
-                  className="inline-flex h-10 items-center justify-center rounded-md border border-transparent bg-transparent px-5 text-sm font-medium text-[var(--primary)] transition-colors hover:bg-[var(--primary-soft)]"
-                >
-                  Reset
-                </Link>
-              ) : null}
+              <FilterPanel
+                searchValue={query}
+                searchPlaceholder="Cari code, name, atau path"
+                activeCount={activeFilters}
+                resetHref={query ? `/dashboard/master/departments?q=${encodeURIComponent(query)}` : "/dashboard/master/departments"}
+              >
+                <SelectFilterField label="Name" name="name" value={paginationQuery.name} allLabel="Semua" options={parentOptions.map((option) => ({ value: option.id, label: option.path }))} />
+                <SelectFilterField label="Parent Department" name="parent" value={paginationQuery.parent} allLabel="Semua" options={[{ value: "none", label: "Tanpa parent (Parent Department)" }, ...parentOptions.filter((option) => option.subtreeIds.length > 1).map((option) => ({ value: option.id, label: option.path }))]} />
+              </FilterPanel>
             </form>
           </CardHeader>
           <CardContent>

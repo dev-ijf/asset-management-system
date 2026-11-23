@@ -10,6 +10,7 @@ import { formatReportDate, getReportOptions, requireReportsView } from "@/lib/ba
 import { prisma } from "@/lib/prisma";
 import { parseDateRange } from "@/lib/date-range";
 import { DateRangeAlert, DateRangeInputs } from "@/components/ui/date-range-inputs";
+import { FilterField, FilterPanel } from "@/components/tables/filter-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -43,11 +44,16 @@ export default async function DisposalReportPage({ searchParams }: PageProps) {
       <PageHeader title="Report Disposals" subtitle="Laporan disposal dan reverse asset." actions={<div className="flex flex-wrap gap-2"><Link href={`/dashboard/reports/disposals/export?${query.toString()}`}><Button><Download className="h-4 w-4" />CSV</Button></Link><Link href={`/dashboard/reports/export/excel?${query.toString()}`}><Button variant="secondary"><Download className="h-4 w-4" />Excel</Button></Link><Link href={`/dashboard/reports/export/pdf?${query.toString()}`}><Button variant="secondary"><Download className="h-4 w-4" />PDF</Button></Link></div>} />
       <Card>
         <CardContent className="space-y-5">
-          <form className="grid gap-4 md:grid-cols-3">
-            <Select name="asset" defaultValue={filters.asset ?? ""}><option value="">Semua Asset</option>{options(reportOptions.assets)}</Select>
-            <Select name="status" defaultValue={filters.status ?? ""}><option value="">Semua Status</option><option value="disposed">Disposed</option><option value="reversed">Reversed</option></Select>
-            <DateRangeInputs from={filters.from} to={filters.to} />
-            <div className="md:col-span-3 flex gap-2"><Button type="submit">Filter</Button><Link href="/dashboard/reports/disposals"><Button type="button" variant="secondary">Reset</Button></Link></div>
+          <form>
+            <FilterPanel activeCount={[filters.asset, filters.status, filters.from, filters.to].filter(Boolean).length} resetHref="/dashboard/reports/disposals">
+              <FilterField label="Asset">
+                <Select name="asset" defaultValue={filters.asset ?? ""}><option value="">Semua asset</option>{options(reportOptions.assets)}</Select>
+              </FilterField>
+              <FilterField label="Status">
+                <Select name="status" defaultValue={filters.status ?? ""}><option value="">Semua status</option><option value="disposed">Disposed</option><option value="reversed">Reversed</option></Select>
+              </FilterField>
+              <DateRangeInputs from={filters.from} to={filters.to} labelled />
+            </FilterPanel>
           </form>
           {range.error ? <DateRangeAlert message={range.error} /> : disposals.length === 0 ? <EmptyState title="Tidak ada data disposal." description="Ubah filter untuk melihat report." /> : (
             <div className="overflow-x-auto">

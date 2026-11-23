@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { buildArchiveQuery, type ArchiveView } from "@/lib/archive-query";
 import { DateRangeAlert, DateRangeInputs } from "@/components/ui/date-range-inputs";
+import { FilterField, FilterPanel } from "@/components/tables/filter-panel";
+import { locationPathOptions } from "@/lib/location-tree";
 import { hasPermission, requirePermission } from "@/lib/auth";
 import { cn } from "@/lib/cn";
 import { createPagination, paginationQuery, parsePagination } from "@/lib/pagination";
@@ -57,8 +59,8 @@ export default async function ArchivePage({ searchParams }: Props) {
     prisma.asset.count({ where: { deletedAt: null, archivedAt: { not: null } } }),
     prisma.asset.count({ where: { deletedAt: { not: null } } }),
     prisma.assetCategory.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    prisma.assetLocation.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    prisma.department.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.assetLocation.findMany({ select: { id: true, code: true, name: true, parentId: true } }),
+    prisma.department.findMany({ select: { id: true, code: true, name: true, parentId: true } }),
   ]);
   const pagination = createPagination(total, requestedPage, pageSize);
   const assets = await prisma.asset.findMany({
@@ -85,6 +87,7 @@ export default async function ArchivePage({ searchParams }: Props) {
   exportQuery.set("view", view);
   const tabHref = (target: ArchiveView) => `/dashboard/archive?view=${target}&limit=${pagination.pageSize}`;
   const counts: Record<ArchiveView, number> = { archived: archivedCount, deleted: deletedCount };
+  const activeFilters = ["category", "location", "department", "age", "from", "to"].filter((key) => flat.get(key)).length;
 
   return (
     <>
@@ -120,46 +123,58 @@ export default async function ArchivePage({ searchParams }: Props) {
             ))}
           </nav>
           <CardTitle>{view === "deleted" ? "Daftar Aset Terhapus" : "Daftar Aset Arsip"}</CardTitle>
-          <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <form>
             <input type="hidden" name="view" value={view} />
             <input type="hidden" name="limit" value={pagination.pageSize} />
-            <div className="relative">
-              <Input name="q" defaultValue={values.q} placeholder="Cari code, name, serial, alasan" className="pr-10" />
-              <Search className="absolute right-3 top-3.5 h-4 w-4 text-[var(--muted)]" />
-            </div>
-            <Select name="category" defaultValue={flat.get("category") ?? ""}>
-              <option value="">Semua kategori</option>
-              {categories.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-            </Select>
-            <Select name="location" defaultValue={flat.get("location") ?? ""}>
-              <option value="">Semua lokasi</option>
-              {locations.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-            </Select>
-            <Select name="department" defaultValue={flat.get("department") ?? ""}>
-              <option value="">Semua departemen</option>
-              {departments.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-            </Select>
-            <Select name="age" defaultValue={values.age}>
-              <option value="">{view === "deleted" ? "Semua usia hapus" : "Semua usia arsip"}</option>
-              <option value="30">0–30 hari</option>
-              <option value="90">31–90 hari</option>
-              <option value="180">91–180 hari</option>
-              <option value="365">181–365 hari</option>
-              <option value="older">Lebih dari 1 tahun</option>
-            </Select>
-            <DateRangeInputs from={values.from} to={values.to} />
-            <div className="flex gap-2">
-              <Select name="sort" defaultValue={values.sort}>
-                <option value="date">{view === "deleted" ? "Tanggal hapus" : "Tanggal arsip"}</option>
-                <option value="code">Kode</option>
-                <option value="name">Nama</option>
-              </Select>
-              <Select name="direction" defaultValue={values.direction}>
-                <option value="desc">Turun</option>
-                <option value="asc">Naik</option>
-              </Select>
-              <button className="rounded-md bg-[var(--primary)] px-4 text-sm font-medium text-white">Filter</button>
-            </div>
+            <FilterPanel
+              searchValue={values.q}
+              searchPlaceholder="Cari code, name, serial, alasan"
+              activeCount={activeFilters}
+              resetHref={`/dashboard/archive?view=${view}${values.q ? `&q=${encodeURIComponent(values.q)}` : ""}`}
+            >
+              <FilterField label="Kategori">
+                <Select name="category" defaultValue={flat.get("category") ?? ""}>
+                  <option value="">Semua kategori</option>
+                  {categories.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                </Select>
+              </FilterField>
+              <FilterField label="Lokasi">
+                <Select name="location" defaultValue={flat.get("location") ?? ""}>
+                  <option value="">Semua lokasi</option>
+                  {locationPathOptions(locations).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+                </Select>
+              </FilterField>
+              <FilterField label="Departemen">
+                <Select name="department" defaultValue={flat.get("department") ?? ""}>
+                  <option value="">Semua departemen</option>
+                  {locationPathOptions(departments).map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
+                </Select>
+              </FilterField>
+              <FilterField label={view === "deleted" ? "Usia hapus" : "Usia arsip"}>
+                <Select name="age" defaultValue={values.age}>
+                  <option value="">Semua</option>
+                  <option value="30">0–30 hari</option>
+                  <option value="90">31–90 hari</option>
+                  <option value="180">91–180 hari</option>
+                  <option value="365">181–365 hari</option>
+                  <option value="older">Lebih dari 1 tahun</option>
+                </Select>
+              </FilterField>
+              <FilterField label="Urutkan">
+                <Select name="sort" defaultValue={values.sort}>
+                  <option value="date">{view === "deleted" ? "Tanggal hapus" : "Tanggal arsip"}</option>
+                  <option value="code">Kode</option>
+                  <option value="name">Nama</option>
+                </Select>
+              </FilterField>
+              <FilterField label="Arah urutan">
+                <Select name="direction" defaultValue={values.direction}>
+                  <option value="desc">Turun</option>
+                  <option value="asc">Naik</option>
+                </Select>
+              </FilterField>
+              <DateRangeInputs from={values.from} to={values.to} labelled />
+            </FilterPanel>
           </form>
         </CardHeader>
         <CardContent>

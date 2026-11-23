@@ -20,9 +20,13 @@ import { locationOptions } from "@/lib/location-tree";
 import { paginate, type PaginationQuery } from "@/lib/pagination";
 import { wibFormat } from "@/lib/datetime";
 
+import { FilterPanel } from "@/components/tables/filter-panel";
+import { SelectFilterField } from "@/components/master/master-filter-fields";
+import { activeFilterCount, type MasterParams } from "@/lib/master-filters";
+import { locationPathOptions } from "@/lib/location-tree";
 type Props = {
   search?: string;
-  paginationQuery: PaginationQuery;
+  paginationQuery: MasterParams;
 };
 
 function formatDate(date: Date) {
@@ -35,7 +39,7 @@ export async function AssetUsersPage({ search = "", paginationQuery }: Props) {
   const query = search.trim();
 
   try {
-    const where: Prisma.AssetUserWhereInput | undefined = query
+    const searchWhere: Prisma.AssetUserWhereInput | undefined = query
           ? {
               OR: [
                 { name: { contains: query, mode: "insensitive" } },
@@ -44,6 +48,9 @@ export async function AssetUsersPage({ search = "", paginationQuery }: Props) {
               ],
             }
           : undefined;
+    const nameOptions = (await prisma.assetUser.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } })).map((item) => ({ value: item.id, label: item.name }));
+    const where: Prisma.AssetUserWhereInput = { AND: [searchWhere ?? {}, paginationQuery.name ? { id: paginationQuery.name } : {}, paginationQuery.department === "none" ? { departmentId: null } : paginationQuery.department ? { departmentId: paginationQuery.department } : {}] };
+    const activeFilters = activeFilterCount(paginationQuery, ["name","department"]);
     const [{ items: assetUsers, pagination }, departments] = await Promise.all([
       paginate(paginationQuery,
         () => prisma.assetUser.count({ where }),
@@ -89,16 +96,19 @@ export async function AssetUsersPage({ search = "", paginationQuery }: Props) {
           }
         />
         <Card>
-          <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <CardHeader className="space-y-4">
             <CardTitle>Daftar Pengguna Aset</CardTitle>
-            <form className="flex w-full flex-col gap-2 sm:flex-row lg:max-w-lg">
+            <form>
               <input type="hidden" name="limit" value={pagination.pageSize} />
-              <div className="relative flex-1">
-                <Input name="q" placeholder="Cari name, email, atau phone" defaultValue={query} className="h-10 pr-10" />
-                <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--muted)]" />
-              </div>
-              <Button type="submit" variant="secondary">Search</Button>
-              {query ? <Link href="/dashboard/master/asset-users" className="inline-flex h-10 items-center justify-center rounded-md border border-transparent bg-transparent px-5 text-sm font-medium text-[var(--primary)] transition-colors hover:bg-[var(--primary-soft)]">Reset</Link> : null}
+              <FilterPanel
+                searchValue={query}
+                searchPlaceholder="Cari name, email, atau phone"
+                activeCount={activeFilters}
+                resetHref={query ? `/dashboard/master/asset-users?q=${encodeURIComponent(query)}` : "/dashboard/master/asset-users"}
+              >
+                <SelectFilterField label="Name" name="name" value={paginationQuery.name} allLabel="Semua" options={nameOptions} />
+                <SelectFilterField label="Department" name="department" value={paginationQuery.department} allLabel="Semua" options={[{ value: "none", label: "Tanpa department" }, ...locationPathOptions(departments).map((option) => ({ value: option.id, label: option.label }))]} />
+              </FilterPanel>
             </form>
           </CardHeader>
           <CardContent>

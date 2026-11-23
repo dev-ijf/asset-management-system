@@ -52,6 +52,11 @@ export function locationOptions(locations: LocationNode[]) {
   return buildLocationTree(locations).map((item) => ({ id: item.id, label: locationOptionLabel(item) }));
 }
 
+/** Tree-ordered options labelled by path only (no code), e.g. "Gudang Pusat › Lantai 2". */
+export function locationPathOptions(locations: LocationNode[]) {
+  return buildLocationTree(locations).map((item) => ({ id: item.id, label: item.path }));
+}
+
 /** Parent (top-level) location codes are typed by the user, e.g. GDA, KMP1. */
 export const LOCATION_CODE_PATTERN = /^[A-Z0-9][A-Z0-9_-]*$/;
 
