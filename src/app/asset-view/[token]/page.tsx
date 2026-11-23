@@ -1,5 +1,16 @@
 import Link from "next/link";
-import { Building2, MapPin, PackageSearch, ShieldCheck, UserRound } from "lucide-react";
+import {
+  Activity,
+  Building2,
+  MapPin,
+  Network,
+  PackageSearch,
+  ShieldCheck,
+  Tags,
+  UserCheck,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
@@ -10,17 +21,36 @@ type AssetViewPageProps = {
   params: Promise<{ token: string }>;
 };
 
+/** Soft colour pairs for the icon bubbles, so each detail is easy to spot at a glance. */
+const TONES = {
+  violet: "bg-[#eeeafe] text-[#3212b8]",
+  green: "bg-[#e7f9ef] text-[#13a251]",
+  pink: "bg-[#ffe8f8] text-[#e0299f]",
+  blue: "bg-[#e4f8ff] text-[#0288c7]",
+  orange: "bg-[#fff1e0] text-[#e07b00]",
+  teal: "bg-[#e0f7f4] text-[#0f9488]",
+} as const;
+
 function InfoItem({
   label,
   value,
+  icon: Icon,
+  tone,
 }: {
   label: string;
   value: string | null | undefined;
+  icon: LucideIcon;
+  tone: keyof typeof TONES;
 }) {
   return (
-    <div className="rounded-md border border-[var(--border)] bg-white p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-[var(--text)]">{value || "-"}</p>
+    <div className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-white p-4">
+      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${TONES[tone]}`}>
+        <Icon className="h-5 w-5" aria-hidden="true" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted)]">{label}</p>
+        <p className="mt-0.5 text-sm font-semibold text-[var(--text)] [overflow-wrap:break-word]">{value || "-"}</p>
+      </div>
     </div>
   );
 }
@@ -72,8 +102,8 @@ export default async function AssetViewPage({ params }: AssetViewPageProps) {
     return <AssetViewNotFound />;
   }
 
-  // "Location" shows the asset's own (sub-)location; "Lokasi" below shows its Parent Location
-  // (the top of the tree). An asset placed directly on a Parent Location shows it in both.
+  // "Location" shows the Parent Location (top of the tree), "Detail Location" the asset's own
+  // (sub-)location. An asset placed directly on a Parent Location shows it in both.
   let parentLocation = asset.assetLocation;
   for (let depth = 0; parentLocation?.parentId && depth < 20; depth += 1) {
     const parent = await prisma.assetLocation.findUnique({ where: { id: parentLocation.parentId } });
@@ -105,33 +135,16 @@ export default async function AssetViewPage({ params }: AssetViewPageProps) {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <InfoItem label="Status" value={asset.assetStatus?.name} />
-              <InfoItem label="Category" value={asset.assetCategory ? `${asset.assetCategory.code} - ${asset.assetCategory.name}` : null} />
-              <InfoItem label="Detail Location" value={asset.assetLocation?.name} />
-              <InfoItem label="Department" value={asset.department ? `${asset.department.code} - ${asset.department.name}` : null} />
-              <InfoItem label="Asset User" value={asset.assetUser?.name} />
-              <InfoItem label="Person In Charge" value={asset.personInCharge?.name} />
+              <InfoItem label="Status" value={asset.assetStatus?.name} icon={Activity} tone="green" />
+              <InfoItem label="Category" value={asset.assetCategory?.name} icon={Tags} tone="pink" />
+              <InfoItem label="Location" value={parentLocation?.name} icon={Building2} tone="violet" />
+              <InfoItem label="Detail Location" value={asset.assetLocation?.name} icon={MapPin} tone="blue" />
+              <InfoItem label="Department" value={asset.department?.name} icon={Network} tone="orange" />
+              <InfoItem label="Asset User" value={asset.assetUser?.name} icon={UserRound} tone="teal" />
+              <InfoItem label="Person In Charge" value={asset.personInCharge?.name} icon={UserCheck} tone="violet" />
             </div>
           </CardContent>
         </Card>
-
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="rounded-md border border-[var(--border)] bg-white p-4">
-            <MapPin className="h-5 w-5 text-[var(--primary)]" />
-            <p className="mt-2 text-xs font-medium uppercase tracking-wide text-[var(--muted)]">Lokasi</p>
-            <p className="mt-1 text-sm font-semibold text-[var(--text)]">{parentLocation?.name ?? "-"}</p>
-          </div>
-          <div className="rounded-md border border-[var(--border)] bg-white p-4">
-            <Building2 className="h-5 w-5 text-[var(--primary)]" />
-            <p className="mt-2 text-xs font-medium uppercase tracking-wide text-[var(--muted)]">Departemen</p>
-            <p className="mt-1 text-sm font-semibold text-[var(--text)]">{asset.department?.name ?? "-"}</p>
-          </div>
-          <div className="rounded-md border border-[var(--border)] bg-white p-4">
-            <UserRound className="h-5 w-5 text-[var(--primary)]" />
-            <p className="mt-2 text-xs font-medium uppercase tracking-wide text-[var(--muted)]">Penanggung Jawab</p>
-            <p className="mt-1 text-sm font-semibold text-[var(--text)]">{asset.personInCharge?.name ?? asset.assetUser?.name ?? "-"}</p>
-          </div>
-        </div>
       </div>
     </main>
   );
