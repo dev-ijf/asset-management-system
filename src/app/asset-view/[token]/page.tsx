@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   Activity,
   Building2,
+  ImageOff,
   MapPin,
   Network,
   PackageSearch,
@@ -95,6 +96,7 @@ export default async function AssetViewPage({ params }: AssetViewPageProps) {
       department: true,
       assetUser: true,
       personInCharge: true,
+      photos: { orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }], take: 1 },
     },
   });
 
@@ -111,6 +113,14 @@ export default async function AssetViewPage({ params }: AssetViewPageProps) {
     parentLocation = parent;
   }
 
+  // Drive photos go through the public token route; old local uploads are served from /uploads.
+  const photo = asset.photos[0];
+  const photoSrc = photo?.driveFileId
+    ? `/asset-view/${encodeURIComponent(token)}/photo`
+    : photo?.path.startsWith("/uploads/")
+      ? photo.path
+      : null;
+
   return (
     <main className="min-h-screen bg-[var(--app-bg)] px-4 py-8">
       <div className="mx-auto max-w-3xl space-y-5">
@@ -125,6 +135,18 @@ export default async function AssetViewPage({ params }: AssetViewPageProps) {
             </div>
           </CardHeader>
           <CardContent className="space-y-5">
+            {photoSrc ? (
+              <div className="overflow-hidden rounded-lg border border-[var(--border)] bg-slate-50">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={photoSrc} alt={`Foto ${asset.name}`} className="h-72 w-full object-contain sm:h-80" />
+              </div>
+            ) : (
+              <div className="flex h-40 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--border)] bg-slate-50 text-[var(--muted)]">
+                <ImageOff className="h-8 w-8" aria-hidden="true" />
+                <p className="text-sm">Belum ada foto asset</p>
+              </div>
+            )}
+
             <div className="rounded-md border border-[var(--border)] bg-[var(--table-head)] p-4">
               <div className="flex items-center gap-3 text-[var(--muted)]">
                 <ShieldCheck className="h-5 w-5 text-[var(--primary)]" />
