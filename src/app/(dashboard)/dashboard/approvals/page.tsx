@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ApproveButton, RejectButton } from "@/components/approvals/approval-actions-client";
 import { ApprovalStatusBadge } from "@/components/approvals/approval-status-badge";
 import { PageHeader } from "@/components/layout/page-header";
+import { MaintenancePhotoThumbs } from "@/components/maintenance/maintenance-photo-thumbs";
 import { DataTable } from "@/components/tables/data-table";
 import { Pagination } from "@/components/tables/pagination";
 import { Card, CardContent } from "@/components/ui/card";
@@ -68,6 +69,7 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
         asset: { select: { code: true, name: true } },
         requester: { select: { name: true, email: true } },
         reviewedBy: { select: { name: true } },
+        photos: { select: { id: true }, orderBy: { createdAt: "asc" } },
       },
       orderBy: history ? [{ reviewedAt: "desc" }, { createdAt: "desc" }] : { createdAt: "desc" },
     })),
@@ -160,7 +162,10 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
               <ApprovalStatusBadge key="status" status={request.status} />,
               request.reviewedBy?.name ?? "-",
               request.reviewedAt ? formatDateTime(request.reviewedAt) : "-",
-              approvalPayloadSummary(request.transactionType, request.payload),
+              <div key="summary">
+                {approvalPayloadSummary(request.transactionType, request.payload)}
+                <MaintenancePhotoThumbs photoIds={request.photos.map((photo) => photo.id)} />
+              </div>,
               request.status === ApprovalStatus.REJECTED ? (
                 <span key="note" className="text-[var(--danger)]">{request.rejectNote ?? "Tanpa alasan"}</span>
               ) : (
@@ -181,7 +186,10 @@ export default async function ApprovalsPage({ searchParams }: PageProps) {
                 request.requester ? `${request.requester.name} (${request.requester.email})` : "-",
                 formatDateTime(request.createdAt),
                 <ApprovalStatusBadge key="status" status={request.status} />,
-                approvalPayloadSummary(request.transactionType, request.payload),
+                <div key="summary">
+                  {approvalPayloadSummary(request.transactionType, request.payload)}
+                  <MaintenancePhotoThumbs photoIds={request.photos.map((photo) => photo.id)} />
+                </div>,
                 canManage ? (
                   <div key="actions" className="flex flex-wrap gap-2">
                     <ApproveButton approvalId={request.id} label={label} />

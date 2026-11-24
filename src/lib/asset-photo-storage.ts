@@ -40,8 +40,10 @@ export async function cleanupDrivePhotos(fileIds?: string[]) {
   let failed = 0;
   for (const job of jobs) {
     try {
-      // Never delete a file still referenced by any asset, including soft-deleted assets.
-      if (!await prisma.assetPhoto.findUnique({ where: { driveFileId: job.fileId }, select: { id: true } })) {
+      // Never delete a file still referenced by any asset (including soft-deleted ones) or maintenance.
+      const inUse = await prisma.assetPhoto.findUnique({ where: { driveFileId: job.fileId }, select: { id: true } })
+        ?? await prisma.maintenancePhoto.findUnique({ where: { driveFileId: job.fileId }, select: { id: true } });
+      if (!inUse) {
         await deleteDrivePhoto(job.fileId);
       }
       await prisma.drivePhotoCleanup.deleteMany({ where: { fileId: job.fileId } });

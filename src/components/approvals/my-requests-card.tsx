@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ApprovalStatus, type ApprovalTransactionType } from "@/generated/prisma/client";
 import { ApprovalStatusBadge } from "@/components/approvals/approval-status-badge";
+import { MaintenancePhotoThumbs } from "@/components/maintenance/maintenance-photo-thumbs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { approvalTypeLabel } from "@/lib/approval-types";
 import { approvalPayloadSummary } from "@/lib/approval-summary";
@@ -40,6 +41,7 @@ export async function MyRequestsCard({
     include: {
       asset: { select: { code: true, name: true } },
       reviewedBy: { select: { name: true } },
+      photos: { select: { id: true }, orderBy: { createdAt: "asc" } },
     },
     orderBy: { createdAt: "desc" },
     take: LIMIT,
@@ -84,7 +86,7 @@ export async function MyRequestsCard({
                 <tr key={request.id} className="align-top">
                   <td className="px-3 py-2">{approvalTypeLabel(request.transactionType)}</td>
                   <td className="px-3 py-2 font-medium">{request.asset.code} - {request.asset.name}</td>
-                  <td className="px-3 py-2 max-w-[24rem] [overflow-wrap:break-word]">{approvalPayloadSummary(request.transactionType, request.payload)}</td>
+                  <td className="px-3 py-2 max-w-[24rem] [overflow-wrap:break-word]">{approvalPayloadSummary(request.transactionType, request.payload)}<MaintenancePhotoThumbs photoIds={request.photos.map((photo) => photo.id)} /></td>
                   <td className="px-3 py-2">{time.format(request.createdAt)}</td>
                   <td className="px-3 py-2"><ApprovalStatusBadge status={request.status} /></td>
                   <td className="px-3 py-2 max-w-[24rem] [overflow-wrap:break-word]">

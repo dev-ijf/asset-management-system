@@ -13,6 +13,7 @@ import {
 } from "@/app/(dashboard)/dashboard/asset-requests/actions";
 import { FieldError } from "@/components/master/master-form-feedback";
 import { MasterRecordForm } from "@/components/master/master-record-form";
+import { MaintenancePhotosField } from "@/components/maintenance/maintenance-photos-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -102,7 +103,7 @@ export function ClassMaintenanceButton({ assetId, assetLabel, size = "sm" }: { a
         </Button>
       )}
     >
-      {(state) => (
+      {(state, pending) => (
         <>
           <input type="hidden" name="assetId" value={assetId} />
           <Field label="Kerusakan / kebutuhan *" error={state.errors?.description}>
@@ -117,6 +118,7 @@ export function ClassMaintenanceButton({ assetId, assetLabel, size = "sm" }: { a
           <Field label="Catatan tambahan" error={state.errors?.notes}>
             <Textarea name="notes" rows={2} maxLength={TEXT_LIMITS.description} />
           </Field>
+          <MaintenancePhotosField error={state.errors?.photos} pending={pending} />
         </>
       )}
     </DialogForm>

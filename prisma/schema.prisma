@@ -396,6 +396,7 @@ model Asset {
   maintenances      AssetMaintenance[]
   approvals         AssetApprovalRequest[]
   fulfilledRequests AssetRequest[]
+  maintenancePhotos MaintenancePhoto[]
 
   /// TODO: Reconfirm whether pool/consumable stock should be split into a dedicated inventory ledger.
   @@index([archivedAt])
@@ -548,8 +549,9 @@ model AssetMaintenance {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  asset     Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  createdBy User? @relation("AssetMaintenanceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  photos    MaintenancePhoto[]
+  asset     Asset              @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  createdBy User?              @relation("AssetMaintenanceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@map("asset_maintenances")
 }
@@ -567,9 +569,10 @@ model AssetApprovalRequest {
   createdAt       DateTime                @default(now()) @map("created_at")
   updatedAt       DateTime                @updatedAt @map("updated_at")
 
-  asset      Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  requester  User? @relation("AssetApprovalRequestedBy", fields: [requesterId], references: [id], onDelete: SetNull)
-  reviewedBy User? @relation("AssetApprovalReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  asset      Asset              @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  requester  User?              @relation("AssetApprovalRequestedBy", fields: [requesterId], references: [id], onDelete: SetNull)
+  reviewedBy User?              @relation("AssetApprovalReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  photos     MaintenancePhoto[]
 
   @@map("asset_approval_requests")
 }
@@ -602,4 +605,25 @@ model AssetRequest {
   @@index([status])
   @@index([requesterId])
   @@map("asset_requests")
+}
+
+/// Photo of the damage, attached to a maintenance request and kept on the maintenance once approved.
+model MaintenancePhoto {
+  id                String   @id @default(uuid()) @db.Uuid
+  assetId           String   @map("asset_id") @db.Uuid
+  approvalRequestId String?  @map("approval_request_id") @db.Uuid
+  maintenanceId     String?  @map("maintenance_id") @db.Uuid
+  driveFileId       String   @unique @map("drive_file_id")
+  filename          String
+  mimeType          String   @map("mime_type")
+  size              Int
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  asset           Asset                 @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  approvalRequest AssetApprovalRequest? @relation(fields: [approvalRequestId], references: [id], onDelete: SetNull)
+  maintenance     AssetMaintenance?     @relation(fields: [maintenanceId], references: [id], onDelete: SetNull)
+
+  @@index([approvalRequestId])
+  @@index([maintenanceId])
+  @@map("maintenance_photos")
 }

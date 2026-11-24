@@ -6,6 +6,7 @@ import {
   MaintenanceDeleteButton,
   MaintenanceEditForm,
 } from "@/components/transactions/transaction-forms";
+import { MaintenancePhotoThumbs } from "@/components/maintenance/maintenance-photo-thumbs";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -62,6 +63,7 @@ export default async function MaintenancePage({ searchParams }: PageProps) {
     ({ skip, take }) => prisma.assetMaintenance.findMany({ where, skip, take, include: {
       asset: true,
       createdBy: { select: { name: true } },
+      photos: { select: { id: true }, orderBy: { createdAt: "asc" } },
     }, orderBy: { createdAt: "desc" } }),
   );
 
@@ -126,7 +128,7 @@ export default async function MaintenancePage({ searchParams }: PageProps) {
                         <tr key={maintenance.id} className="align-top">
                           <td className="px-3 py-2">{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
                           <td className="px-3 py-2 font-medium">{maintenance.asset.code} - {maintenance.asset.name}</td>
-                          <td className="px-3 py-2">{maintenance.description}</td>
+                          <td className="px-3 py-2">{maintenance.description}<MaintenancePhotoThumbs photoIds={maintenance.photos.map((photo) => photo.id)} /></td>
                           <td className="px-3 py-2"><Badge variant={maintenance.status === "COMPLETED" ? "success" : "warning"}>{maintenance.status}</Badge></td>
                           <td className="px-3 py-2">{formatDate(maintenance.scheduledDate)}</td>
                           <td className="px-3 py-2">{formatDate(maintenance.completedDate)}</td>

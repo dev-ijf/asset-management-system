@@ -272,6 +272,8 @@ async function applyMaintenance(
       createdAt: request.createdAt,
     },
   });
+  // Photos of the damage sent with the request stay with the maintenance record.
+  await tx.maintenancePhoto.updateMany({ where: { approvalRequestId: request.id }, data: { maintenanceId: maintenance.id } });
 
   await createAssetHistory({
     action: maintenance.status === "COMPLETED" ? "MAINTENANCE_COMPLETED" : "MAINTENANCE_CREATED",

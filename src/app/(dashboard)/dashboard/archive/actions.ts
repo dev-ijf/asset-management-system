@@ -94,11 +94,20 @@ export async function permanentDeleteAssetsAction(ids: string[], confirmation: s
     const { codes, photos } = await prisma.$transaction(async (tx) => {
       const assets = await tx.asset.findMany({
         where: { id: { in: uniqueIds }, ...INACTIVE_ASSET },
-        select: { id: true, code: true, photos: { select: { path: true, driveFileId: true } } },
+        select: {
+          id: true,
+          code: true,
+          photos: { select: { path: true, driveFileId: true } },
+          maintenancePhotos: { select: { driveFileId: true } },
+        },
       });
       if (assets.length !== uniqueIds.length) throw new ArchiveSelectionError();
 
-      const assetPhotos = assets.flatMap((asset) => asset.photos);
+      // Maintenance photos go with the asset too; they carry no legacy path.
+      const assetPhotos = assets.flatMap((asset) => [
+        ...asset.photos,
+        ...asset.maintenancePhotos.map((photo) => ({ path: "", driveFileId: photo.driveFileId })),
+      ]);
       // Queue Drive files before the rows disappear, so a failed Drive call is retried later instead of leaking.
       for (const photo of assetPhotos) {
         if (photo.driveFileId) await queuePhotoDeletion(tx, photo.driveFileId);

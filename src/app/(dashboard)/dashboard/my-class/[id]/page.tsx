@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ImageOff } from "lucide-react";
 import { ClassMaintenanceButton } from "@/components/class/class-forms";
+import { MaintenancePhotoThumbs } from "@/components/maintenance/maintenance-photo-thumbs";
 import { PageHeader } from "@/components/layout/page-header";
 import { DataTable } from "@/components/tables/data-table";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +40,11 @@ export default async function MyClassAssetPage({ params }: { params: Promise<{ i
       assetUser: true,
       personInCharge: true,
       photos: { orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }] },
-      maintenances: { orderBy: { createdAt: "desc" }, take: 20 },
+      maintenances: {
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        include: { photos: { select: { id: true }, orderBy: { createdAt: "asc" } } },
+      },
     },
   });
   if (!asset) notFound();
@@ -118,7 +123,10 @@ export default async function MyClassAssetPage({ params }: { params: Promise<{ i
               columns={["Dicatat", "Keterangan", "Status", "Jadwal", "Selesai"]}
               rows={asset.maintenances.map((item) => [
                 formatDate(item.createdAt),
-                item.description,
+                <div key="description">
+                  {item.description}
+                  <MaintenancePhotoThumbs photoIds={item.photos.map((photo) => photo.id)} />
+                </div>,
                 <Badge key="status" variant={item.status === "COMPLETED" ? "success" : "warning"}>{item.status}</Badge>,
                 formatDate(item.scheduledDate),
                 formatDate(item.completedDate),

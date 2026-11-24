@@ -7,6 +7,14 @@ import { findActiveDisposal } from "@/lib/asset-disposal";
 import { classAssetWhere, CLASS_PERMISSIONS, getClassScope } from "@/lib/class-scope";
 import { prisma } from "@/lib/prisma";
 import { checkLengths, TEXT_LIMITS } from "@/lib/text-limits";
+import { PhotoError } from "@/lib/asset-image";
+import type { PreparedPhoto } from "@/lib/asset-photo-storage";
+import {
+  attachMaintenancePhotos,
+  discardMaintenancePhotos,
+  maintenancePhotoFiles,
+  prepareMaintenancePhotos,
+} from "@/lib/maintenance-photos";
 
 export type ClassActionState = {
   ok?: boolean;
@@ -43,7 +51,7 @@ export async function requestClassMaintenanceAction(
 
   // Only assets of the teacher's own class.
   const asset = assetId
-    ? await prisma.asset.findFirst({ where: { id: assetId, ...classAssetWhere(scope) }, select: { id: true } })
+    ? await prisma.asset.findFirst({ where: { id: assetId, ...classAssetWhere(scope) }, select: { id: true, code: true } })
     : null;
   if (!asset) return { message: "Asset tidak ditemukan di kelas Anda." };
 
@@ -55,29 +63,48 @@ export async function requestClassMaintenanceAction(
   });
   if (pending > 0) return { message: "Anda sudah mengajukan maintenance untuk asset ini dan masih menunggu approval." };
 
+  let files: File[] = [];
+  try {
+    files = maintenancePhotoFiles(formData);
+  } catch (error) {
+    errors.photos = error instanceof PhotoError ? error.message : "File foto tidak valid.";
+  }
+
   if (Object.values(errors).some(Boolean)) {
     return { errors, message: "Periksa kembali isian pengajuan." };
   }
 
+  let photos: PreparedPhoto[] = [];
   try {
-    await prisma.assetApprovalRequest.create({
-      data: {
-        transactionType: ApprovalTransactionType.MAINTENANCE,
-        assetId: asset.id,
-        requesterId: user.id,
-        payload: {
+    photos = await prepareMaintenancePhotos(files, asset.code);
+  } catch (error) {
+    const message = error instanceof PhotoError ? error.message : "Foto gagal diunggah. Silakan coba lagi.";
+    return { errors: { photos: message }, message };
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const request = await tx.assetApprovalRequest.create({
+        data: {
+          transactionType: ApprovalTransactionType.MAINTENANCE,
           assetId: asset.id,
-          description,
-          status: "OPEN",
-          scheduledDate: null,
-          completedDate: null,
-          cost: null,
-          vendor: null,
-          notes: notes || null,
+          requesterId: user.id,
+          payload: {
+            assetId: asset.id,
+            description,
+            status: "OPEN",
+            scheduledDate: null,
+            completedDate: null,
+            cost: null,
+            vendor: null,
+            notes: notes || null,
+          },
         },
-      },
+      });
+      await attachMaintenancePhotos(tx, photos, { assetId: asset.id, approvalRequestId: request.id });
     });
   } catch {
+    await discardMaintenancePhotos(photos);
     return { message: "Pengajuan maintenance gagal dikirim. Silakan coba lagi." };
   }
 
