@@ -70,9 +70,9 @@ function announceable(data: NotificationSummary) {
   ];
 }
 
-/** Pending requests are handled on the main list; decided ones are found in the history tab. */
+/** The server decides where each item opens (Approvals, its history, Pengajuan Asset or Kelas Saya). */
 function itemHref(item: NotificationItem) {
-  return item.status === "PENDING" ? "/dashboard/approvals" : "/dashboard/approvals?view=history";
+  return item.href;
 }
 
 const TOAST_VARIANT: Record<NotificationItem["status"], ToastVariant> = {
@@ -80,6 +80,7 @@ const TOAST_VARIANT: Record<NotificationItem["status"], ToastVariant> = {
   APPROVED: "success",
   REJECTED: "error",
   CANCELLED: "info",
+  FULFILLED: "success",
 };
 
 function readSeen(storageKey: string) {
@@ -173,6 +174,7 @@ function ItemList({ items, empty }: { items: NotificationItem[]; empty: string }
   const time = wibFormat({ day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
   const tone: Record<string, string> = {
     APPROVED: "bg-[var(--success,#16a34a)]",
+    FULFILLED: "bg-[var(--success,#16a34a)]",
     REJECTED: "bg-[var(--danger)]",
     PENDING: "bg-[var(--warning,#f59e0b)]",
   };
@@ -180,7 +182,7 @@ function ItemList({ items, empty }: { items: NotificationItem[]; empty: string }
   return (
     <ul className="divide-y divide-[var(--border)]">
       {items.map((item) => (
-        <li key={item.id}>
+        <li key={`${item.href}:${item.id}`}>
           <Link href={itemHref(item)} className="flex gap-3 px-4 py-3 hover:bg-[var(--table-head)]">
             <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${tone[item.status] ?? "bg-slate-400"}`} aria-hidden="true" />
             <span className="min-w-0">
