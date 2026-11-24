@@ -53,6 +53,14 @@ async function ensurePermissionsExist(permissionIds: string[]) {
   return count === new Set(permissionIds).size;
 }
 
+/** Optional class location of a homeroom teacher; "" clears it. */
+async function classLocationInput(formData: FormData) {
+  const id = fieldValue(formData, "assetLocationId");
+  if (!id) return { id: null as string | null, error: undefined };
+  const exists = await prisma.assetLocation.count({ where: { id } });
+  return { id, error: exists ? undefined : "Lokasi kelas tidak valid." };
+}
+
 async function wouldRemoveLastSuperAdmin(userId: string, nextRoleIds?: string[]) {
   const superAdmin = await prisma.role.findUnique({
     where: { name_guardName: { name: "super-admin", guardName: "web" } },
@@ -80,7 +88,9 @@ export async function createUserAction(_: SecurityActionState, formData: FormDat
   const password = fieldValue(formData, "password");
   const roleIds = selectedIds(formData, "roleIds");
   const permissionIds = selectedIds(formData, "permissionIds");
+  const classLocation = await classLocationInput(formData);
   const errors: Record<string, string | undefined> = {};
+  if (classLocation.error) errors.assetLocationId = classLocation.error;
 
   if (!name) errors.name = "Nama wajib diisi.";
   if (!email) errors.email = "Email wajib diisi.";
@@ -103,6 +113,7 @@ export async function createUserAction(_: SecurityActionState, formData: FormDat
           name,
           email,
           password: passwordHash,
+          assetLocationId: classLocation.id,
         },
       });
 
@@ -141,7 +152,9 @@ export async function updateUserAction(_: SecurityActionState, formData: FormDat
   const password = fieldValue(formData, "password");
   const roleIds = selectedIds(formData, "roleIds");
   const permissionIds = selectedIds(formData, "permissionIds");
+  const classLocation = await classLocationInput(formData);
   const errors: Record<string, string | undefined> = {};
+  if (classLocation.error) errors.assetLocationId = classLocation.error;
 
   if (!id) errors.id = "User tidak valid.";
   if (!name) errors.name = "Nama wajib diisi.";
@@ -165,6 +178,7 @@ export async function updateUserAction(_: SecurityActionState, formData: FormDat
         data: {
           name,
           email,
+          assetLocationId: classLocation.id,
           ...(password ? { password: await bcrypt.hash(password, 12) } : {}),
         },
       });

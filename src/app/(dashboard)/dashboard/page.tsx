@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTable } from "@/components/tables/data-table";
 import { approvalTypeLabel } from "@/lib/approval-types";
+import { redirect } from "next/navigation";
+import { hasPermission, requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { addDays, startOfWibDay as startOfDay, todayDateOnly, wibDayKey, wibFormat } from "@/lib/datetime";
 import { WARRANTY_ALERT_DAYS } from "@/lib/warranty";
@@ -153,6 +155,12 @@ function TrendChart({
 }
 
 export default async function DashboardPage() {
+  // The organisation-wide overview is for asset staff; a homeroom teacher lands on their class instead.
+  const user = await requireAuth();
+  if (!hasPermission(user, "assets.view") && !hasPermission(user, "reports.view") && hasPermission(user, "class-assets.view")) {
+    redirect("/dashboard/my-class");
+  }
+
   const today = startOfDay(new Date());
   const thirtyDaysAgo = startOfDay(addDays(today, -30));
   const trendStart = startOfDay(addDays(today, -13));

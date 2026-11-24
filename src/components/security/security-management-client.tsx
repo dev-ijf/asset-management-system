@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { useActionFeedback } from "@/components/ui/toast-provider";
 import { useFormAction } from "@/components/ui/use-form-action";
 
@@ -40,6 +41,9 @@ export type UserSecurityRecord = {
   email: string;
   roleIds: string[];
   permissionIds: string[];
+  assetLocationId: string | null;
+  /** Path of the class location, for homeroom teachers. */
+  classLocation: string | null;
   roles: string[];
   directPermissions: string[];
   createdAt: string;
@@ -168,12 +172,14 @@ function DeleteButton({
 
 function UserForm({
   action,
+  locations,
   mode,
   permissions,
   record,
   roles,
 }: {
   action: SecurityAction;
+  locations: SecurityOption[];
   mode: "create" | "edit";
   permissions: SecurityOption[];
   record?: UserSecurityRecord;
@@ -237,6 +243,21 @@ function UserForm({
               selectedIds={record?.permissionIds ?? []}
               error={state.errors?.permissionIds}
             />
+            <label className="block">
+              <span className="text-sm font-medium text-[var(--text)]">Lokasi Kelas</span>
+              <Select name="assetLocationId" defaultValue={record?.assetLocationId ?? ""} className="mt-2">
+                <option value="">Tidak ada</option>
+                {locations.map((location) => (
+                  <option key={location.id} value={location.id}>
+                    {location.name}
+                  </option>
+                ))}
+              </Select>
+              <span className="mt-1 block text-xs text-[var(--muted)]">
+                Untuk role homeroom-teacher: user hanya melihat asset di lokasi ini beserta sub-lokasinya.
+              </span>
+              <FieldError message={state.errors?.assetLocationId} />
+            </label>
           </MasterRecordForm>
         </form>
       ) : null}
@@ -350,11 +371,13 @@ function PermissionForm({
 }
 
 export function UsersSecurityClient({
+  locations,
   permissions,
   roles,
   users,
   pagination,
 }: {
+  locations: SecurityOption[];
   permissions: SecurityOption[];
   roles: SecurityOption[];
   users: UserSecurityRecord[];
@@ -364,19 +387,20 @@ export function UsersSecurityClient({
     <Card>
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <CardTitle>Daftar User</CardTitle>
-        <UserForm action={createUserAction} mode="create" roles={roles} permissions={permissions} />
+        <UserForm action={createUserAction} mode="create" roles={roles} permissions={permissions} locations={locations} />
       </CardHeader>
       <CardContent>
         <DataTable
-          columns={["Nama", "Email", "Role", "Direct Permission", "Dibuat", "Action"]}
+          columns={["Nama", "Email", "Role", "Direct Permission", "Lokasi Kelas", "Dibuat", "Action"]}
           rows={users.map((user) => [
             user.name,
             user.email,
             <BadgeList key="roles" labels={user.roles} />,
             <BadgeList key="permissions" labels={user.directPermissions} variant="info" />,
+            user.classLocation ?? "-",
             user.createdAt,
             <div key="actions" className="flex flex-wrap gap-2">
-              <UserForm action={updateUserAction} mode="edit" record={user} roles={roles} permissions={permissions} />
+              <UserForm action={updateUserAction} mode="edit" record={user} roles={roles} permissions={permissions} locations={locations} />
               <DeleteButton
                 action={deleteUserAction}
                 id={user.id}

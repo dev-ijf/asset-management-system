@@ -16,7 +16,18 @@ const LIMIT = 10;
  * rejected in the last week. Shown on the Movement / Maintenance / Disposal pages, because a
  * request only appears in their main table after it is approved. Renders nothing when empty.
  */
-export async function MyRequestsCard({ userId, types }: { userId: string; types: ApprovalTransactionType[] }) {
+export async function MyRequestsCard({
+  userId,
+  types,
+  note = "Request baru masuk tabel di bawah setelah disetujui.",
+  historyHref = "/dashboard/approvals?view=history",
+}: {
+  userId: string;
+  types: ApprovalTransactionType[];
+  note?: string;
+  /** Null hides the link, for users who cannot open Approvals. */
+  historyHref?: string | null;
+}) {
   const requests = await prisma.assetApprovalRequest.findMany({
     where: {
       requesterId: userId,
@@ -46,12 +57,14 @@ export async function MyRequestsCard({ userId, types }: { userId: string; types:
           <CardTitle>Request Saya</CardTitle>
           <p className="mt-1 text-sm text-[var(--muted)]">
             {pending > 0 ? `${pending} request menunggu approval. ` : ""}
-            Request baru masuk tabel di bawah setelah disetujui. Request yang ditolak tampil di sini selama {REJECTED_VISIBLE_DAYS} hari.
+            {note} Request yang ditolak tampil di sini selama {REJECTED_VISIBLE_DAYS} hari.
           </p>
         </div>
-        <Link href="/dashboard/approvals?view=history" className="text-sm font-medium text-[var(--primary)] hover:underline">
-          Lihat riwayat approval
-        </Link>
+        {historyHref ? (
+          <Link href={historyHref} className="text-sm font-medium text-[var(--primary)] hover:underline">
+            Lihat riwayat approval
+          </Link>
+        ) : null}
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">

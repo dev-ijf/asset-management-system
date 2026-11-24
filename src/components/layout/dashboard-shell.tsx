@@ -12,7 +12,7 @@ type DashboardShellProps = {
 export function DashboardShell({ children, user }: DashboardShellProps) {
   return (
     <div className="dashboard-shell min-h-screen bg-[var(--app-bg)]">
-      <AppSidebar />
+      <AppSidebar roles={user.roles} permissions={user.permissions} />
       <div className="dashboard-content min-h-screen min-w-0">
         <AppHeader user={user} />
         <main className="px-5 pb-10 lg:px-7">

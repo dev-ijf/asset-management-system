@@ -38,6 +38,16 @@ enum ApprovalTransactionType {
   DISPOSAL_REVERSAL
 }
 
+/// Request for a new asset (e.g. by a homeroom teacher): PENDING → APPROVED/REJECTED,
+/// APPROVED → FULFILLED once the asset team has bought and registered it.
+enum AssetRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FULFILLED
+  CANCELLED
+}
+
 enum DepreciationMethod {
   STRAIGHT_LINE     @map("straight_line")
   DECLINING_BALANCE @map("declining_balance")
@@ -84,6 +94,9 @@ model User {
   reviewedApprovals   AssetApprovalRequest[] @relation("AssetApprovalReviewedBy")
   bulkJobs            AssetBulkJob[]
   passwordResetTokens PasswordResetToken[]
+  assetRequests       AssetRequest[]         @relation("AssetRequestRequestedBy")
+  reviewedAssetReqs   AssetRequest[]         @relation("AssetRequestReviewedBy")
+  fulfilledAssetReqs  AssetRequest[]         @relation("AssetRequestFulfilledBy")
 
   @@map("users")
 }
@@ -286,6 +299,7 @@ model AssetLocation {
   movementToLocations   AssetMovement[] @relation("MovementToLocation")
   previousDisposals     AssetDisposal[] @relation("DisposalPreviousLocation")
   audits                AssetAudit[]
+  assetRequests         AssetRequest[]
 
   @@map("asset_locations")
 }
@@ -362,25 +376,26 @@ model Asset {
   retentionUntil         DateTime?          @map("retention_until") @db.Date
   deletedAt              DateTime?          @map("deleted_at")
 
-  assetStatus    AssetStatus?           @relation(fields: [assetStatusId], references: [id], onDelete: SetNull)
-  assetClass     AssetClass?            @relation(fields: [assetClassId], references: [id], onDelete: SetNull)
-  assetCategory  AssetCategory?         @relation(fields: [assetCategoryId], references: [id], onDelete: SetNull)
-  unit           Unit?                  @relation(fields: [unitId], references: [id], onDelete: SetNull)
-  department     Department?            @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  personInCharge PersonInCharge?        @relation(fields: [personInChargeId], references: [id], onDelete: SetNull)
-  assetUser      AssetUser?             @relation(fields: [assetUserId], references: [id], onDelete: SetNull)
-  assetLocation  AssetLocation?         @relation(fields: [assetLocationId], references: [id], onDelete: SetNull)
-  warranty       Warranty?              @relation(fields: [warrantyId], references: [id], onDelete: SetNull)
-  vendorContract VendorContract?        @relation(fields: [vendorContractId], references: [id], onDelete: SetNull)
-  archivedBy     User?                  @relation("AssetArchivedBy", fields: [archivedById], references: [id], onDelete: SetNull)
-  restoredBy     User?                  @relation("AssetRestoredBy", fields: [restoredById], references: [id], onDelete: SetNull)
-  histories      AssetHistory[]
-  photos         AssetPhoto[]
-  movements      AssetMovement[]
-  disposals      AssetDisposal[]
-  audits         AssetAudit[]
-  maintenances   AssetMaintenance[]
-  approvals      AssetApprovalRequest[]
+  assetStatus       AssetStatus?           @relation(fields: [assetStatusId], references: [id], onDelete: SetNull)
+  assetClass        AssetClass?            @relation(fields: [assetClassId], references: [id], onDelete: SetNull)
+  assetCategory     AssetCategory?         @relation(fields: [assetCategoryId], references: [id], onDelete: SetNull)
+  unit              Unit?                  @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  department        Department?            @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  personInCharge    PersonInCharge?        @relation(fields: [personInChargeId], references: [id], onDelete: SetNull)
+  assetUser         AssetUser?             @relation(fields: [assetUserId], references: [id], onDelete: SetNull)
+  assetLocation     AssetLocation?         @relation(fields: [assetLocationId], references: [id], onDelete: SetNull)
+  warranty          Warranty?              @relation(fields: [warrantyId], references: [id], onDelete: SetNull)
+  vendorContract    VendorContract?        @relation(fields: [vendorContractId], references: [id], onDelete: SetNull)
+  archivedBy        User?                  @relation("AssetArchivedBy", fields: [archivedById], references: [id], onDelete: SetNull)
+  restoredBy        User?                  @relation("AssetRestoredBy", fields: [restoredById], references: [id], onDelete: SetNull)
+  histories         AssetHistory[]
+  photos            AssetPhoto[]
+  movements         AssetMovement[]
+  disposals         AssetDisposal[]
+  audits            AssetAudit[]
+  maintenances      AssetMaintenance[]
+  approvals         AssetApprovalRequest[]
+  fulfilledRequests AssetRequest[]
 
   /// TODO: Reconfirm whether pool/consumable stock should be split into a dedicated inventory ledger.
   @@index([archivedAt])
@@ -557,4 +572,34 @@ model AssetApprovalRequest {
   reviewedBy User? @relation("AssetApprovalReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
 
   @@map("asset_approval_requests")
+}
+
+model AssetRequest {
+  id               String             @id @default(uuid()) @db.Uuid
+  itemName         String             @map("item_name")
+  quantity         Int                @default(1)
+  reason           String
+  notes            String?
+  assetLocationId  String?            @map("asset_location_id") @db.Uuid
+  requesterId      String?            @map("requester_id") @db.Uuid
+  status           AssetRequestStatus @default(PENDING)
+  rejectNote       String?            @map("reject_note")
+  reviewedById     String?            @map("reviewed_by") @db.Uuid
+  reviewedAt       DateTime?          @map("reviewed_at")
+  fulfilledById    String?            @map("fulfilled_by") @db.Uuid
+  fulfilledAt      DateTime?          @map("fulfilled_at")
+  fulfilledNote    String?            @map("fulfilled_note")
+  fulfilledAssetId String?            @map("fulfilled_asset_id") @db.Uuid
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  assetLocation  AssetLocation? @relation(fields: [assetLocationId], references: [id], onDelete: SetNull)
+  requester      User?          @relation("AssetRequestRequestedBy", fields: [requesterId], references: [id], onDelete: SetNull)
+  reviewedBy     User?          @relation("AssetRequestReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  fulfilledBy    User?          @relation("AssetRequestFulfilledBy", fields: [fulfilledById], references: [id], onDelete: SetNull)
+  fulfilledAsset Asset?         @relation(fields: [fulfilledAssetId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([requesterId])
+  @@map("asset_requests")
 }

@@ -20,6 +20,9 @@ const permissions = [
   "maintenance.manage",
   "reports.view",
   "approvals.manage",
+  "class-assets.view",
+  "maintenance.request",
+  "asset-requests.create",
 ];
 
 const rolePermissions = {
@@ -37,6 +40,7 @@ const rolePermissions = {
   auditor: ["assets.view", "audits.manage", "reports.view"],
   maintenance: ["assets.view", "maintenance.manage", "movements.manage", "reports.view"],
   viewer: ["assets.view", "reports.view"],
+  "homeroom-teacher": ["class-assets.view", "maintenance.request", "asset-requests.create"],
 };
 
 async function upsertPermission(name) {

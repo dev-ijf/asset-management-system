@@ -48,6 +48,7 @@ export function AppHeader({ user }: { user: CurrentUser }) {
         >
           <Menu className="h-5 w-5" />
         </button>
+        {can(user, "assets.view") ? (
         <form action={handleSearch} className="relative hidden w-[360px] md:block">
           <Input name="q" placeholder="Search asset code/name/serial..." className="h-10 pr-11" />
           <button
@@ -58,10 +59,11 @@ export function AppHeader({ user }: { user: CurrentUser }) {
             <Search className="h-4 w-4" />
           </button>
         </form>
+        ) : null}
       </div>
 
       <div className="flex items-center gap-3">
-        {shortcuts.map((action) => (
+        {shortcuts.filter(() => can(user, "reports.view")).map((action) => (
           <Link
             key={action.label}
             href={action.href}

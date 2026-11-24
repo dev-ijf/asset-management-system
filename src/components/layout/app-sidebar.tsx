@@ -8,6 +8,8 @@ import {
   ChevronRight,
   Boxes,
   ClipboardCheck,
+  PackagePlus,
+  School,
   FileBarChart,
   Gauge,
   Home,
@@ -23,13 +25,14 @@ import { cn } from "@/lib/cn";
 import type { SidebarItem } from "@/types/navigation";
 
 const navigation: SidebarItem[] = [
-  { title: "Dashboard", href: "/dashboard", icon: Home },
+  { title: "Dashboard", href: "/dashboard", icon: Home, permission: ["assets.view", "reports.view"] },
+  { title: "Kelas Saya", href: "/dashboard/my-class", icon: School, permission: "class-assets.view" },
   { title: "Assets", href: "/dashboard/assets", icon: Package, permission: "assets.view" },
   {
     title: "Master Data",
     href: "/dashboard/master",
     icon: Boxes,
-    permission: "assets.manage",
+    permission: "assets.view",
     children: [
       { title: "Asset Statuses", href: "/dashboard/master/asset-statuses" },
       { title: "Asset Classes", href: "/dashboard/master/asset-classes" },
@@ -46,25 +49,41 @@ const navigation: SidebarItem[] = [
     title: "Transactions",
     href: "/dashboard/transactions",
     icon: Repeat2,
-    permission: "movements.manage",
     children: [
-      { title: "Movements", href: "/dashboard/transactions/movements", permission: "movements.manage" },
-      { title: "Disposals", href: "/dashboard/transactions/disposals", permission: "disposals.manage" },
-      { title: "Audits", href: "/dashboard/transactions/audits", permission: "audits.manage" },
+      { title: "Movements", href: "/dashboard/transactions/movements", permission: ["assets.view", "movements.manage"] },
+      { title: "Disposals", href: "/dashboard/transactions/disposals", permission: ["assets.view", "disposals.manage"] },
+      { title: "Audits", href: "/dashboard/transactions/audits", permission: ["reports.view", "audits.manage"] },
     ],
   },
-  { title: "Maintenance", href: "/dashboard/maintenance", icon: Wrench, permission: "maintenance.manage" },
-  { title: "Reports", href: "/dashboard/reports", icon: FileBarChart, permission: "reports.view", children: [
+  { title: "Maintenance", href: "/dashboard/maintenance", icon: Wrench, permission: ["assets.view", "maintenance.manage"] },
+  { title: "Pengajuan Asset", href: "/dashboard/asset-requests", icon: PackagePlus, permission: ["asset-requests.create", "approvals.manage", "assets.manage"] },
+  { title: "Reports", href: "/dashboard/reports", icon: FileBarChart, children: [
     { title: "Reports", href: "/dashboard/reports", icon: FileBarChart, permission: "reports.view" },
-    { title: "Charts", href: "/dashboard/charts", icon: BarChart3 },
+    { title: "Charts", href: "/dashboard/charts", icon: BarChart3, permission: ["assets.view", "reports.view"] },
   ] },
 ];
 
 const utilityItems = [
-  { label: "Approvals", href: "/dashboard/approvals", icon: ClipboardCheck },
-  { label: "Security", href: "/dashboard/security", icon: ShieldCheck },
-  { label: "Archive", href: "/dashboard/archive", icon: Trash2 },
+  { label: "Approvals", href: "/dashboard/approvals", icon: ClipboardCheck, permission: ["assets.view", "approvals.manage"] },
+  { label: "Security", href: "/dashboard/security", icon: ShieldCheck, permission: ["users.manage", "roles.manage", "permissions.manage"] },
+  { label: "Archive", href: "/dashboard/archive", icon: Trash2, permission: ["assets.view"] },
 ];
+
+/** Client-side mirror of hasPermission; only decides which menus to show (pages guard themselves). */
+function allowed(roles: string[], permissions: string[], required?: string | string[]) {
+  if (!required || roles.includes("super-admin")) return true;
+  return (Array.isArray(required) ? required : [required]).some((permission) => permissions.includes(permission));
+}
+
+/** Menus the user may open; a group keeps only its allowed children and disappears when none are left. */
+function visibleNavigation(roles: string[], permissions: string[]) {
+  return navigation.flatMap((item) => {
+    if (!allowed(roles, permissions, item.permission)) return [];
+    if (!item.children) return [item];
+    const children = item.children.filter((child) => allowed(roles, permissions, child.permission));
+    return children.length ? [{ ...item, children }] : [];
+  });
+}
 
 function isActive(pathname: string, item: SidebarItem) {
   if (item.href === "/dashboard") {
@@ -74,8 +93,10 @@ function isActive(pathname: string, item: SidebarItem) {
   return pathname === item.href || pathname.startsWith(`${item.href}/`);
 }
 
-export function AppSidebar() {
+export function AppSidebar({ roles, permissions }: { roles: string[]; permissions: string[] }) {
   const pathname = usePathname();
+  const navigation = visibleNavigation(roles, permissions);
+  const utilities = utilityItems.filter((item) => allowed(roles, permissions, item.permission));
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const activeGroup = navigation.find(item => item.children &&
@@ -177,7 +198,7 @@ export function AppSidebar() {
             })}
           </nav>
           <div className="mt-4 flex w-full shrink-0 flex-col items-center gap-3 border-t border-[var(--border)] pt-4">
-            {utilityItems.map(item => {
+            {utilities.map(item => {
               const Icon = item.icon;
               const active = pathname === item.href;
               return <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)} className={linkClass(active)}
