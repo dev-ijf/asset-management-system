@@ -4,11 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { Camera, X } from "lucide-react";
 
 const MAX_PHOTOS = 3;
-const MAX_BYTES = 10 * 1024 * 1024;
-/** Server actions accept 12 MB per request; leave room for the text fields. */
-const MAX_TOTAL_BYTES = 11 * 1024 * 1024;
+/** Vercel rejects request bodies above 4.5 MB, so all photos together must stay below that. */
+const MAX_TOTAL_BYTES = 4 * 1024 * 1024;
+const MAX_BYTES = 1.3 * 1024 * 1024;
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIDE = 1600;
+const QUALITIES = [0.82, 0.7, 0.55];
 
 /**
  * Phone photos are often 4–8 MB. Shrink them in the browser first (the server compresses
@@ -23,7 +24,13 @@ async function shrinkPhoto(file: File): Promise<File> {
     canvas.height = Math.round(bitmap.height * scale);
     canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
     bitmap.close();
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+    // Lower the quality until the photo fits MAX_BYTES.
+    let blob: Blob | null = null;
+    for (const quality of QUALITIES) {
+      const next = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+      if (next && (!blob || next.size < blob.size)) blob = next;
+      if (blob && blob.size <= MAX_BYTES) break;
+    }
     if (!blob || blob.size >= file.size) return file;
     return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
   } catch {
@@ -67,7 +74,7 @@ export function MaintenancePhotosField({ error, pending = false }: { error?: str
     setBusy(false);
     const next = [...files, ...shrunk];
     if (shrunk.some((file) => file.size > MAX_BYTES)) {
-      setLocalError("Ukuran tiap foto maksimal 10 MB.");
+      setLocalError("Foto terlalu besar. Gunakan foto lain atau resolusi lebih kecil.");
       return;
     }
     if (next.reduce((total, file) => total + file.size, 0) > MAX_TOTAL_BYTES) {

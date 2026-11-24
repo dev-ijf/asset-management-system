@@ -42,6 +42,20 @@ function Field({ label, error, hint, children }: { label: string; error?: string
   );
 }
 
+/** A failed request (too large, timeout, offline) becomes a message instead of the error page. */
+function safeAction(action: Action): Action {
+  return async (state, formData) => {
+    try {
+      return await action(state, formData);
+    } catch (error) {
+      const digest = (error as { digest?: unknown } | null)?.digest;
+      if (typeof digest === "string" && digest.startsWith("NEXT_")) throw error; // redirect / notFound
+      console.error(error);
+      return { message: "Pengajuan gagal dikirim. Periksa koneksi atau kurangi foto, lalu coba lagi." };
+    }
+  };
+}
+
 /** A button that opens a modal form; the modal closes when the action succeeds. */
 function DialogForm({
   action,
@@ -59,7 +73,8 @@ function DialogForm({
   children: (state: State, pending: boolean) => ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const [state, form, pending] = useFormAction(action, initialState);
+  const [safe] = useState(() => safeAction(action));
+  const [state, form, pending] = useFormAction(safe, initialState);
   useEffect(() => {
     if (state.ok) setOpen(false);
   }, [state.ok]);
