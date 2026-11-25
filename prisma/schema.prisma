@@ -549,9 +549,10 @@ model AssetMaintenance {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  photos    MaintenancePhoto[]
-  asset     Asset              @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  createdBy User?              @relation("AssetMaintenanceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  photos          MaintenancePhoto[]
+  approvalRequest AssetApprovalRequest?
+  asset           Asset                 @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  createdBy       User?                 @relation("AssetMaintenanceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@map("asset_maintenances")
 }
@@ -566,13 +567,16 @@ model AssetApprovalRequest {
   rejectNote      String?                 @map("reject_note")
   reviewedById    String?                 @map("reviewed_by") @db.Uuid
   reviewedAt      DateTime?               @map("reviewed_at")
+  /// The maintenance record an approved MAINTENANCE request created, so the requester can follow it.
+  maintenanceId   String?                 @unique @map("maintenance_id") @db.Uuid
   createdAt       DateTime                @default(now()) @map("created_at")
   updatedAt       DateTime                @updatedAt @map("updated_at")
 
-  asset      Asset              @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  requester  User?              @relation("AssetApprovalRequestedBy", fields: [requesterId], references: [id], onDelete: SetNull)
-  reviewedBy User?              @relation("AssetApprovalReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
-  photos     MaintenancePhoto[]
+  maintenance AssetMaintenance?  @relation(fields: [maintenanceId], references: [id], onDelete: SetNull)
+  asset       Asset              @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  requester   User?              @relation("AssetApprovalRequestedBy", fields: [requesterId], references: [id], onDelete: SetNull)
+  reviewedBy  User?              @relation("AssetApprovalReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  photos      MaintenancePhoto[]
 
   @@map("asset_approval_requests")
 }

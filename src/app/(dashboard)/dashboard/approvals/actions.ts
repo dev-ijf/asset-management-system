@@ -272,6 +272,8 @@ async function applyMaintenance(
       createdAt: request.createdAt,
     },
   });
+  // The requester follows the work through this link (Kelas Saya › Pengajuan Maintenance).
+  await tx.assetApprovalRequest.update({ where: { id: request.id }, data: { maintenanceId: maintenance.id } });
   // Photos of the damage sent with the request stay with the maintenance record.
   await tx.maintenancePhoto.updateMany({ where: { approvalRequestId: request.id }, data: { maintenanceId: maintenance.id } });
 

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Eye } from "lucide-react";
-import { ApprovalTransactionType, type Prisma } from "@/generated/prisma/client";
-import { MyRequestsCard } from "@/components/approvals/my-requests-card";
+import type { Prisma } from "@/generated/prisma/client";
+import { ClassMaintenanceTracker } from "@/components/class/class-maintenance-tracker";
 import { AssetRequestCreateButton, ClassMaintenanceButton } from "@/components/class/class-forms";
 import { PageHeader } from "@/components/layout/page-header";
 import { DataTable } from "@/components/tables/data-table";
@@ -137,14 +137,7 @@ export default async function MyClassPage({ searchParams }: PageProps) {
             <Pagination {...pagination} />
           </CardContent>
         </Card>
-        {canRequestMaintenance ? (
-          <MyRequestsCard
-            userId={user.id}
-            types={[ApprovalTransactionType.MAINTENANCE]}
-            note="Pengajuan maintenance Anda yang masih menunggu persetujuan."
-            historyHref={hasPermission(user, "assets.view") ? undefined : null}
-          />
-        ) : null}
+        {canRequestMaintenance ? <ClassMaintenanceTracker userId={user.id} /> : null}
       </div>
     </>
   );
