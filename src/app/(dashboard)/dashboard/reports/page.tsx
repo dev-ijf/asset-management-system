@@ -9,7 +9,7 @@ const reports = [
   { title: "Movements", href: "/dashboard/reports/movements", description: "Report perpindahan asset antar lokasi, departemen, dan user." },
   { title: "Disposals", href: "/dashboard/reports/disposals", description: "Report disposal dan reverse disposal asset." },
   { title: "Audits", href: "/dashboard/reports/audits", description: "Report hasil audit fisik asset." },
-  { title: "Batch QR Labels", href: "/dashboard/reports/qr-labels", description: "Cetak label QR asset secara massal." },
+  { title: "Batch QR Labels", href: "/print/qr-labels", description: "Cetak label QR semua asset aktif (kode di bawah QR)." },
 ];
 
 export default async function ReportsPage() {

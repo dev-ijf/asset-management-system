@@ -1,5 +1,4 @@
-import { AlertCircle, Search } from "lucide-react";
-import type { Prisma } from "@/generated/prisma/client";
+import { AlertCircle, QrCode, Search } from "lucide-react";
 import Link from "next/link";
 import { AssetCreateAction, AssetRowActions, type AssetFormOptions, type AssetRow } from "@/components/assets/asset-form-client";
 import { AssetBulkProvider, AssetBulkTable, AssetImportButton } from "@/components/assets/asset-bulk-client";
@@ -18,7 +17,7 @@ import { wibFormat } from "@/lib/datetime";
 import { categoryClassResolver } from "@/lib/category-class";
 import { locationOptions, locationPathOptions } from "@/lib/location-tree";
 import { FilterField, FilterPanel } from "@/components/tables/filter-panel";
-import { assetLocationFilter, departmentFilter } from "@/lib/location-filter";
+import { assetListFilterQuery, assetListWhere } from "@/lib/asset-list-filter";
 
 export const dynamic = "force-dynamic";
 
@@ -112,24 +111,7 @@ async function getAssets({
   requestedPage: number;
   pageSize: number;
 }) {
-  const where: Prisma.AssetWhereInput = {
-      deletedAt: null,
-      archivedAt: null,
-      ...(query
-        ? {
-            OR: [
-              { code: { contains: query, mode: "insensitive" } },
-              { name: { contains: query, mode: "insensitive" } },
-              { serialNumber: { contains: query, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-      ...(statusId ? { assetStatusId: statusId } : {}),
-      ...(classId ? { assetClassId: classId } : {}),
-      ...(categoryId ? { assetCategoryId: categoryId } : {}),
-      ...(locationId ? { assetLocationId: await assetLocationFilter(locationId) } : {}),
-      ...(departmentId ? { departmentId: await departmentFilter(departmentId) } : {}),
-    };
+  const where = await assetListWhere({ query, statusId, classId, categoryId, locationId, departmentId });
   const total = await prisma.asset.count({ where });
   const pagination = createPagination(total, requestedPage, pageSize);
   const items = await prisma.asset.findMany({
@@ -228,11 +210,9 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
     const activeFilters = [statusId, classId, categoryId, locationId, departmentId].filter(Boolean).length;
     const hasFilter = Boolean(query) || activeFilters > 0;
     // Export carries the active search and filters (not the page), so the file matches the list.
-    const exportParams = new URLSearchParams(
-      Object.entries({ q: query, status: statusId, class: classId, category: categoryId, location: locationId, department: departmentId })
-        .filter(([, value]) => value),
-    );
+    const exportParams = assetListFilterQuery({ query, statusId, classId, categoryId, locationId, departmentId });
     const exportHref = `/dashboard/reports/assets/export${exportParams.size ? `?${exportParams}` : ""}`;
+    const qrPrintHref = `/print/qr-labels${exportParams.size ? `?${exportParams}` : ""}`;
 
     return (
       <AssetBulkProvider key={JSON.stringify(params)} canManage={canManage}>
@@ -240,6 +220,7 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
           title="Data List Aset"
           subtitle="Kelola daftar aset, kode inventaris, status operasional, lokasi, dan kepemilikan aset."
           actions={<div className="flex flex-wrap gap-2"><AssetImportButton />
+            <a href={qrPrintHref} target="_blank" rel="noopener noreferrer" title={hasFilter ? "Print QR asset sesuai pencarian dan filter yang aktif" : "Print QR semua asset"} className="inline-flex h-10 items-center gap-2 rounded-md border border-[var(--border)] bg-white px-5 text-sm font-medium hover:bg-slate-50"><QrCode className="h-4 w-4" />{hasFilter ? "Print QR (terfilter)" : "Print QR"}</a>
             {hasPermission(user, "reports.view") ? <a href={exportHref} title={hasFilter ? "Export aset sesuai pencarian dan filter yang aktif" : "Export semua aset"} className="inline-flex h-10 items-center rounded-md border border-[var(--border)] bg-white px-5 text-sm font-medium hover:bg-slate-50">{hasFilter ? "Export (terfilter)" : "Export"}</a> : null}
             <AssetCreateAction canManage={canManage} options={options} /></div>}
         />
